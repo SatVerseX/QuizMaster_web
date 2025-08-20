@@ -22,6 +22,8 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isCreator, setIsCreator] = useState(false);
 
   // Email/Password signup
   const signup = async (email, password, displayName) => {
@@ -65,13 +67,27 @@ export const AuthProvider = ({ children }) => {
     return unsubscribe;
   }, []);
 
+  useEffect(() => {
+    if (currentUser) {
+      currentUser.getIdTokenResult().then(token => {
+        setIsAdmin(!!token.claims.admin);
+        setIsCreator(!!token.claims.creator);
+      });
+    } else {
+      setIsAdmin(false);
+      setIsCreator(false);
+    }
+  }, [currentUser]);
+
   const value = {
     currentUser,
     signup,
     login,
     signInWithGoogle,
     logout,
-    loading
+    loading,
+    isAdmin,
+    isCreator
   };
 
   return (
