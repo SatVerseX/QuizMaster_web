@@ -879,25 +879,7 @@ const TestSeriesList = ({
                   </div>
                 )}
 
-                {/* My Series specific content */}
-                {!searchTerm && activeFilter === 'my-series' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 max-w-2xl mx-auto mb-8">
-                    <div className="bg-gradient-to-r from-purple-500/10 to-purple-600/10 border border-purple-500/20 rounded-xl p-4 text-center hover-lift">
-                      <div className="w-12 h-12 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <FiBookOpen className="w-6 h-6 text-purple-400" />
-                      </div>
-                      <h4 className="text-white font-semibold mb-2">Explore Series</h4>
-                      <p className="text-sm text-purple-200">Browse our collection of test series</p>
-                    </div>
-                    <div className="bg-gradient-to-r from-blue-500/10 to-blue-600/10 border border-blue-500/20 rounded-xl p-4 text-center hover-lift">
-                      <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <FiHeart className="w-6 h-6 text-blue-400" />
-                      </div>
-                      <h4 className="text-white font-semibold mb-2">Subscribe & Learn</h4>
-                      <p className="text-sm text-blue-200">Subscribe to start your learning journey</p>
-                    </div>
-                  </div>
-                )}
+
               </div>
               
               {/* Enhanced Action Buttons */}
@@ -967,22 +949,7 @@ const TestSeriesList = ({
                 )}
               </div>
 
-              {/* Motivational quote */}
-              {!searchTerm && (
-                <div className="mt-12 sm:mt-16 max-w-2xl mx-auto">
-                  <div className="bg-gradient-to-r from-gray-800/60 to-gray-700/60 backdrop-blur-xl border border-gray-600/40 rounded-2xl p-6 sm:p-8 shimmer">
-                    <div className="flex items-center justify-center gap-3 mb-4">
-                      <div className="w-1 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
-                      <FiMessageSquare className="w-6 h-6 text-blue-400" />
-                      <div className="w-1 h-8 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full"></div>
-                    </div>
-                    <p className="text-lg sm:text-xl text-gray-300 italic text-center leading-relaxed">
-                      "Education is not preparation for life; education is life itself."
-                    </p>
-                    <p className="text-sm text-gray-400 text-center mt-3">— John Dewey</p>
-                  </div>
-                </div>
-              )}
+              
             </div>
           )}
         </div>
