@@ -542,7 +542,7 @@ const QuizList = ({ onTakeQuiz, onCreateQuiz, onViewAttempts, onViewLeaderboard,
       {/* Call to Action Section */}
       {filteredAndSortedQuizzes.length > 0 && (
         <div className="text-center mt-16">
-          <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-900/20 dark:via-indigo-900/20 dark:to-purple-900/20 rounded-3xl p-12 border-2 border-blue-200/50 dark:border-blue-700/50 shadow-2xl backdrop-blur-sm">
+          <div className="bg-gradient-to-br from-white via-white to-white dark:from-blue-900/20 dark:via-indigo-900/20 dark:to-purple-900/20 rounded-3xl p-12 border-2 border-blue-200/50 dark:border-blue-700/50 shadow-2xl backdrop-blur-sm">
             <div className="max-w-3xl mx-auto">
               <div className="flex items-center justify-center gap-4 mb-6">
                 <div className="p-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg">

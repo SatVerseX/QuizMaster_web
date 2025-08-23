@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 import { 
   collection, 
@@ -61,6 +62,7 @@ const TestSeriesDashboard = ({
 }) => {
   const navigate = useNavigate();
   const { currentUser, isAdmin } = useAuth();
+  const { isDark } = useTheme();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
@@ -448,18 +450,28 @@ const TestSeriesDashboard = ({
   );
 
   const TestCreationCard = ({ icon, title, description, features, buttonText, onClick, colorClass }) => (
-    <div className="bg-gray-800/60 backdrop-blur-sm border border-gray-700/60 rounded-lg sm:rounded-xl p-4 sm:p-5 flex flex-col h-full hover:bg-gray-800/80 transition-all">
+    <div className={`backdrop-blur-sm border rounded-lg sm:rounded-xl p-4 sm:p-5 flex flex-col h-full transition-all duration-300 ${
+      isDark 
+        ? 'bg-gray-800/60 border-gray-700/60 hover:bg-gray-800/80' 
+        : 'bg-white border-slate-200 shadow-sm hover:shadow-md'
+    }`}>
       <div className="flex items-center gap-2 sm:gap-3 mb-3">
         <div className={`p-2 sm:p-3 rounded-lg ${colorClass}`}>
           {icon}
         </div>
         <div>
-          <h4 className="text-base sm:text-lg font-bold text-white">{title}</h4>
-          <p className="text-xs sm:text-sm text-gray-400">{description}</p>
+          <h4 className={`text-base sm:text-lg font-bold transition-all duration-300 ${
+            isDark ? 'text-white' : 'text-slate-800'
+          }`}>{title}</h4>
+          <p className={`text-xs sm:text-sm transition-all duration-300 ${
+            isDark ? 'text-gray-400' : 'text-slate-600'
+          }`}>{description}</p>
         </div>
       </div>
       
-      <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm text-gray-400 mb-4 sm:mb-6 flex-grow">
+      <ul className={`space-y-1.5 sm:space-y-2 text-xs sm:text-sm mb-4 sm:mb-6 flex-grow transition-all duration-300 ${
+        isDark ? 'text-gray-400' : 'text-slate-600'
+      }`}>
         {features.map((feature, index) => (
           <li key={index} className="flex items-center gap-2">
             {typeof feature === 'object' ? feature.icon : <FiCheck className="w-3 h-3 sm:w-4 sm:h-4 text-green-400" />}
@@ -568,14 +580,22 @@ const TestSeriesDashboard = ({
 
       {/* Add New Test Section (Admins only) */}
       {isAdmin && (
-      <div className="bg-gray-800/60 backdrop-blur-sm border border-gray-700/60 rounded-xl p-4 sm:p-5 mb-6 sm:mb-8">
+      <div className={`backdrop-blur-sm border rounded-xl p-4 sm:p-5 mb-6 sm:mb-8 transition-all duration-300 ${
+        isDark 
+          ? 'bg-gray-800/60 border-gray-700/60' 
+          : 'bg-white border-slate-200 shadow-sm'
+      }`}>
         <div className="flex items-center gap-3 mb-4 sm:mb-5">
           <div className="p-2 bg-blue-600 rounded-lg">
             <FiPlus className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
           </div>
           <div>
-            <h3 className="text-lg sm:text-xl font-bold text-white">Add New Test</h3>
-            <p className="text-sm sm:text-base text-gray-400">Create tests for your series using manual editor or AI assistance</p>
+            <h3 className={`text-lg sm:text-xl font-bold transition-all duration-300 ${
+              isDark ? 'text-white' : 'text-slate-800'
+            }`}>Add New Test</h3>
+            <p className={`text-sm sm:text-base transition-all duration-300 ${
+              isDark ? 'text-gray-400' : 'text-slate-600'
+            }`}>Create tests for your series using manual editor or AI assistance</p>
           </div>
         </div>
 

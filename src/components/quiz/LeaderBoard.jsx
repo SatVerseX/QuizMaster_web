@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { 
   FiAward, 
   FiUser, 
@@ -30,6 +31,7 @@ import {
 
 const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest = false }) => {
   const { currentUser } = useAuth();
+  const { isDark } = useTheme();
   const [leaderboard, setLeaderboard] = useState([]);
   const [userRank, setUserRank] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -226,7 +228,11 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900/20 to-purple-900/20">
+      <div className={`min-h-screen transition-all duration-500 ${
+        isDark 
+          ? 'bg-gradient-to-br from-gray-900 via-blue-900/20 to-purple-900/20' 
+          : 'bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20'
+      }`}>
         <div className="max-w-6xl mx-auto p-6">
           <div className="flex justify-center items-center min-h-[400px]">
             <div className="text-center">
@@ -235,8 +241,10 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
                 <div className="absolute inset-3 rounded-full border-4 border-yellow-300 border-t-transparent animate-spin animate-reverse"></div>
                 <div className="absolute inset-6 rounded-full border-2 border-yellow-200 border-t-transparent animate-spin"></div>
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">Loading Leaderboard</h3>
-              <p className="text-gray-400">Fetching top performers...</p>
+              <h3 className={`text-xl font-bold mb-2 ${
+                isDark ? 'text-white' : 'text-slate-800'
+              }`}>Loading Leaderboard</h3>
+              <p className={isDark ? 'text-gray-400' : 'text-slate-600'}>Fetching top performers...</p>
             </div>
           </div>
         </div>
@@ -246,15 +254,23 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900/20 to-purple-900/20">
+      <div className={`min-h-screen transition-all duration-500 ${
+        isDark 
+          ? 'bg-gradient-to-br from-gray-900 via-blue-900/20 to-purple-900/20' 
+          : 'bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20'
+      }`}>
         <div className="max-w-6xl mx-auto p-6">
           <div className="flex justify-center items-center min-h-[400px]">
             <div className="text-center">
-              <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${
+                isDark ? 'bg-red-500/20' : 'bg-red-50/80'
+              }`}>
                 <FiZap className="w-10 h-10 text-red-400" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">Error Loading Leaderboard</h3>
-              <p className="text-red-400 mb-6">{error}</p>
+              <h3 className={`text-xl font-bold mb-2 ${
+                isDark ? 'text-white' : 'text-red-700'
+              }`}>Error Loading Leaderboard</h3>
+              <p className={isDark ? 'text-red-400' : 'text-red-600'}>{error}</p>
               <button
                 onClick={loadLeaderboard}
                 className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold transition-colors flex items-center gap-2 mx-auto"
@@ -270,12 +286,20 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900/20 to-purple-900/20">
+    <div className={`min-h-screen transition-all duration-500 ${
+      isDark 
+        ? 'bg-gradient-to-br from-gray-900 via-blue-900/20 to-purple-900/20' 
+        : 'bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20'
+    }`}>
       <div className="max-w-6xl mx-auto p-6">
-        {/* Background Elements */}
-        <div className="fixed inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-yellow-500/10 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        {/* Professional Background Elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className={`absolute top-20 right-20 w-96 h-96 rounded-full blur-3xl animate-pulse ${
+            isDark ? 'bg-yellow-500/10' : 'bg-yellow-400/8'
+          }`}></div>
+          <div className={`absolute bottom-20 left-20 w-96 h-96 rounded-full blur-3xl animate-pulse delay-1000 ${
+            isDark ? 'bg-purple-500/10' : 'bg-indigo-400/6'
+          }`}></div>
         </div>
 
         {/* Header */}
@@ -283,7 +307,11 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
           {onBack && (
             <button 
               onClick={onBack}
-              className="group bg-gray-800/60 hover:bg-gray-700/60 border border-gray-600/40 text-gray-300 hover:text-white rounded-2xl px-4 py-3 transition-all duration-300 flex items-center gap-2"
+              className={`group rounded-2xl px-4 py-3 transition-all duration-300 flex items-center gap-2 ${
+                isDark 
+                  ? 'bg-gray-800/60 hover:bg-gray-700/60 border border-gray-600/40 text-gray-300 hover:text-white'
+                  : 'bg-white/90 hover:bg-white border border-slate-200/60 text-slate-700 hover:text-slate-800 hover:shadow-slate-300/30'
+              }`}
             >
               <FiArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
               Back
@@ -294,41 +322,83 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
             <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-600">
               Leaderboard
             </h1>
-            <p className="text-gray-400 text-lg">{quizTitle}</p>
+            <p className={`text-lg transition-all duration-300 ${
+              isDark ? 'text-gray-400' : 'text-slate-600'
+            }`}>{quizTitle}</p>
           </div>
         </div>
 
         {/* Stats Cards */}
         <div className="relative z-10 grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 backdrop-blur-xl border border-yellow-500/30 rounded-2xl p-6 text-center">
+          <div className={`backdrop-blur-xl border rounded-2xl p-6 text-center transition-all duration-500 ${
+            isDark 
+              ? 'bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 border-yellow-500/30'
+              : 'bg-white/90 border-yellow-200'
+          }`}>
             <FaTrophy className="w-8 h-8 text-yellow-400 mx-auto mb-3" />
-            <div className="text-2xl font-bold text-yellow-300">{stats.topScore}%</div>
-            <div className="text-yellow-200 text-sm">Top Score</div>
+            <div className={`text-2xl font-bold ${
+              isDark ? 'text-yellow-300' : 'text-yellow-700'
+            }`}>{stats.topScore}%</div>
+            <div className={`text-sm ${
+              isDark ? 'text-yellow-200' : 'text-yellow-600'
+            }`}>Top Score</div>
           </div>
           
-          <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/20 backdrop-blur-xl border border-blue-500/30 rounded-2xl p-6 text-center">
+          <div className={`backdrop-blur-xl border rounded-2xl p-6 text-center transition-all duration-500 ${
+            isDark 
+              ? 'bg-gradient-to-br from-blue-500/20 to-blue-600/20 border-blue-500/30'
+              : 'bg-white/90 border-blue-200'
+          }`}>
             <FiUsers className="w-8 h-8 text-blue-400 mx-auto mb-3" />
-            <div className="text-2xl font-bold text-blue-300">{stats.participantCount}</div>
-            <div className="text-blue-200 text-sm">Participants</div>
+            <div className={`text-2xl font-bold ${
+              isDark ? 'text-blue-300' : 'text-blue-700'
+            }`}>{stats.participantCount}</div>
+            <div className={`text-sm ${
+              isDark ? 'text-blue-200' : 'text-blue-600'
+            }`}>Participants</div>
           </div>
           
-          <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/20 backdrop-blur-xl border border-purple-500/30 rounded-2xl p-6 text-center">
+          <div className={`backdrop-blur-xl border rounded-2xl p-6 text-center transition-all duration-500 ${
+            isDark 
+              ? 'bg-gradient-to-br from-purple-500/20 to-purple-600/20 border-purple-500/30'
+              : 'bg-white/90 border-purple-200'
+          }`}>
             <FiTarget className="w-8 h-8 text-purple-400 mx-auto mb-3" />
-            <div className="text-2xl font-bold text-purple-300">{stats.averageScore}%</div>
-            <div className="text-purple-200 text-sm">Average Score</div>
+            <div className={`text-2xl font-bold ${
+              isDark ? 'text-purple-300' : 'text-purple-700'
+            }`}>{stats.averageScore}%</div>
+            <div className={`text-sm ${
+              isDark ? 'text-purple-200' : 'text-purple-600'
+            }`}>Average Score</div>
           </div>
           
-          <div className="bg-gradient-to-br from-green-500/20 to-green-600/20 backdrop-blur-xl border border-green-500/30 rounded-2xl p-6 text-center">
+          <div className={`backdrop-blur-xl border rounded-2xl p-6 text-center transition-all duration-500 ${
+            isDark 
+              ? 'bg-gradient-to-br from-green-500/20 to-green-600/20 border-green-500/30'
+              : 'bg-white/90 border-green-200'
+          }`}>
             <FiTrendingUp className="w-8 h-8 text-green-400 mx-auto mb-3" />
-            <div className="text-2xl font-bold text-green-300">{stats.totalAttempts}</div>
-            <div className="text-green-200 text-sm">Total Attempts</div>
+            <div className={`text-2xl font-bold ${
+              isDark ? 'text-green-300' : 'text-green-700'
+            }`}>{stats.totalAttempts}</div>
+            <div className={`text-sm ${
+              isDark ? 'text-green-200' : 'text-green-600'
+            }`}>Total Attempts</div>
           </div>
         </div>
 
         {/* Main Leaderboard Card */}
-        <div className="relative z-10 bg-gradient-to-br from-gray-800/80 to-gray-900/80 backdrop-blur-xl border border-gray-600/40 rounded-3xl shadow-2xl overflow-hidden">
+        <div className={`relative z-10 backdrop-blur-xl border rounded-3xl shadow-2xl overflow-hidden transition-all duration-500 ${
+          isDark 
+            ? 'bg-gradient-to-br from-gray-800/80 to-gray-900/80 border-gray-600/40'
+            : 'bg-white/90 border-slate-200/60'
+        }`}>
           {/* Header */}
-          <div className="bg-gradient-to-r from-yellow-500/20 via-orange-500/20 to-yellow-500/20 border-b border-gray-600/40 p-8">
+          <div className={`border-b p-8 ${
+            isDark 
+              ? 'bg-gradient-to-r from-yellow-500/20 via-orange-500/20 to-yellow-500/20 border-gray-600/40'
+              : 'bg-gradient-to-r from-yellow-50/80 via-orange-50/80 to-yellow-50/80 border-slate-200/60'
+          }`}>
             <div className="text-center">
               <div className="relative mb-6">
                 <div className="w-20 h-20 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-full flex items-center justify-center mx-auto shadow-2xl shadow-yellow-500/30">
@@ -337,12 +407,20 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
                 <div className="absolute -inset-4 bg-gradient-to-r from-yellow-400/20 to-orange-400/20 rounded-full blur-xl animate-pulse"></div>
               </div>
               
-              <h2 className="text-3xl font-bold text-white mb-4">Hall of Fame</h2>
+              <h2 className={`text-3xl font-bold mb-4 ${
+                isDark ? 'text-white' : 'text-slate-800'
+              }`}>Hall of Fame</h2>
               
               {userRank && (
-                <div className="inline-flex items-center gap-3 bg-blue-500/20 border border-blue-500/30 backdrop-blur-sm px-6 py-3 rounded-full">
+                <div className={`inline-flex items-center gap-3 backdrop-blur-sm px-6 py-3 rounded-full ${
+                  isDark 
+                    ? 'bg-blue-500/20 border border-blue-500/30'
+                    : 'bg-blue-50/80 border border-blue-200'
+                }`}>
                   <FiUser className="w-5 h-5 text-blue-400" />
-                  <span className="text-white font-bold">Your Rank: #{userRank}</span>
+                  <span className={`font-bold ${
+                    isDark ? 'text-white' : 'text-blue-700'
+                  }`}>Your Rank: #{userRank}</span>
                 </div>
               )}
             </div>
@@ -354,7 +432,9 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
                 className={`flex items-center gap-3 px-6 py-3 rounded-2xl font-bold transition-all duration-300 ${
                   filter === 'best' 
                     ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg shadow-yellow-500/30'
-                    : 'bg-gray-700/50 text-gray-300 hover:bg-gray-600/50'
+                    : isDark 
+                      ? 'bg-gray-700/50 text-gray-300 hover:bg-gray-600/50'
+                      : 'bg-slate-100/80 text-slate-600 hover:bg-slate-200/80 border border-slate-200/60'
                 }`}
               >
                 <FaChartLine className="w-5 h-5" />
@@ -366,7 +446,9 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
                 className={`flex items-center gap-3 px-6 py-3 rounded-2xl font-bold transition-all duration-300 ${
                   filter === 'recent' 
                     ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg shadow-yellow-500/30'
-                    : 'bg-gray-700/50 text-gray-300 hover:bg-gray-600/50'
+                    : isDark 
+                      ? 'bg-gray-700/50 text-gray-300 hover:bg-gray-600/50'
+                      : 'bg-slate-100/80 text-slate-600 hover:bg-slate-200/80 border border-slate-200/60'
                 }`}
               >
                 <FaHistory className="w-5 h-5" />
@@ -379,11 +461,17 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
           <div className="p-8">
             {leaderboard.length === 0 ? (
               <div className="text-center py-16">
-                <div className="w-32 h-32 bg-gray-700/50 rounded-full flex items-center justify-center mx-auto mb-6">
+                <div className={`w-32 h-32 rounded-full flex items-center justify-center mx-auto mb-6 ${
+                  isDark ? 'bg-gray-700/50' : 'bg-slate-200/60'
+                }`}>
                   <FaTrophy className="w-16 h-16 text-gray-500" />
                 </div>
-                <h3 className="text-2xl font-bold text-white mb-4">No Attempts Yet</h3>
-                <p className="text-gray-400 text-lg">
+                <h3 className={`text-2xl font-bold mb-4 ${
+                  isDark ? 'text-white' : 'text-slate-800'
+                }`}>No Attempts Yet</h3>
+                <p className={`text-lg ${
+                  isDark ? 'text-gray-400' : 'text-slate-600'
+                }`}>
                   Be the first to take this test and claim the crown! 👑
                 </p>
               </div>
@@ -402,7 +490,9 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
                           {leaderboard[1]?.percentage}%
                         </div>
                       </div>
-                      <h4 className="text-white font-bold">{leaderboard[1]?.userName || 'Anonymous'}</h4>
+                      <h4 className={`font-bold ${
+                        isDark ? 'text-white' : 'text-slate-800'
+                      }`}>{leaderboard[1]?.userName || 'Anonymous'}</h4>
                     </div>
 
                     {/* 1st Place */}
@@ -432,7 +522,9 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
                           {leaderboard[2]?.percentage}%
                         </div>
                       </div>
-                      <h4 className="text-white font-bold">{leaderboard[2]?.userName || 'Anonymous'}</h4>
+                      <h4 className={`font-bold ${
+                        isDark ? 'text-white' : 'text-slate-800'
+                      }`}>{leaderboard[1]?.userName || 'Anonymous'}</h4>
                     </div>
                   </div>
                 )}
@@ -448,10 +540,14 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
                         key={attempt.id}
                         className={`group relative overflow-hidden rounded-2xl border transition-all duration-300 hover:scale-[1.02] ${
                           isCurrentUser 
-                            ? 'bg-gradient-to-r from-blue-500/20 to-blue-600/20 border-blue-500/40 shadow-lg shadow-blue-500/20' 
+                            ? isDark
+                              ? 'bg-gradient-to-r from-blue-500/20 to-blue-600/20 border-blue-500/40 shadow-lg shadow-blue-500/20'
+                              : 'bg-gradient-to-r from-blue-50/80 to-blue-100/80 border-blue-300/60 shadow-lg shadow-blue-500/20'
                             : rank <= 3
                               ? `bg-gradient-to-r ${getScoreBg(attempt.percentage)} border`
-                              : 'bg-gray-800/50 border-gray-700/50 hover:bg-gray-800/70'
+                              : isDark
+                                ? 'bg-gray-800/50 border-gray-700/50 hover:bg-gray-800/70'
+                                : 'bg-white/90 border-slate-200/60 hover:bg-slate-100/90'
                         }`}
                       >
                         <div className="p-6">
@@ -465,7 +561,9 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-3 mb-2">
                                 <h3 className={`text-xl font-bold truncate ${
-                                  isCurrentUser ? 'text-blue-300' : 'text-white'
+                                  isCurrentUser 
+                                    ? isDark ? 'text-blue-300' : 'text-blue-700'
+                                    : isDark ? 'text-white' : 'text-slate-800'
                                 }`}>
                                   {attempt.userName || 'Anonymous'}
                                 </h3>
@@ -493,14 +591,16 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
                                 
                                 <div className="flex items-center gap-2">
                                   <FiClock className="w-4 h-4 text-gray-400" />
-                                  <span className="text-gray-300 font-mono">
+                                  <span className={`font-mono ${
+                                    isDark ? 'text-gray-300' : 'text-slate-600'
+                                  }`}>
                                     {formatTime(attempt.timeSpent)}
                                   </span>
                                 </div>
                                 
                                 <div className="flex items-center gap-2">
                                   <FiAward className="w-4 h-4 text-gray-400" />
-                                  <span className="text-gray-300">
+                                  <span className={isDark ? 'text-gray-300' : 'text-slate-600'}>
                                     {attempt.score}/{attempt.totalQuestions}
                                   </span>
                                 </div>
@@ -508,7 +608,7 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
                                 {filter === 'recent' && attempt.completedAt && (
                                   <div className="flex items-center gap-2">
                                     <FiCalendar className="w-4 h-4 text-gray-400" />
-                                    <span className="text-gray-300">
+                                    <span className={isDark ? 'text-gray-300' : 'text-slate-600'}>
                                       {formatDate(attempt.completedAt)}
                                     </span>
                                   </div>

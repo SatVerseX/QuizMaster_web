@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { collection, addDoc, doc, updateDoc, arrayUnion, getDoc } from 'firebase/firestore';
+import React, { useState } from 'react';
+import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { examCategories } from '../../utils/constants/examCategories';
 import { 
   FiPlus, 
@@ -14,22 +15,15 @@ import {
   FiTag,
   FiClock,
   FiUsers,
-  FiCheck,
-  FiAlertCircle,
-  FiCreditCard,
-  FiBriefcase,
-  FiRefreshCw,
-  FiAlertTriangle,
-  FiLock
+  FiCheck
 } from 'react-icons/fi';
 
 const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
   const { currentUser } = useAuth();
+  const { isDark } = useTheme();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1); // 1: Basic Info, 2: Pricing & Payments
-  const [creatorProfile, setCreatorProfile] = useState(null);
-  const [loadingProfile, setLoadingProfile] = useState(false);
-  const [paymentMethodLoaded, setPaymentMethodLoaded] = useState(false);
+
   
   const [seriesData, setSeriesData] = useState({
     title: '',
@@ -43,22 +37,7 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
     isPaid: false,
     price: 299,
     quizzes: [],
-    coverImageUrl: '', // New field for cover image
-    paymentMethod: {
-      type: 'bank', // 'bank' or 'upi'
-      bankAccount: {
-        accountNumber: '',
-        ifscCode: '',
-        accountHolderName: '',
-        bankName: '',
-        verified: false
-      },
-      upi: {
-        upiId: '',
-        verified: false
-      },
-      syncWithProfile: true
-    }
+    coverImageUrl: '' // New field for cover image
   });
 
   const categories = [
@@ -76,42 +55,7 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
     { value: 'hard', label: 'Hard', color: 'red' }
   ];
   
-  // Load creator profile data
-  useEffect(() => {
-    const loadCreatorProfile = async () => {
-      if (!currentUser) return;
-      
-      setLoadingProfile(true);
-      try {
-        const profileRef = doc(db, 'creator-profiles', currentUser.uid);
-        const profileSnap = await getDoc(profileRef);
-        
-        if (profileSnap.exists()) {
-          const profileData = profileSnap.data();
-          setCreatorProfile(profileData);
-          
-          // If sync is enabled, update seriesData with profile payment details
-          if (seriesData.paymentMethod.syncWithProfile && !paymentMethodLoaded) {
-            setSeriesData(prev => ({
-              ...prev,
-              paymentMethod: {
-                ...prev.paymentMethod,
-                bankAccount: profileData.paymentDetails?.bankAccount || prev.paymentMethod.bankAccount,
-                upi: profileData.paymentDetails?.upi || prev.paymentMethod.upi,
-              }
-            }));
-            setPaymentMethodLoaded(true);
-          }
-        }
-      } catch (error) {
-        console.error('Error loading creator profile:', error);
-      } finally {
-        setLoadingProfile(false);
-      }
-    };
-    
-    loadCreatorProfile();
-  }, [currentUser, seriesData.paymentMethod.syncWithProfile]);
+
 
   const handleInputChange = (field, value) => {
     setSeriesData(prev => ({
@@ -120,65 +64,7 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
     }));
   };
   
-  const handlePaymentMethodChange = (field, value) => {
-    setSeriesData(prev => ({
-      ...prev,
-      paymentMethod: {
-        ...prev.paymentMethod,
-        [field]: value
-      }
-    }));
-  };
-  
-  const handleBankDetailsChange = (field, value) => {
-    setSeriesData(prev => ({
-      ...prev,
-      paymentMethod: {
-        ...prev.paymentMethod,
-        bankAccount: {
-          ...prev.paymentMethod.bankAccount,
-          [field]: value
-        }
-      }
-    }));
-  };
-  
-  const handleUPIDetailsChange = (field, value) => {
-    setSeriesData(prev => ({
-      ...prev,
-      paymentMethod: {
-        ...prev.paymentMethod,
-        upi: {
-          ...prev.paymentMethod.upi,
-          [field]: value
-        }
-      }
-    }));
-  };
-  
-  const handleSyncWithProfileChange = async () => {
-    const newSyncValue = !seriesData.paymentMethod.syncWithProfile;
-    
-    setSeriesData(prev => ({
-      ...prev,
-      paymentMethod: {
-        ...prev.paymentMethod,
-        syncWithProfile: newSyncValue
-      }
-    }));
-    
-    if (newSyncValue && creatorProfile) {
-      // Load from profile
-      setSeriesData(prev => ({
-        ...prev,
-        paymentMethod: {
-          ...prev.paymentMethod,
-          bankAccount: creatorProfile.paymentDetails?.bankAccount || prev.paymentMethod.bankAccount,
-          upi: creatorProfile.paymentDetails?.upi || prev.paymentMethod.upi,
-        }
-      }));
-    }
-  };
+
 
   const handleTagAdd = (tag) => {
     if (tag && !seriesData.tags.includes(tag)) {
@@ -235,7 +121,9 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
   const renderStep1 = () => (
     <div className="space-y-6">
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-2">
+        <label className={`block text-sm font-medium mb-2 transition-all duration-300 ${
+          isDark ? 'text-gray-300' : 'text-slate-700'
+        }`}>
           Test Series Title <span className="text-red-500">*</span>
         </label>
         <input
@@ -243,14 +131,20 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
           placeholder="e.g., UPSC Mock Test Series 2024"
           value={seriesData.title}
           onChange={(e) => handleInputChange('title', e.target.value)}
-          className="w-full px-4 py-3 rounded-lg bg-gray-800/70 border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className={`w-full px-4 py-3 rounded-lg border transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+            isDark 
+              ? 'bg-gray-800/70 border-gray-700 text-white placeholder-gray-400' 
+              : 'bg-white border-slate-300 text-slate-800 placeholder-slate-500'
+          }`}
           required
         />
       </div>
 
       {/* Cover Image Section */}
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-2">
+        <label className={`block text-sm font-medium mb-2 transition-all duration-300 ${
+          isDark ? 'text-gray-300' : 'text-slate-700'
+        }`}>
           Cover Image URL (Cloudinary)
         </label>
         <div className="space-y-3">
@@ -259,72 +153,79 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
             placeholder="https://res.cloudinary.com/your-cloud/image/upload/..."
             value={seriesData.coverImageUrl}
             onChange={(e) => handleInputChange('coverImageUrl', e.target.value)}
-            className="w-full px-4 py-3 rounded-lg bg-gray-800/70 border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className={`w-full px-4 py-3 rounded-lg border transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+              isDark 
+                ? 'bg-gray-800/70 border-gray-700 text-white placeholder-gray-400' 
+                : 'bg-white border-slate-300 text-slate-800 placeholder-slate-500'
+            }`}
           />
           {seriesData.coverImageUrl && (
             <div className="relative">
               <img
                 src={seriesData.coverImageUrl}
                 alt="Cover preview"
-                className="w-full h-32 object-cover rounded-lg border border-gray-600"
+                className={`w-full h-32 object-cover rounded-lg border transition-all duration-300 ${
+                  isDark ? 'border-gray-600' : 'border-slate-300'
+                }`}
                 onError={(e) => {
                   e.target.style.display = 'none';
                   e.target.nextSibling.style.display = 'block';
                 }}
               />
-              <div className="hidden w-full h-32 bg-gray-700 rounded-lg border border-gray-600 flex items-center justify-center text-gray-400">
+              <div className={`hidden w-full h-32 rounded-lg border flex items-center justify-center transition-all duration-300 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-400' 
+                  : 'bg-slate-100 border-slate-300 text-slate-500'
+              }`}>
                 Invalid image URL
               </div>
             </div>
           )}
-          <p className="text-xs text-gray-400">
+          <p className={`text-xs transition-all duration-300 ${
+            isDark ? 'text-gray-400' : 'text-slate-500'
+          }`}>
             Upload your image to Cloudinary and paste the URL here. Recommended size: 400x300px
           </p>
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-2">
+        <label className={`block text-sm font-medium mb-2 transition-all duration-300 ${
+          isDark ? 'text-gray-300' : 'text-slate-700'
+        }`}>
           Description
         </label>
         <textarea
           placeholder="Describe your test series, what students will learn..."
           value={seriesData.description}
           onChange={(e) => handleInputChange('description', e.target.value)}
-          className="w-full px-4 py-3 rounded-lg bg-gray-800/70 border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className={`w-full px-4 py-3 rounded-lg border transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+            isDark 
+              ? 'bg-gray-800/70 border-gray-700 text-white placeholder-gray-400' 
+              : 'bg-white border-slate-300 text-slate-800 placeholder-slate-500'
+          }`}
           rows="4"
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            General Category
-          </label>
-          <select
-            value={seriesData.category}
-            onChange={(e) => handleInputChange('category', e.target.value)}
-            className="w-full px-4 py-3 rounded-lg bg-gray-800/70 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
-          >
-            {categories.map(cat => (
-              <option key={cat.value} value={cat.value}>
-                {cat.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
+        <label className={`block text-sm font-medium mb-2 transition-all duration-300 ${
+          isDark ? 'text-gray-300' : 'text-slate-700'
+        }`}>
             Exam Category
           </label>
+        <div className="relative">
           <select
             value={seriesData.examCategory}
             onChange={(e) => {
               handleInputChange('examCategory', e.target.value);
               handleInputChange('examSubcategory', ''); // Reset subcategory when main category changes
             }}
-            className="w-full px-4 py-3 rounded-lg bg-gray-800/70 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
+            className={`w-full px-4 py-3 pr-10 rounded-lg border transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none ${
+              isDark 
+                ? 'bg-gray-800/70 border-gray-700 text-white' 
+                : 'bg-white border-slate-300 text-slate-800'
+            }`}
           >
             <option value="">Select Exam Category</option>
             {examCategories.map(cat => (
@@ -333,22 +234,36 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
               </option>
             ))}
           </select>
+          <div className={`absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none transition-all duration-300 ${
+            isDark ? 'text-gray-400' : 'text-slate-500'
+          }`}>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
+          <label className={`block text-sm font-medium mb-2 transition-all duration-300 ${
+            isDark ? 'text-gray-300' : 'text-slate-700'
+          }`}>
             Specific Exam
           </label>
+          <div className="relative">
           <select
             value={seriesData.examSubcategory}
             onChange={(e) => handleInputChange('examSubcategory', e.target.value)}
             disabled={!seriesData.examCategory}
-            className={`w-full px-4 py-3 rounded-lg border appearance-none ${
+              className={`w-full px-4 py-3 pr-10 rounded-lg border appearance-none transition-all duration-300 ${
               seriesData.examCategory
+                  ? isDark 
                 ? 'bg-gray-800/70 border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-                : 'bg-gray-700/50 border-gray-600 text-gray-500 cursor-not-allowed'
+                    : 'bg-white border-slate-300 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+                  : isDark 
+                    ? 'bg-gray-700/50 border-gray-600 text-gray-500 cursor-not-allowed'
+                    : 'bg-slate-100 border-slate-300 text-slate-500 cursor-not-allowed'
             }`}
           >
             <option value="">Select Specific Exam</option>
@@ -360,20 +275,32 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
                 </option>
               ))}
           </select>
+            <div className={`absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none transition-all duration-300 ${
+              isDark ? 'text-gray-400' : 'text-slate-500'
+            }`}>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
+          <label className={`block text-sm font-medium mb-2 transition-all duration-300 ${
+            isDark ? 'text-gray-300' : 'text-slate-700'
+          }`}>
             Difficulty Level
           </label>
           <div className="grid grid-cols-3 gap-2">
             <button
               type="button"
               onClick={() => handleInputChange('difficulty', 'easy')}
-              className={`p-2 rounded-lg text-center text-sm font-medium transition-colors ${
+              className={`p-2 rounded-lg text-center text-sm font-medium transition-all duration-300 ${
                 seriesData.difficulty === 'easy'
                   ? 'bg-green-600 text-white'
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  : isDark 
+                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300'
               }`}
             >
               Easy
@@ -381,10 +308,12 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
             <button
               type="button"
               onClick={() => handleInputChange('difficulty', 'medium')}
-              className={`p-2 rounded-lg text-center text-sm font-medium transition-colors ${
+              className={`p-2 rounded-lg text-center text-sm font-medium transition-all duration-300 ${
                 seriesData.difficulty === 'medium'
                   ? 'bg-yellow-600 text-white'
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  : isDark 
+                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300'
               }`}
             >
               Medium
@@ -392,10 +321,12 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
             <button
               type="button"
               onClick={() => handleInputChange('difficulty', 'hard')}
-              className={`p-2 rounded-lg text-center text-sm font-medium transition-colors ${
+              className={`p-2 rounded-lg text-center text-sm font-medium transition-all duration-300 ${
                 seriesData.difficulty === 'hard'
                   ? 'bg-red-600 text-white'
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  : isDark 
+                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300'
               }`}
             >
               Hard
@@ -405,7 +336,9 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-2">
+        <label className={`block text-sm font-medium mb-2 transition-all duration-300 ${
+          isDark ? 'text-gray-300' : 'text-slate-700'
+        }`}>
           Estimated Duration (minutes)
         </label>
         <input
@@ -414,25 +347,39 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
           max="600"
           value={seriesData.estimatedDuration}
           onChange={(e) => handleInputChange('estimatedDuration', parseInt(e.target.value) || 60)}
-          className="w-full px-4 py-3 rounded-lg bg-gray-800/70 border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className={`w-full px-4 py-3 rounded-lg border transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+            isDark 
+              ? 'bg-gray-800/70 border-gray-700 text-white placeholder-gray-400' 
+              : 'bg-white border-slate-300 text-slate-800 placeholder-slate-500'
+          }`}
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-2">
+        <label className={`block text-sm font-medium mb-2 transition-all duration-300 ${
+          isDark ? 'text-gray-300' : 'text-slate-700'
+        }`}>
           Tags (Press Enter to add)
         </label>
         <div className="flex flex-wrap gap-2 mb-3">
           {seriesData.tags.map(tag => (
             <span
               key={tag}
-              className="inline-flex items-center gap-1 px-3 py-1 bg-blue-900/60 text-blue-200 rounded-full text-sm"
+              className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm transition-all duration-300 ${
+                isDark 
+                  ? 'bg-blue-900/60 text-blue-200' 
+                  : 'bg-blue-100 text-blue-700 border border-blue-200'
+              }`}
             >
               {tag}
               <button
                 type="button"
                 onClick={() => handleTagRemove(tag)}
-                className="text-blue-300 hover:text-white ml-1"
+                className={`ml-1 transition-all duration-300 ${
+                  isDark 
+                    ? 'text-blue-300 hover:text-white' 
+                    : 'text-blue-600 hover:text-blue-800'
+                }`}
               >
                 ×
               </button>
@@ -442,7 +389,11 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
         <input
           type="text"
           placeholder="Add tags like 'upsc', 'maths', 'science'..."
-          className="w-full px-4 py-3 rounded-lg bg-gray-800/70 border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className={`w-full px-4 py-3 rounded-lg border transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+            isDark 
+              ? 'bg-gray-800/70 border-gray-700 text-white placeholder-gray-400' 
+              : 'bg-white border-slate-300 text-slate-800 placeholder-slate-500'
+          }`}
           onKeyPress={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
@@ -458,22 +409,34 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
   const renderStep2 = () => (
     <div className="space-y-6">
       <div className="text-center mb-8">
-        <h3 className="text-2xl font-bold text-white mb-2">
+        <h3 className={`text-2xl font-bold mb-2 transition-all duration-300 ${
+          isDark ? 'text-white' : 'text-slate-800'
+        }`}>
           💰 Pricing & Payment Settings
         </h3>
-        <p className="text-gray-400">
+        <p className={`transition-all duration-300 ${
+          isDark ? 'text-gray-400' : 'text-slate-600'
+        }`}>
           Set your test series pricing and payment receiving method
         </p>
       </div>
 
       {/* Free/Paid Toggle */}
-      <div className="bg-gray-800/70 border border-gray-700 rounded-lg p-5">
+      <div className={`border rounded-lg p-5 transition-all duration-300 ${
+        isDark 
+          ? 'bg-gray-800/70 border-gray-700' 
+          : 'bg-white border-slate-200 shadow-sm'
+      }`}>
         <div className="flex items-center justify-between">
           <div>
-            <h4 className="text-lg font-bold text-white">
+            <h4 className={`text-lg font-bold transition-all duration-300 ${
+              isDark ? 'text-white' : 'text-slate-800'
+            }`}>
               Test Series Type
             </h4>
-            <p className="text-gray-400">
+            <p className={`transition-all duration-300 ${
+              isDark ? 'text-gray-400' : 'text-slate-600'
+            }`}>
               {seriesData.isPaid ? 'Paid test series - Students need to subscribe' : 'Free test series - Open for everyone'}
             </p>
           </div>
@@ -484,7 +447,9 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
             className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all duration-300 ${
               seriesData.isPaid
                 ? 'bg-green-600 text-white'
-                : 'bg-gray-700 text-gray-300'
+                : isDark 
+                  ? 'bg-gray-700 text-gray-300'
+                  : 'bg-slate-100 text-slate-700 border border-slate-300'
             }`}
           >
             {seriesData.isPaid ? (
@@ -505,14 +470,22 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
       {/* Pricing Section */}
       {seriesData.isPaid && (
         <>
-          <div className="bg-gray-800/70 border border-gray-700 rounded-lg p-5">
-            <h4 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+          <div className={`border rounded-lg p-5 transition-all duration-300 ${
+            isDark 
+              ? 'bg-gray-800/70 border-gray-700' 
+              : 'bg-white border-slate-200 shadow-sm'
+          }`}>
+            <h4 className={`text-xl font-bold mb-6 flex items-center gap-2 transition-all duration-300 ${
+              isDark ? 'text-white' : 'text-slate-800'
+            }`}>
               <FiDollarSign className="w-6 h-6 text-green-400" />
               Set Your Price
             </h4>
             
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className={`block text-sm font-medium mb-2 transition-all duration-300 ${
+                isDark ? 'text-gray-300' : 'text-slate-700'
+              }`}>
                 Test Series Price (₹)
               </label>
               <input
@@ -521,7 +494,11 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
                 max="2999"
                 value={seriesData.price}
                 onChange={(e) => handleInputChange('price', parseInt(e.target.value) || 299)}
-                className="w-full px-4 py-3 rounded-lg bg-gray-800/70 border border-gray-700 text-white text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className={`w-full px-4 py-3 rounded-lg border text-2xl font-bold transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  isDark 
+                    ? 'bg-gray-800/70 border-gray-700 text-white' 
+                    : 'bg-white border-slate-300 text-slate-800'
+                }`}
                 placeholder="299"
               />
             </div>
@@ -533,10 +510,12 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
                   key={price}
                   type="button"
                   onClick={() => handleInputChange('price', price)}
-                  className={`p-3 rounded-lg text-center font-medium transition-colors ${
+                  className={`p-3 rounded-lg text-center font-medium transition-all duration-300 ${
                     seriesData.price === price
                       ? 'bg-blue-600 text-white'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      : isDark 
+                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300'
                   }`}
                 >
                   ₹{price}
@@ -545,206 +524,56 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
             </div>
 
             {/* Pricing Info */}
-            <div className="bg-green-900/30 border border-green-800/50 rounded-lg p-4">
-              <h5 className="font-bold text-green-300 mb-3">
+            <div className={`border rounded-lg p-4 transition-all duration-300 ${
+              isDark 
+                ? 'bg-green-900/30 border-green-800/50' 
+                : 'bg-green-50 border-green-200'
+            }`}>
+              <h5 className={`font-bold mb-3 transition-all duration-300 ${
+                isDark ? 'text-green-300' : 'text-green-700'
+              }`}>
                 Pricing Summary:
               </h5>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-green-300">Subscription Price:</span>
-                  <span className="font-bold text-white">₹{seriesData.price}</span>
+                  <span className={`transition-all duration-300 ${
+                    isDark ? 'text-green-300' : 'text-green-600'
+                  }`}>Subscription Price:</span>
+                  <span className={`font-bold transition-all duration-300 ${
+                    isDark ? 'text-white' : 'text-slate-800'
+                  }`}>₹{seriesData.price}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-green-300">Payouts:</span>
-                  <span className="font-medium text-gray-400">Revenue share disabled; funds go to platform</span>
+                  <span className={`transition-all duration-300 ${
+                    isDark ? 'text-green-300' : 'text-green-600'
+                  }`}>Payouts:</span>
+                  <span className={`font-medium transition-all duration-300 ${
+                    isDark ? 'text-gray-400' : 'text-slate-600'
+                  }`}>Revenue share disabled; funds go to platform</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Payment Receiving Methods */}
-          <div className="bg-gray-800/70 border border-gray-700 rounded-lg p-5">
-            <div className="flex items-center justify-between mb-6">
-              <h4 className="text-xl font-bold text-white flex items-center gap-2">
-                <FiCreditCard className="w-6 h-6 text-blue-400" />
-                Payment Receiving Method
-              </h4>
-              
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-400">Sync with profile</span>
-                <button 
-                  type="button"
-                  onClick={handleSyncWithProfileChange}
-                  className={`w-12 h-6 rounded-full relative transition-colors ${
-                    seriesData.paymentMethod.syncWithProfile ? 'bg-blue-600' : 'bg-gray-600'
-                  }`}
-                  disabled={loadingProfile}
-                >
-                  <span className={`block w-5 h-5 rounded-full bg-white absolute top-0.5 transition-transform transform ${
-                    seriesData.paymentMethod.syncWithProfile ? 'translate-x-6' : 'translate-x-0.5'
-                  }`}></span>
-                </button>
-              </div>
-            </div>
 
-            {/* Info Alert */}
-            <div className="bg-blue-900/30 border border-blue-800/50 rounded-lg p-4 mb-6 flex gap-3">
-              <div className="flex-shrink-0 text-blue-400 mt-0.5">
-                <FiAlertCircle className="w-5 h-5" />
-              </div>
-              <div className="text-blue-300 text-sm">
-                <p className="font-medium mb-1">Why do we need your payment details?</p>
-                <p>We'll use this information to transfer your earnings when students subscribe to your test series.</p>
-              </div>
-            </div>
-
-            {/* Payment Method Tabs */}
-            <div className="mb-6">
-              <div className="flex mb-4 border-b border-gray-700">
-                <button
-                  type="button"
-                  onClick={() => handlePaymentMethodChange('type', 'bank')}
-                  className={`px-4 py-2 font-medium text-sm -mb-px ${
-                    seriesData.paymentMethod.type === 'bank'
-                      ? 'text-blue-400 border-b-2 border-blue-400'
-                      : 'text-gray-400 hover:text-gray-300'
-                  }`}
-                >
-                  Bank Account
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handlePaymentMethodChange('type', 'upi')}
-                  className={`px-4 py-2 font-medium text-sm -mb-px ${
-                    seriesData.paymentMethod.type === 'upi'
-                      ? 'text-blue-400 border-b-2 border-blue-400'
-                      : 'text-gray-400 hover:text-gray-300'
-                  }`}
-                >
-                  UPI
-                </button>
-              </div>
-
-              {/* Bank Account Details */}
-              {seriesData.paymentMethod.type === 'bank' && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Account Holder Name
-                      </label>
-                      <input
-                        type="text"
-                        value={seriesData.paymentMethod.bankAccount.accountHolderName}
-                        onChange={(e) => handleBankDetailsChange('accountHolderName', e.target.value)}
-                        className="w-full px-4 py-3 rounded-lg bg-gray-800/70 border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="John Doe"
-                        disabled={seriesData.paymentMethod.syncWithProfile && loadingProfile}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Bank Name
-                      </label>
-                      <input
-                        type="text"
-                        value={seriesData.paymentMethod.bankAccount.bankName}
-                        onChange={(e) => handleBankDetailsChange('bankName', e.target.value)}
-                        className="w-full px-4 py-3 rounded-lg bg-gray-800/70 border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="State Bank of India"
-                        disabled={seriesData.paymentMethod.syncWithProfile && loadingProfile}
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Account Number
-                      </label>
-                      <input
-                        type="text"
-                        value={seriesData.paymentMethod.bankAccount.accountNumber}
-                        onChange={(e) => handleBankDetailsChange('accountNumber', e.target.value)}
-                        className="w-full px-4 py-3 rounded-lg bg-gray-800/70 border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="1234567890"
-                        disabled={seriesData.paymentMethod.syncWithProfile && loadingProfile}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        IFSC Code
-                      </label>
-                      <input
-                        type="text"
-                        value={seriesData.paymentMethod.bankAccount.ifscCode}
-                        onChange={(e) => handleBankDetailsChange('ifscCode', e.target.value.toUpperCase())}
-                        className="w-full px-4 py-3 rounded-lg bg-gray-800/70 border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="SBIN0000123"
-                        disabled={seriesData.paymentMethod.syncWithProfile && loadingProfile}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* UPI Details */}
-              {seriesData.paymentMethod.type === 'upi' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    UPI ID
-                  </label>
-                  <input
-                    type="text"
-                    value={seriesData.paymentMethod.upi.upiId}
-                    onChange={(e) => handleUPIDetailsChange('upiId', e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg bg-gray-800/70 border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="yourname@bankupi"
-                    disabled={seriesData.paymentMethod.syncWithProfile && loadingProfile}
-                  />
-                  <p className="text-sm text-gray-400 mt-2">
-                    Example: yourname@okhdfcbank, yourname@paytm, etc.
-                  </p>
-                </div>
-              )}
-
-              {/* Missing Payment Warning */}
-              {seriesData.isPaid && (
-                (seriesData.paymentMethod.type === 'bank' && !seriesData.paymentMethod.bankAccount.accountNumber) || 
-                (seriesData.paymentMethod.type === 'upi' && !seriesData.paymentMethod.upi.upiId)
-              ) && (
-                <div className="mt-6 bg-yellow-900/30 border border-yellow-800/50 rounded-lg p-4 flex gap-3">
-                  <FiAlertTriangle className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h5 className="font-bold text-yellow-400 mb-1">Missing Payment Details</h5>
-                    <p className="text-yellow-300 text-sm">
-                      You need to add your payment details to receive earnings when students subscribe to your test series.
-                    </p>
-                    {!creatorProfile?.paymentDetails && (
-                      <p className="text-yellow-300 text-sm mt-2">
-                        You can add your payment details in your profile settings for faster setup in the future.
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Payment Security Note */}
-              <div className="mt-4 flex items-center gap-2 text-gray-400 text-xs">
-                <FiLock className="w-4 h-4" />
-                <span>Your payment details are securely stored and will only be used for processing your earnings</span>
-              </div>
-            </div>
-          </div>
         </>
       )}
 
       {/* Free Series Benefits */}
       {!seriesData.isPaid && (
-        <div className="bg-gray-800/70 border border-gray-700 rounded-lg p-5">
-          <h4 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+        <div className={`border rounded-lg p-5 transition-all duration-300 ${
+          isDark 
+            ? 'bg-gray-800/70 border-gray-700' 
+            : 'bg-slate-50 border-slate-200 shadow-sm'
+        }`}>
+          <h4 className={`text-xl font-bold mb-4 flex items-center gap-2 transition-all duration-300 ${
+            isDark ? 'text-white' : 'text-slate-800'
+          }`}>
             🎉 Free Test Series Benefits
           </h4>
-          <ul className="space-y-3 text-gray-300">
+          <ul className={`space-y-3 transition-all duration-300 ${
+            isDark ? 'text-gray-300' : 'text-slate-600'
+          }`}>
             <li className="flex items-center gap-2">
               <FiCheck className="w-4 h-4 text-green-400" />
               Maximum reach - Open for all students
@@ -768,22 +597,35 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
   );
 
   return (
+    <div className={`min-h-screen transition-all duration-500 ${
+      isDark 
+        ? 'bg-gradient-to-br from-gray-900 via-blue-900/10 to-purple-900/10' 
+        : 'bg-white'
+    }`}>
     <div className="max-w-4xl mx-auto p-4 sm:p-6">
       {/* Header */}
       <div className="flex items-center gap-4 mb-8">
         <button
           onClick={onBack}
-          className="bg-gray-800/70 hover:bg-gray-700 text-white font-medium rounded-lg px-4 py-2 flex items-center gap-2 transition-colors"
+          className={`font-medium rounded-lg px-4 py-2 flex items-center gap-2 transition-all duration-300 ${
+            isDark 
+              ? 'bg-gray-800/70 hover:bg-gray-700 text-white' 
+              : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+          }`}
         >
           <FiArrowLeft className="w-4 h-4" />
           Back
         </button>
         
         <div>
-          <h1 className="text-3xl font-bold text-white">
+          <h1 className={`text-3xl font-bold transition-all duration-300 ${
+            isDark ? 'text-white' : 'text-slate-800'
+          }`}>
             Create Test Series
           </h1>
-          <p className="text-gray-400">
+          <p className={`transition-all duration-300 ${
+            isDark ? 'text-gray-400' : 'text-slate-600'
+          }`}>
             Create a comprehensive test series for your students
           </p>
         </div>
@@ -798,10 +640,14 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
           ].map(({ step: stepNum, label, icon: Icon }, index) => (
             <div key={stepNum} className="flex items-center">
               <div className="flex flex-col items-center">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold ${
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold transition-all duration-300 ${
                   step >= stepNum
+                    ? isDark 
                     ? 'bg-blue-600 text-white'
-                    : 'bg-gray-700 text-gray-400'
+                      : 'bg-blue-600 text-white'
+                    : isDark 
+                      ? 'bg-gray-700 text-gray-400'
+                      : 'bg-slate-200 text-slate-500'
                 }`}>
                   {step > stepNum ? (
                     <FiCheck className="w-6 h-6" />
@@ -809,20 +655,28 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
                     <Icon className="w-6 h-6" />
                   )}
                 </div>
-                <span className={`mt-2 font-medium ${
+                <span className={`mt-2 font-medium transition-all duration-300 ${
                   step >= stepNum
+                    ? isDark 
                     ? 'text-blue-400'
-                    : 'text-gray-500'
+                      : 'text-blue-600'
+                    : isDark 
+                      ? 'text-gray-500'
+                      : 'text-slate-500'
                 }`}>
                   {label}
                 </span>
               </div>
               
               {index < 1 && (
-                <div className={`w-24 h-1 mx-2 rounded ${
+                <div className={`w-24 h-1 mx-2 rounded transition-all duration-300 ${
                   step > stepNum
+                    ? isDark 
                     ? 'bg-blue-600'
-                    : 'bg-gray-700'
+                      : 'bg-blue-600'
+                    : isDark 
+                      ? 'bg-gray-700'
+                      : 'bg-slate-200'
                 }`} />
               )}
             </div>
@@ -831,7 +685,11 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
       </div>
 
       {/* Form Content */}
-      <div className="bg-gray-800/70 backdrop-blur-sm border border-gray-700 rounded-xl p-6 mb-8">
+      <div className={`backdrop-blur-sm border rounded-xl p-6 mb-8 transition-all duration-300 ${
+        isDark 
+          ? 'bg-gray-800/70 border-gray-700' 
+          : 'bg-white border-slate-200 shadow-sm'
+      }`}>
         {step === 1 && renderStep1()}
         {step === 2 && renderStep2()}
       </div>
@@ -842,7 +700,11 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
           {step > 1 && (
             <button
               onClick={() => setStep(step - 1)}
-              className="bg-gray-800/70 hover:bg-gray-700 text-white font-medium rounded-lg px-5 py-2.5 transition-colors"
+              className={`font-medium rounded-lg px-5 py-2.5 transition-all duration-300 ${
+                isDark 
+                  ? 'bg-gray-800/70 hover:bg-gray-700 text-white' 
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+              }`}
             >
               Previous
             </button>
@@ -854,7 +716,11 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
             <button
               onClick={() => setStep(step + 1)}
               disabled={!seriesData.title.trim()}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg px-5 py-2.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`font-medium rounded-lg px-5 py-2.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
+                isDark 
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                  : 'bg-blue-600 hover:bg-blue-700 text-white'
+              }`}
             >
               Next
             </button>
@@ -862,7 +728,11 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
             <button
               onClick={handleCreateSeries}
               disabled={loading || !seriesData.title.trim()}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg px-5 py-2.5 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`font-medium rounded-lg px-5 py-2.5 transition-all duration-300 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                isDark 
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                  : 'bg-blue-600 hover:bg-blue-700 text-white'
+              }`}
             >
               {loading ? (
                 <>
@@ -877,6 +747,7 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
               )}
             </button>
           )}
+        </div>
         </div>
       </div>
     </div>

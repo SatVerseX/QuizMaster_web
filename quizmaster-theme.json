@@ -1,0 +1,1143 @@
+{
+  "version": "1.0.0",
+  "name": "QuizMaster Professional Theme",
+  "description": "Professional light theme configuration for QuizMaster React application",
+  "$themes": [
+    {
+      "name": "light",
+      "type": "light",
+      "default": true,
+      "selectedTokenSets": {
+        "global": "enabled",
+        "semantic": "enabled",
+        "components": "enabled"
+      }
+    },
+    {
+      "name": "dark",
+      "type": "dark",
+      "default": false,
+      "selectedTokenSets": {
+        "global": "enabled",
+        "semantic-dark": "enabled",
+        "components-dark": "enabled"
+      }
+    }
+  ],
+  "$metadata": {
+    "tokenSetOrder": ["global", "semantic", "components"],
+    "activeThemes": ["light"],
+    "activeSets": ["global", "semantic", "components"]
+  },
+  "global": {
+    "colors": {
+      "primary": {
+        "50": {
+          "$type": "color",
+          "$value": "#eff6ff",
+          "$description": "Lightest primary blue for backgrounds"
+        },
+        "100": {
+          "$type": "color",
+          "$value": "#dbeafe",
+          "$description": "Very light primary blue"
+        },
+        "200": {
+          "$type": "color",
+          "$value": "#bfdbfe",
+          "$description": "Light primary blue"
+        },
+        "300": {
+          "$type": "color",
+          "$value": "#93c5fd",
+          "$description": "Medium light primary blue"
+        },
+        "400": {
+          "$type": "color",
+          "$value": "#60a5fa",
+          "$description": "Medium primary blue"
+        },
+        "500": {
+          "$type": "color",
+          "$value": "#3b82f6",
+          "$description": "Base primary blue"
+        },
+        "600": {
+          "$type": "color",
+          "$value": "#2563eb",
+          "$description": "Dark primary blue"
+        },
+        "700": {
+          "$type": "color",
+          "$value": "#1d4ed8",
+          "$description": "Darker primary blue"
+        },
+        "800": {
+          "$type": "color",
+          "$value": "#1e40af",
+          "$description": "Very dark primary blue"
+        },
+        "900": {
+          "$type": "color",
+          "$value": "#1e3a8a",
+          "$description": "Darkest primary blue"
+        }
+      },
+      "secondary": {
+        "50": {
+          "$type": "color",
+          "$value": "#f8fafc",
+          "$description": "Lightest secondary slate"
+        },
+        "100": {
+          "$type": "color",
+          "$value": "#f1f5f9",
+          "$description": "Very light secondary slate"
+        },
+        "200": {
+          "$type": "color",
+          "$value": "#e2e8f0",
+          "$description": "Light secondary slate"
+        },
+        "300": {
+          "$type": "color",
+          "$value": "#cbd5e1",
+          "$description": "Medium light secondary slate"
+        },
+        "400": {
+          "$type": "color",
+          "$value": "#94a3b8",
+          "$description": "Medium secondary slate"
+        },
+        "500": {
+          "$type": "color",
+          "$value": "#64748b",
+          "$description": "Base secondary slate"
+        },
+        "600": {
+          "$type": "color",
+          "$value": "#475569",
+          "$description": "Dark secondary slate"
+        },
+        "700": {
+          "$type": "color",
+          "$value": "#334155",
+          "$description": "Darker secondary slate"
+        },
+        "800": {
+          "$type": "color",
+          "$value": "#1e293b",
+          "$description": "Very dark secondary slate"
+        },
+        "900": {
+          "$type": "color",
+          "$value": "#0f172a",
+          "$description": "Darkest secondary slate"
+        }
+      },
+      "success": {
+        "50": {
+          "$type": "color",
+          "$value": "#ecfdf5",
+          "$description": "Lightest success green"
+        },
+        "100": {
+          "$type": "color",
+          "$value": "#d1fae5",
+          "$description": "Very light success green"
+        },
+        "500": {
+          "$type": "color",
+          "$value": "#10b981",
+          "$description": "Base success green"
+        },
+        "600": {
+          "$type": "color",
+          "$value": "#059669",
+          "$description": "Dark success green"
+        },
+        "700": {
+          "$type": "color",
+          "$value": "#047857",
+          "$description": "Darker success green"
+        }
+      },
+      "warning": {
+        "50": {
+          "$type": "color",
+          "$value": "#fffbeb",
+          "$description": "Lightest warning orange"
+        },
+        "100": {
+          "$type": "color",
+          "$value": "#fef3c7",
+          "$description": "Very light warning orange"
+        },
+        "500": {
+          "$type": "color",
+          "$value": "#f59e0b",
+          "$description": "Base warning orange"
+        },
+        "600": {
+          "$type": "color",
+          "$value": "#d97706",
+          "$description": "Dark warning orange"
+        }
+      },
+      "error": {
+        "50": {
+          "$type": "color",
+          "$value": "#fef2f2",
+          "$description": "Lightest error red"
+        },
+        "100": {
+          "$type": "color",
+          "$value": "#fee2e2",
+          "$description": "Very light error red"
+        },
+        "500": {
+          "$type": "color",
+          "$value": "#ef4444",
+          "$description": "Base error red"
+        },
+        "600": {
+          "$type": "color",
+          "$value": "#dc2626",
+          "$description": "Dark error red"
+        }
+      },
+      "neutral": {
+        "white": {
+          "$type": "color",
+          "$value": "#ffffff",
+          "$description": "Pure white"
+        },
+        "black": {
+          "$type": "color",
+          "$value": "#000000",
+          "$description": "Pure black"
+        }
+      }
+    },
+    "typography": {
+      "fontFamilies": {
+        "primary": {
+          "$type": "fontFamily",
+          "$value": ["Inter", "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
+          "$description": "Primary font family for body text and UI elements"
+        },
+        "heading": {
+          "$type": "fontFamily",
+          "$value": ["Inter", "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
+          "$description": "Font family for headings"
+        },
+        "monospace": {
+          "$type": "fontFamily",
+          "$value": ["JetBrains Mono", "Fira Code", "Monaco", "Consolas", "monospace"],
+          "$description": "Monospace font family for code"
+        }
+      },
+      "fontWeights": {
+        "light": {
+          "$type": "fontWeight",
+          "$value": "300",
+          "$description": "Light font weight"
+        },
+        "regular": {
+          "$type": "fontWeight",
+          "$value": "400",
+          "$description": "Regular font weight"
+        },
+        "medium": {
+          "$type": "fontWeight",
+          "$value": "500",
+          "$description": "Medium font weight"
+        },
+        "semibold": {
+          "$type": "fontWeight",
+          "$value": "600",
+          "$description": "Semibold font weight"
+        },
+        "bold": {
+          "$type": "fontWeight",
+          "$value": "700",
+          "$description": "Bold font weight"
+        },
+        "black": {
+          "$type": "fontWeight",
+          "$value": "900",
+          "$description": "Black font weight"
+        }
+      },
+      "fontSizes": {
+        "xs": {
+          "$type": "fontSize",
+          "$value": "0.75rem",
+          "$description": "Extra small text - 12px"
+        },
+        "sm": {
+          "$type": "fontSize",
+          "$value": "0.875rem",
+          "$description": "Small text - 14px"
+        },
+        "base": {
+          "$type": "fontSize",
+          "$value": "1rem",
+          "$description": "Base text size - 16px"
+        },
+        "lg": {
+          "$type": "fontSize",
+          "$value": "1.125rem",
+          "$description": "Large text - 18px"
+        },
+        "xl": {
+          "$type": "fontSize",
+          "$value": "1.25rem",
+          "$description": "Extra large text - 20px"
+        },
+        "2xl": {
+          "$type": "fontSize",
+          "$value": "1.5rem",
+          "$description": "2X large text - 24px"
+        },
+        "3xl": {
+          "$type": "fontSize",
+          "$value": "1.875rem",
+          "$description": "3X large text - 30px"
+        },
+        "4xl": {
+          "$type": "fontSize",
+          "$value": "2.25rem",
+          "$description": "4X large text - 36px"
+        },
+        "5xl": {
+          "$type": "fontSize",
+          "$value": "3rem",
+          "$description": "5X large text - 48px"
+        },
+        "6xl": {
+          "$type": "fontSize",
+          "$value": "3.75rem",
+          "$description": "6X large text - 60px"
+        }
+      },
+      "lineHeights": {
+        "tight": {
+          "$type": "lineHeight",
+          "$value": "1.25",
+          "$description": "Tight line height for headings"
+        },
+        "snug": {
+          "$type": "lineHeight",
+          "$value": "1.375",
+          "$description": "Snug line height"
+        },
+        "normal": {
+          "$type": "lineHeight",
+          "$value": "1.5",
+          "$description": "Normal line height for body text"
+        },
+        "relaxed": {
+          "$type": "lineHeight",
+          "$value": "1.625",
+          "$description": "Relaxed line height"
+        },
+        "loose": {
+          "$type": "lineHeight",
+          "$value": "2",
+          "$description": "Loose line height"
+        }
+      }
+    },
+    "spacing": {
+      "0": {
+        "$type": "dimension",
+        "$value": "0px",
+        "$description": "No spacing"
+      },
+      "1": {
+        "$type": "dimension",
+        "$value": "0.25rem",
+        "$description": "4px spacing"
+      },
+      "2": {
+        "$type": "dimension",
+        "$value": "0.5rem",
+        "$description": "8px spacing"
+      },
+      "3": {
+        "$type": "dimension",
+        "$value": "0.75rem",
+        "$description": "12px spacing"
+      },
+      "4": {
+        "$type": "dimension",
+        "$value": "1rem",
+        "$description": "16px spacing"
+      },
+      "5": {
+        "$type": "dimension",
+        "$value": "1.25rem",
+        "$description": "20px spacing"
+      },
+      "6": {
+        "$type": "dimension",
+        "$value": "1.5rem",
+        "$description": "24px spacing"
+      },
+      "8": {
+        "$type": "dimension",
+        "$value": "2rem",
+        "$description": "32px spacing"
+      },
+      "10": {
+        "$type": "dimension",
+        "$value": "2.5rem",
+        "$description": "40px spacing"
+      },
+      "12": {
+        "$type": "dimension",
+        "$value": "3rem",
+        "$description": "48px spacing"
+      },
+      "16": {
+        "$type": "dimension",
+        "$value": "4rem",
+        "$description": "64px spacing"
+      },
+      "20": {
+        "$type": "dimension",
+        "$value": "5rem",
+        "$description": "80px spacing"
+      },
+      "24": {
+        "$type": "dimension",
+        "$value": "6rem",
+        "$description": "96px spacing"
+      },
+      "32": {
+        "$type": "dimension",
+        "$value": "8rem",
+        "$description": "128px spacing"
+      }
+    },
+    "borderRadius": {
+      "none": {
+        "$type": "dimension",
+        "$value": "0px",
+        "$description": "No border radius"
+      },
+      "sm": {
+        "$type": "dimension",
+        "$value": "0.125rem",
+        "$description": "Small border radius - 2px"
+      },
+      "default": {
+        "$type": "dimension",
+        "$value": "0.25rem",
+        "$description": "Default border radius - 4px"
+      },
+      "md": {
+        "$type": "dimension",
+        "$value": "0.375rem",
+        "$description": "Medium border radius - 6px"
+      },
+      "lg": {
+        "$type": "dimension",
+        "$value": "0.5rem",
+        "$description": "Large border radius - 8px"
+      },
+      "xl": {
+        "$type": "dimension",
+        "$value": "0.75rem",
+        "$description": "Extra large border radius - 12px"
+      },
+      "2xl": {
+        "$type": "dimension",
+        "$value": "1rem",
+        "$description": "2X large border radius - 16px"
+      },
+      "3xl": {
+        "$type": "dimension",
+        "$value": "1.5rem",
+        "$description": "3X large border radius - 24px"
+      },
+      "full": {
+        "$type": "dimension",
+        "$value": "9999px",
+        "$description": "Full border radius"
+      }
+    },
+    "shadows": {
+      "none": {
+        "$type": "shadow",
+        "$value": [
+          {
+            "color": "rgba(0, 0, 0, 0)",
+            "offsetX": "0px",
+            "offsetY": "0px",
+            "blur": "0px",
+            "spread": "0px"
+          }
+        ],
+        "$description": "No shadow"
+      },
+      "sm": {
+        "$type": "shadow",
+        "$value": [
+          {
+            "color": "rgba(0, 0, 0, 0.05)",
+            "offsetX": "0px",
+            "offsetY": "1px",
+            "blur": "2px",
+            "spread": "0px"
+          }
+        ],
+        "$description": "Small shadow"
+      },
+      "default": {
+        "$type": "shadow",
+        "$value": [
+          {
+            "color": "rgba(0, 0, 0, 0.1)",
+            "offsetX": "0px",
+            "offsetY": "1px",
+            "blur": "3px",
+            "spread": "0px"
+          },
+          {
+            "color": "rgba(0, 0, 0, 0.1)",
+            "offsetX": "0px",
+            "offsetY": "1px",
+            "blur": "2px",
+            "spread": "-1px"
+          }
+        ],
+        "$description": "Default shadow"
+      },
+      "md": {
+        "$type": "shadow",
+        "$value": [
+          {
+            "color": "rgba(0, 0, 0, 0.1)",
+            "offsetX": "0px",
+            "offsetY": "4px",
+            "blur": "6px",
+            "spread": "-1px"
+          },
+          {
+            "color": "rgba(0, 0, 0, 0.1)",
+            "offsetX": "0px",
+            "offsetY": "2px",
+            "blur": "4px",
+            "spread": "-2px"
+          }
+        ],
+        "$description": "Medium shadow"
+      },
+      "lg": {
+        "$type": "shadow",
+        "$value": [
+          {
+            "color": "rgba(0, 0, 0, 0.1)",
+            "offsetX": "0px",
+            "offsetY": "10px",
+            "blur": "15px",
+            "spread": "-3px"
+          },
+          {
+            "color": "rgba(0, 0, 0, 0.1)",
+            "offsetX": "0px",
+            "offsetY": "4px",
+            "blur": "6px",
+            "spread": "-4px"
+          }
+        ],
+        "$description": "Large shadow"
+      },
+      "xl": {
+        "$type": "shadow",
+        "$value": [
+          {
+            "color": "rgba(0, 0, 0, 0.1)",
+            "offsetX": "0px",
+            "offsetY": "20px",
+            "blur": "25px",
+            "spread": "-5px"
+          },
+          {
+            "color": "rgba(0, 0, 0, 0.1)",
+            "offsetX": "0px",
+            "offsetY": "8px",
+            "blur": "10px",
+            "spread": "-6px"
+          }
+        ],
+        "$description": "Extra large shadow"
+      }
+    }
+  },
+  "semantic": {
+    "colors": {
+      "background": {
+        "primary": {
+          "$type": "color",
+          "$value": "{colors.neutral.white}",
+          "$description": "Primary background color"
+        },
+        "secondary": {
+          "$type": "color",
+          "$value": "{colors.secondary.50}",
+          "$description": "Secondary background color"
+        },
+        "tertiary": {
+          "$type": "color",
+          "$value": "{colors.secondary.100}",
+          "$description": "Tertiary background color"
+        },
+        "brand": {
+          "$type": "color",
+          "$value": "{colors.primary.600}",
+          "$description": "Brand background color"
+        },
+        "success": {
+          "$type": "color",
+          "$value": "{colors.success.50}",
+          "$description": "Success background color"
+        },
+        "warning": {
+          "$type": "color",
+          "$value": "{colors.warning.50}",
+          "$description": "Warning background color"
+        },
+        "error": {
+          "$type": "color",
+          "$value": "{colors.error.50}",
+          "$description": "Error background color"
+        },
+        "disabled": {
+          "$type": "color",
+          "$value": "{colors.secondary.100}",
+          "$description": "Disabled background color"
+        }
+      },
+      "text": {
+        "primary": {
+          "$type": "color",
+          "$value": "{colors.secondary.900}",
+          "$description": "Primary text color"
+        },
+        "secondary": {
+          "$type": "color",
+          "$value": "{colors.secondary.600}",
+          "$description": "Secondary text color"
+        },
+        "tertiary": {
+          "$type": "color",
+          "$value": "{colors.secondary.500}",
+          "$description": "Tertiary text color"
+        },
+        "inverse": {
+          "$type": "color",
+          "$value": "{colors.neutral.white}",
+          "$description": "Inverse text color for dark backgrounds"
+        },
+        "brand": {
+          "$type": "color",
+          "$value": "{colors.primary.600}",
+          "$description": "Brand text color"
+        },
+        "success": {
+          "$type": "color",
+          "$value": "{colors.success.600}",
+          "$description": "Success text color"
+        },
+        "warning": {
+          "$type": "color",
+          "$value": "{colors.warning.600}",
+          "$description": "Warning text color"
+        },
+        "error": {
+          "$type": "color",
+          "$value": "{colors.error.600}",
+          "$description": "Error text color"
+        },
+        "disabled": {
+          "$type": "color",
+          "$value": "{colors.secondary.400}",
+          "$description": "Disabled text color"
+        }
+      },
+      "border": {
+        "primary": {
+          "$type": "color",
+          "$value": "{colors.secondary.200}",
+          "$description": "Primary border color"
+        },
+        "secondary": {
+          "$type": "color",
+          "$value": "{colors.secondary.300}",
+          "$description": "Secondary border color"
+        },
+        "brand": {
+          "$type": "color",
+          "$value": "{colors.primary.300}",
+          "$description": "Brand border color"
+        },
+        "success": {
+          "$type": "color",
+          "$value": "{colors.success.600}",
+          "$description": "Success border color"
+        },
+        "warning": {
+          "$type": "color",
+          "$value": "{colors.warning.600}",
+          "$description": "Warning border color"
+        },
+        "error": {
+          "$type": "color",
+          "$value": "{colors.error.600}",
+          "$description": "Error border color"
+        },
+        "focus": {
+          "$type": "color",
+          "$value": "{colors.primary.500}",
+          "$description": "Focus state border color"
+        }
+      }
+    },
+    "typography": {
+      "heading": {
+        "h1": {
+          "$type": "typography",
+          "$value": {
+            "fontFamily": "{typography.fontFamilies.heading}",
+            "fontWeight": "{typography.fontWeights.bold}",
+            "fontSize": "{typography.fontSizes.5xl}",
+            "lineHeight": "{typography.lineHeights.tight}"
+          },
+          "$description": "H1 heading style"
+        },
+        "h2": {
+          "$type": "typography",
+          "$value": {
+            "fontFamily": "{typography.fontFamilies.heading}",
+            "fontWeight": "{typography.fontWeights.bold}",
+            "fontSize": "{typography.fontSizes.4xl}",
+            "lineHeight": "{typography.lineHeights.tight}"
+          },
+          "$description": "H2 heading style"
+        },
+        "h3": {
+          "$type": "typography",
+          "$value": {
+            "fontFamily": "{typography.fontFamilies.heading}",
+            "fontWeight": "{typography.fontWeights.semibold}",
+            "fontSize": "{typography.fontSizes.3xl}",
+            "lineHeight": "{typography.lineHeights.snug}"
+          },
+          "$description": "H3 heading style"
+        },
+        "h4": {
+          "$type": "typography",
+          "$value": {
+            "fontFamily": "{typography.fontFamilies.heading}",
+            "fontWeight": "{typography.fontWeights.semibold}",
+            "fontSize": "{typography.fontSizes.2xl}",
+            "lineHeight": "{typography.lineHeights.snug}"
+          },
+          "$description": "H4 heading style"
+        }
+      },
+      "body": {
+        "large": {
+          "$type": "typography",
+          "$value": {
+            "fontFamily": "{typography.fontFamilies.primary}",
+            "fontWeight": "{typography.fontWeights.regular}",
+            "fontSize": "{typography.fontSizes.lg}",
+            "lineHeight": "{typography.lineHeights.relaxed}"
+          },
+          "$description": "Large body text style"
+        },
+        "default": {
+          "$type": "typography",
+          "$value": {
+            "fontFamily": "{typography.fontFamilies.primary}",
+            "fontWeight": "{typography.fontWeights.regular}",
+            "fontSize": "{typography.fontSizes.base}",
+            "lineHeight": "{typography.lineHeights.normal}"
+          },
+          "$description": "Default body text style"
+        },
+        "small": {
+          "$type": "typography",
+          "$value": {
+            "fontFamily": "{typography.fontFamilies.primary}",
+            "fontWeight": "{typography.fontWeights.regular}",
+            "fontSize": "{typography.fontSizes.sm}",
+            "lineHeight": "{typography.lineHeights.normal}"
+          },
+          "$description": "Small body text style"
+        }
+      }
+    }
+  },
+  "components": {
+    "button": {
+      "primary": {
+        "background": {
+          "default": {
+            "$type": "color",
+            "$value": "{colors.primary.600}",
+            "$description": "Primary button default background"
+          },
+          "hover": {
+            "$type": "color",
+            "$value": "{colors.primary.700}",
+            "$description": "Primary button hover background"
+          },
+          "active": {
+            "$type": "color",
+            "$value": "{colors.primary.800}",
+            "$description": "Primary button active background"
+          },
+          "disabled": {
+            "$type": "color",
+            "$value": "{colors.secondary.300}",
+            "$description": "Primary button disabled background"
+          }
+        },
+        "text": {
+          "default": {
+            "$type": "color",
+            "$value": "{colors.neutral.white}",
+            "$description": "Primary button text color"
+          },
+          "disabled": {
+            "$type": "color",
+            "$value": "{colors.secondary.500}",
+            "$description": "Primary button disabled text color"
+          }
+        },
+        "border": {
+          "radius": {
+            "$type": "dimension",
+            "$value": "{borderRadius.lg}",
+            "$description": "Primary button border radius"
+          }
+        },
+        "padding": {
+          "x": {
+            "$type": "dimension",
+            "$value": "{spacing.6}",
+            "$description": "Primary button horizontal padding"
+          },
+          "y": {
+            "$type": "dimension",
+            "$value": "{spacing.3}",
+            "$description": "Primary button vertical padding"
+          }
+        },
+        "shadow": {
+          "default": {
+            "$type": "shadow",
+            "$value": "{shadows.sm}",
+            "$description": "Primary button shadow"
+          },
+          "hover": {
+            "$type": "shadow",
+            "$value": "{shadows.md}",
+            "$description": "Primary button hover shadow"
+          }
+        }
+      },
+      "secondary": {
+        "background": {
+          "default": {
+            "$type": "color",
+            "$value": "{colors.neutral.white}",
+            "$description": "Secondary button default background"
+          },
+          "hover": {
+            "$type": "color",
+            "$value": "{colors.secondary.50}",
+            "$description": "Secondary button hover background"
+          },
+          "active": {
+            "$type": "color",
+            "$value": "{colors.secondary.100}",
+            "$description": "Secondary button active background"
+          }
+        },
+        "text": {
+          "default": {
+            "$type": "color",
+            "$value": "{colors.secondary.700}",
+            "$description": "Secondary button text color"
+          }
+        },
+        "border": {
+          "color": {
+            "$type": "color",
+            "$value": "{colors.secondary.300}",
+            "$description": "Secondary button border color"
+          },
+          "radius": {
+            "$type": "dimension",
+            "$value": "{borderRadius.lg}",
+            "$description": "Secondary button border radius"
+          },
+          "width": {
+            "$type": "dimension",
+            "$value": "1px",
+            "$description": "Secondary button border width"
+          }
+        }
+      }
+    },
+    "card": {
+      "background": {
+        "$type": "color",
+        "$value": "{colors.neutral.white}",
+        "$description": "Card background color"
+      },
+      "border": {
+        "color": {
+          "$type": "color",
+          "$value": "{colors.secondary.200}",
+          "$description": "Card border color"
+        },
+        "radius": {
+          "$type": "dimension",
+          "$value": "{borderRadius.xl}",
+          "$description": "Card border radius"
+        },
+        "width": {
+          "$type": "dimension",
+          "$value": "1px",
+          "$description": "Card border width"
+        }
+      },
+      "shadow": {
+        "default": {
+          "$type": "shadow",
+          "$value": "{shadows.sm}",
+          "$description": "Card shadow"
+        },
+        "hover": {
+          "$type": "shadow",
+          "$value": "{shadows.lg}",
+          "$description": "Card hover shadow"
+        }
+      },
+      "padding": {
+        "$type": "dimension",
+        "$value": "{spacing.6}",
+        "$description": "Card padding"
+      }
+    },
+    "input": {
+      "background": {
+        "default": {
+          "$type": "color",
+          "$value": "{colors.neutral.white}",
+          "$description": "Input default background"
+        },
+        "disabled": {
+          "$type": "color",
+          "$value": "{colors.secondary.100}",
+          "$description": "Input disabled background"
+        }
+      },
+      "border": {
+        "color": {
+          "default": {
+            "$type": "color",
+            "$value": "{colors.secondary.300}",
+            "$description": "Input default border color"
+          },
+          "focus": {
+            "$type": "color",
+            "$value": "{colors.primary.500}",
+            "$description": "Input focus border color"
+          },
+          "error": {
+            "$type": "color",
+            "$value": "{colors.error.500}",
+            "$description": "Input error border color"
+          }
+        },
+        "radius": {
+          "$type": "dimension",
+          "$value": "{borderRadius.md}",
+          "$description": "Input border radius"
+        },
+        "width": {
+          "$type": "dimension",
+          "$value": "1px",
+          "$description": "Input border width"
+        }
+      },
+      "text": {
+        "color": {
+          "$type": "color",
+          "$value": "{colors.secondary.900}",
+          "$description": "Input text color"
+        },
+        "placeholder": {
+          "$type": "color",
+          "$value": "{colors.secondary.500}",
+          "$description": "Input placeholder color"
+        }
+      },
+      "padding": {
+        "x": {
+          "$type": "dimension",
+          "$value": "{spacing.3}",
+          "$description": "Input horizontal padding"
+        },
+        "y": {
+          "$type": "dimension",
+          "$value": "{spacing.2}",
+          "$description": "Input vertical padding"
+        }
+      }
+    },
+    "modal": {
+      "background": {
+        "$type": "color",
+        "$value": "{colors.neutral.white}",
+        "$description": "Modal background color"
+      },
+      "overlay": {
+        "$type": "color",
+        "$value": "rgba(0, 0, 0, 0.5)",
+        "$description": "Modal overlay color"
+      },
+      "border": {
+        "radius": {
+          "$type": "dimension",
+          "$value": "{borderRadius.xl}",
+          "$description": "Modal border radius"
+        }
+      },
+      "shadow": {
+        "$type": "shadow",
+        "$value": "{shadows.xl}",
+        "$description": "Modal shadow"
+      },
+      "padding": {
+        "$type": "dimension",
+        "$value": "{spacing.6}",
+        "$description": "Modal padding"
+      }
+    },
+    "navigation": {
+      "background": {
+        "$type": "color",
+        "$value": "{colors.neutral.white}",
+        "$description": "Navigation background color"
+      },
+      "border": {
+        "color": {
+          "$type": "color",
+          "$value": "{colors.secondary.200}",
+          "$description": "Navigation border color"
+        }
+      },
+      "link": {
+        "color": {
+          "default": {
+            "$type": "color",
+            "$value": "{colors.secondary.700}",
+            "$description": "Navigation link default color"
+          },
+          "hover": {
+            "$type": "color",
+            "$value": "{colors.primary.600}",
+            "$description": "Navigation link hover color"
+          },
+          "active": {
+            "$type": "color",
+            "$value": "{colors.primary.700}",
+            "$description": "Navigation link active color"
+          }
+        }
+      }
+    }
+  },
+  "breakpoints": {
+    "xs": {
+      "$type": "dimension",
+      "$value": "480px",
+      "$description": "Extra small screen breakpoint"
+    },
+    "sm": {
+      "$type": "dimension",
+      "$value": "640px",
+      "$description": "Small screen breakpoint"
+    },
+    "md": {
+      "$type": "dimension",
+      "$value": "768px",
+      "$description": "Medium screen breakpoint"
+    },
+    "lg": {
+      "$type": "dimension",
+      "$value": "1024px",
+      "$description": "Large screen breakpoint"
+    },
+    "xl": {
+      "$type": "dimension",
+      "$value": "1280px",
+      "$description": "Extra large screen breakpoint"
+    },
+    "2xl": {
+      "$type": "dimension",
+      "$value": "1536px",
+      "$description": "2X large screen breakpoint"
+    }
+  },
+  "animations": {
+    "duration": {
+      "fast": {
+        "$type": "duration",
+        "$value": "150ms",
+        "$description": "Fast animation duration"
+      },
+      "normal": {
+        "$type": "duration",
+        "$value": "300ms",
+        "$description": "Normal animation duration"
+      },
+      "slow": {
+        "$type": "duration",
+        "$value": "500ms",
+        "$description": "Slow animation duration"
+      }
+    },
+    "easing": {
+      "linear": {
+        "$type": "cubicBezier",
+        "$value": [0, 0, 1, 1],
+        "$description": "Linear easing"
+      },
+      "easeIn": {
+        "$type": "cubicBezier",
+        "$value": [0.4, 0, 1, 1],
+        "$description": "Ease in animation"
+      },
+      "easeOut": {
+        "$type": "cubicBezier",
+        "$value": [0, 0, 0.2, 1],
+        "$description": "Ease out animation"
+      },
+      "easeInOut": {
+        "$type": "cubicBezier",
+        "$value": [0.4, 0, 0.2, 1],
+        "$description": "Ease in-out animation"
+      }
+    }
+  }
+}

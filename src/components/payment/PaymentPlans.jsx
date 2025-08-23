@@ -154,7 +154,7 @@ const PaymentPlans = ({ onSuccess, onCancel, requiredPlan = null }) => {
     return (
       <div className={`relative p-8 rounded-2xl border-2 transition-all duration-300 hover:scale-105 ${
         isPopular 
-          ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 shadow-xl' 
+          ? 'border-blue-500 bg-gradient-to-br from-white to-white dark:from-blue-900/20 dark:to-indigo-900/20 shadow-xl' 
           : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-blue-300 dark:hover:border-blue-600'
       }`}>
         

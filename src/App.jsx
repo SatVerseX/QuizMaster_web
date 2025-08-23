@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { ThemeProvider } from './contexts/ThemeContext';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import Header from './components/layout/Header';
+import Footer from './components/layout/Footer';
 import AuthForm from './components/auth/AuthForm';
 import LoginPopup from './components/auth/LoginPopup';
 // import CreatorRoutes from './routes/CreatorRoutes'; // disabled: creator feature removed
@@ -43,6 +44,7 @@ const AppContent = () => {
   const [isLoadingSeries, setIsLoadingSeries] = useState(false);
   const [showLoginPopup, setShowLoginPopup] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
+  const { isDark } = useTheme();
 
   // Count a free series view once per browser (localStorage guard)
   const countFreeSeriesView = async (series) => {
@@ -346,7 +348,7 @@ const AppContent = () => {
 
   if (currentUser === undefined) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-white to-white dark:from-gray-900 dark:to-gray-800">
         <div className="text-center">
           <div className="relative w-20 h-20 mx-auto mb-6">
             <div className="absolute inset-0 rounded-full border-4 border-blue-500 border-t-transparent animate-spin"></div>
@@ -661,7 +663,9 @@ const AppContent = () => {
   const showHeader = currentView !== 'welcome';
 
   return (
-    <div className={`flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 transition-all duration-500 ${pageLoaded ? 'opacity-100' : 'opacity-0'}`}>
+    <div className={`flex flex-col min-h-screen transition-all duration-500 ${pageLoaded ? 'opacity-100' : 'opacity-0'} ${
+      isDark ? 'bg-gray-900' : 'bg-white'
+    }`}>
       {/* Header - only shown when not on welcome page */}
       {showHeader && (
         <Header 
@@ -678,8 +682,12 @@ const AppContent = () => {
       <main className={`flex-grow ${showHeader ? 'pt-20' : ''} relative`}>
         {/* Background decoration */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/5 to-purple-400/5 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-green-400/5 to-blue-400/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
+          <div className={`absolute -top-40 -right-40 w-80 h-80 rounded-full blur-3xl animate-pulse transition-all duration-500 ${
+            isDark ? 'bg-blue-400/5' : 'bg-blue-400/10'
+          }`}></div>
+          <div className={`absolute -bottom-40 -left-40 w-80 h-80 rounded-full blur-3xl animate-pulse delay-1000 transition-all duration-500 ${
+            isDark ? 'bg-green-400/5' : 'bg-green-400/10'
+          }`}></div>
         </div>
         
         {/* Content */}
@@ -699,121 +707,7 @@ const AppContent = () => {
       
       {/* Professional Footer - only shown when not on welcome page */}
       {showHeader && (
-        <footer className="w-full bg-gradient-to-br from-gray-900 via-blue-900/90 to-gray-900 border-t border-blue-800/30 relative overflow-hidden">
-          {/* Background Pattern */}
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=%2260%22 height=%2260%22 viewBox=%220 0 60 60%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg fill=%22none%22 fill-rule=%22evenodd%22%3E%3Cg fill=%22%23ffffff%22 fill-opacity=%220.02%22%3E%3Ccircle cx=%2230%22 cy=%2230%22 r=%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-30"></div>
-          
-          <div className="max-w-7xl mx-auto px-6 py-16 relative z-10">
-            {/* Main Footer Content */}
-            <div className="w-full flex flex-col items-center justify-center mb-12">
-              <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-3 gap-8">
-              
-              
-              {/* Quick Links */}
-                  <div>
-                <h4 className="text-lg font-semibold text-white mb-6">Quick Links</h4>
-                <ul className="space-y-3">
-                  <li>
-                    <button 
-                      onClick={handleViewTestSeries}
-                      className="text-gray-400 hover:text-blue-400 transition-colors duration-200 text-sm flex items-center gap-2 group"
-                    >
-                      <span className="w-1 h-1 bg-blue-400 rounded-full group-hover:scale-150 transition-transform"></span>
-                      Test Series
-                    </button>
-                  </li>
-                  <li>
-                    <button 
-                      onClick={handleViewAttempts}
-                      className="text-gray-400 hover:text-purple-400 transition-colors duration-200 text-sm flex items-center gap-2 group"
-                    >
-                      <span className="w-1 h-1 bg-purple-400 rounded-full group-hover:scale-150 transition-transform"></span>
-                      My Attempts
-                    </button>
-                  </li>
-                  <li>
-                    <button 
-                      onClick={handleAIGenerator}
-                      className="text-gray-400 hover:text-green-400 transition-colors duration-200 text-sm flex items-center gap-2 group"
-                    >
-                      <span className="w-1 h-1 bg-green-400 rounded-full group-hover:scale-150 transition-transform"></span>
-                      AI Generator
-                    </button>
-                  </li>
-                  <li>
-                    <button 
-                      onClick={handleViewHome}
-                      className="text-gray-400 hover:text-yellow-400 transition-colors duration-200 text-sm flex items-center gap-2 group"
-                    >
-                      <span className="w-1 h-1 bg-yellow-400 rounded-full group-hover:scale-150 transition-transform"></span>
-                      Dashboard
-                    </button>
-                  </li>
-                </ul>
-                </div>
-                
-              {/* Features */}
-                  <div>
-                <h4 className="text-lg font-semibold text-white mb-6">Features</h4>
-                <ul className="space-y-3">
-                  <li className="flex items-center gap-3 text-sm text-gray-400">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    AI-Powered Test Generation
-                  </li>
-                  <li className="flex items-center gap-3 text-sm text-gray-400">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                    Comprehensive Analytics
-                  </li>
-                  <li className="flex items-center gap-3 text-sm text-gray-400">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      Progress Tracking
-                  </li>
-                  <li className="flex items-center gap-3 text-sm text-gray-400">
-                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                    Performance Insights
-                  </li>
-                </ul>
-                  </div>
-              
-              {/* Contact & Support */}
-              <div>
-                <h4 className="text-lg font-semibold text-white mb-6">Support</h4>
-                <ul className="space-y-3">
-                  <li className="flex items-center gap-3 text-sm text-gray-400">
-                    <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                    support@quizmaster.com
-                  </li>
-                  <li className="flex items-center gap-3 text-sm text-gray-400">
-                    <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    24/7 Available
-                  </li>
-                  <li className="flex items-center gap-3 text-sm text-gray-400">
-                    <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Secure & Reliable
-                  </li>
-                </ul>
-              </div>
-            </div>
-            </div>
-
-            {/* Bottom Section */}
-            <div className="pt-8 border-t border-gray-700/50">
-              <div className="flex flex-col items-center justify-center gap-2">
-                <div className="text-sm text-gray-400 text-center">
-                  © {new Date().getFullYear()} QuizMaster. All rights reserved. | 
-                  <a href="#" className="hover:text-blue-400 transition-colors duration-200 ml-1">Privacy Policy</a> | 
-                  <a href="#" className="hover:text-blue-400 transition-colors duration-200 ml-1">Terms of Service</a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </footer>
+        <Footer />
       )}
     </div>
   );

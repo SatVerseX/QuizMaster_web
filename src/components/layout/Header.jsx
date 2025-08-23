@@ -106,7 +106,11 @@ const Header = ({
   };
 
   return (
-    <header className="fixed top-0 inset-x-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-300 dark:border-gray-700 shadow-xl safe-area-top">
+    <header className={`fixed top-0 inset-x-0 z-50 transition-all duration-500 safe-area-top ${
+      theme === 'dark' 
+        ? 'bg-gray-900/95 backdrop-blur-xl border-gray-700/50 shadow-2xl shadow-gray-900/20' 
+        : 'bg-white/95 backdrop-blur-xl border-slate-200/60 shadow-xl shadow-slate-200/40'
+    } border-b`}>
       <div className="container-responsive">
         <div className="flex justify-between items-center h-16 px-4 sm:px-6">
           {/* Enhanced Logo - Mobile Optimized */}
@@ -156,10 +160,32 @@ const Header = ({
 
           {/* Enhanced Mobile Controls */}
           <div className="flex items-center gap-3 md:hidden">
-            {/* Theme toggle button removed */}
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              className={`group relative p-2.5 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md border ${
+                theme === 'dark'
+                  ? 'text-gray-200 hover:bg-gradient-to-r hover:from-blue-900/30 hover:to-purple-900/30 border-gray-700/50'
+                  : 'text-slate-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 border-slate-200/60'
+              }`}
+              title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+            >
+              <div className="relative">
+                {theme === 'dark' ? (
+                  <FiSun className="w-5 h-5 transition-all duration-300 group-hover:scale-110 group-hover:text-yellow-500" />
+                ) : (
+                  <FiMoon className="w-5 h-5 transition-all duration-300 group-hover:scale-110 group-hover:text-blue-600" />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full opacity-0 group-hover:opacity-20 blur-sm transition-opacity duration-300"></div>
+              </div>
+            </button>
 
             <button
-              className="group relative p-2.5 rounded-xl text-gray-700 dark:text-gray-200 hover:bg-gradient-to-r hover:from-blue-100 hover:to-purple-100 dark:hover:from-blue-900/30 dark:hover:to-purple-900/30 transition-all duration-300 shadow-sm hover:shadow-md border border-gray-200/50 dark:border-gray-700/50"
+              className={`group relative p-2.5 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md border ${
+                theme === 'dark'
+                  ? 'text-gray-200 hover:bg-gradient-to-r hover:from-blue-900/30 hover:to-purple-900/30 border-gray-700/50'
+                  : 'text-slate-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 border-slate-200/60'
+              }`}
               onClick={toggleMenu}
               aria-label="Toggle menu"
             >
@@ -175,10 +201,18 @@ const Header = ({
             {/* Navigation Menu */}
             {currentUser && (
               <nav className="flex items-center mr-4 max-w-[60vw] xl:max-w-[65vw] 2xl:max-w-[70vw] overflow-x-auto no-scrollbar">
-                <div className="flex space-x-1 whitespace-nowrap bg-gray-100 dark:bg-gray-800 rounded-lg p-1 shadow-inner border border-gray-200/50 dark:border-gray-700/50">
+                <div className={`flex space-x-1 whitespace-nowrap rounded-lg p-1 shadow-inner border ${
+                  theme === 'dark'
+                    ? 'bg-gray-800 border-gray-700/50'
+                    : 'bg-slate-100 border-slate-200/60'
+                }`}>
                   <button
                     onClick={() => onViewHome && onViewHome()}
-                    className="flex items-center gap-2 px-4 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm transition-all duration-200"
+                    className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 ${
+                      theme === 'dark'
+                        ? 'text-gray-300 hover:bg-gray-700 hover:shadow-sm'
+                        : 'text-slate-700 hover:bg-white hover:shadow-sm'
+                    }`}
                     title="Test Series"
                   >
                     <FiHome className="icon-responsive" />
@@ -187,7 +221,11 @@ const Header = ({
 
                   <button
                     onClick={() => onViewAttempts && onViewAttempts()}
-                    className="flex items-center gap-2 px-4 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm transition-all duration-200"
+                    className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 ${
+                      theme === 'dark'
+                        ? 'text-gray-300 hover:bg-gray-700 hover:shadow-sm'
+                        : 'text-slate-700 hover:bg-white hover:shadow-sm'
+                    }`}
                     title="My Progress"
                   >
                     <FiTarget className="icon-responsive" />
@@ -197,7 +235,11 @@ const Header = ({
                   {onAIGenerator && isAdmin && (
                     <button
                       onClick={() => onAIGenerator()}
-                      className="flex items-center gap-2 px-4 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm transition-all duration-200"
+                      className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 ${
+                        theme === 'dark'
+                          ? 'text-gray-300 hover:bg-gray-700 hover:shadow-sm'
+                          : 'text-slate-700 hover:bg-white hover:shadow-sm'
+                      }`}
                       title="AI Generator"
                     >
                       <FaBrain className="icon-responsive" />
@@ -208,6 +250,26 @@ const Header = ({
               </nav>
             )}
 
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              className={`group relative p-2.5 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md border ${
+                theme === 'dark'
+                  ? 'text-gray-200 hover:bg-gradient-to-r hover:from-blue-900/30 hover:to-purple-900/30 border-gray-700/50'
+                  : 'text-slate-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 border-slate-200/60'
+              }`}
+              title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+            >
+              <div className="relative">
+                {theme === 'dark' ? (
+                  <FiSun className="w-5 h-5 transition-all duration-300 group-hover:scale-110 group-hover:text-yellow-500" />
+                ) : (
+                  <FiMoon className="w-5 h-5 transition-all duration-300 group-hover:scale-110 group-hover:text-blue-600" />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full opacity-0 group-hover:opacity-20 blur-sm transition-opacity duration-300"></div>
+              </div>
+            </button>
+
             {/* User menu */}
             {currentUser ? (
               <div
@@ -216,12 +278,20 @@ const Header = ({
                 onMouseLeave={scheduleCloseUserMenu}
               >
                 <button
-                  className="user-menu-trigger flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm"
+                  className={`user-menu-trigger flex items-center gap-2 px-4 py-2 rounded-lg shadow-sm border transition-all duration-200 ${
+                    theme === 'dark'
+                      ? 'bg-gray-800 border-gray-700 hover:bg-gray-700'
+                      : 'bg-white border-slate-200/60 hover:bg-slate-50'
+                  }`}
                   onClick={() => setIsUserMenuOpen((v) => !v)}
                   aria-haspopup="menu"
                   aria-expanded={isUserMenuOpen}
                 >
-                  <div className="flex items-center justify-center w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 overflow-hidden">
+                  <div className={`flex items-center justify-center w-7 h-7 rounded-full overflow-hidden ${
+                    theme === 'dark'
+                      ? 'bg-blue-900/30 text-blue-400'
+                      : 'bg-blue-100 text-blue-600'
+                  }`}>
                     {currentUser?.photoURL && !avatarError ? (
                       <img
                         src={currentUser.photoURL}
@@ -235,7 +305,9 @@ const Header = ({
                       <FiUser className="icon-responsive" />
                     )}
                   </div>
-                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200 max-w-40 truncate">
+                  <span className={`text-sm font-medium max-w-40 truncate ${
+                    theme === 'dark' ? 'text-gray-200' : 'text-slate-800'
+                  }`}>
                     {currentUser.displayName ||
                       currentUser.email?.split("@")[0] ||
                       "User"}
@@ -244,9 +316,17 @@ const Header = ({
 
                 {/* Dropdown */}
                 {isUserMenuOpen && (
-                  <div className="user-menu-panel absolute right-0 top-full mt-3 w-80 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50 backdrop-blur-xl">
+                  <div className={`user-menu-panel absolute right-0 top-full mt-3 w-80 rounded-2xl shadow-2xl border overflow-hidden z-50 backdrop-blur-xl ${
+                    theme === 'dark'
+                      ? 'bg-gray-800 border-gray-700'
+                      : 'bg-white border-slate-200/60'
+                  }`}>
                     {/* Enhanced User Profile Section */}
-                    <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
+                    <div className={`px-6 py-5 border-b ${
+                      theme === 'dark'
+                        ? 'border-gray-700 bg-gradient-to-br from-blue-900/20 to-purple-900/20'
+                        : 'border-slate-200/60 bg-gradient-to-br from-blue-50/50 to-purple-50/50'
+                    }`}>
                       <div className="flex items-center gap-4">
                         <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 text-white overflow-hidden shadow-lg">
                           {currentUser?.photoURL && !avatarError ? (
@@ -263,12 +343,16 @@ const Header = ({
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="text-base font-bold text-gray-900 dark:text-white truncate mb-1">
+                          <div className={`text-base font-bold truncate mb-1 ${
+                            theme === 'dark' ? 'text-white' : 'text-slate-900'
+                          }`}>
                             {currentUser.displayName ||
                               currentUser.email?.split("@")[0] ||
                               "User"}
                           </div>
-                          <div className="text-sm text-gray-600 dark:text-gray-300 truncate">
+                          <div className={`text-sm truncate ${
+                            theme === 'dark' ? 'text-gray-300' : 'text-slate-600'
+                          }`}>
                             {currentUser.email}
                           </div>
                         </div>
@@ -280,9 +364,17 @@ const Header = ({
                       <div className="px-3">
                         <Link
                           to="/privacy"
-                          className="group flex items-center gap-4 px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 dark:hover:from-blue-900/20 dark:hover:to-blue-800/20 rounded-xl transition-all duration-200 hover:shadow-sm"
+                          className={`group flex items-center gap-4 px-4 py-3 text-sm rounded-xl transition-all duration-200 hover:shadow-sm ${
+                            theme === 'dark'
+                              ? 'text-gray-200 hover:bg-gradient-to-r hover:from-blue-900/20 hover:to-blue-800/20'
+                              : 'text-slate-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100'
+                          }`}
                         >
-                          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 group-hover:bg-blue-200 dark:group-hover:bg-blue-800/40 transition-all duration-200">
+                          <div className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 ${
+                            theme === 'dark'
+                              ? 'bg-blue-900/30 text-blue-400 group-hover:bg-blue-800/40'
+                              : 'bg-blue-100 text-blue-600 group-hover:bg-blue-200'
+                          }`}>
                             <FiShield className="w-4 h-4" />
                           </div>
                           <span className="font-medium">Privacy Policy</span>
@@ -290,9 +382,17 @@ const Header = ({
 
                         <Link
                           to="/terms"
-                          className="group flex items-center gap-4 px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gradient-to-r hover:from-green-50 hover:to-green-100 dark:hover:from-green-900/20 dark:hover:to-green-800/20 rounded-xl transition-all duration-200 hover:shadow-sm"
+                          className={`group flex items-center gap-4 px-4 py-3 text-sm rounded-xl transition-all duration-200 hover:shadow-sm ${
+                            theme === 'dark'
+                              ? 'text-gray-200 hover:bg-gradient-to-r hover:from-green-900/20 hover:to-green-800/20'
+                              : 'text-slate-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-green-100'
+                          }`}
                         >
-                          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 group-hover:bg-green-200 dark:group-hover:bg-green-800/40 transition-all duration-200">
+                          <div className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 ${
+                            theme === 'dark'
+                              ? 'bg-green-900/30 text-green-400 group-hover:bg-green-800/40'
+                              : 'bg-green-100 text-green-600 group-hover:bg-green-200'
+                          }`}>
                             <FiFileText className="w-4 h-4" />
                           </div>
                           <span className="font-medium">
@@ -302,9 +402,17 @@ const Header = ({
 
                         <Link
                           to="/refunds"
-                          className="group flex items-center gap-4 px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gradient-to-r hover:from-orange-50 hover:to-orange-100 dark:hover:from-orange-900/20 dark:hover:to-orange-800/20 rounded-xl transition-all duration-200 hover:shadow-sm"
+                          className={`group flex items-center gap-4 px-4 py-3 text-sm rounded-xl transition-all duration-200 hover:shadow-sm ${
+                            theme === 'dark'
+                              ? 'text-gray-200 hover:bg-gradient-to-r hover:from-orange-900/20 hover:to-orange-800/20'
+                              : 'text-slate-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-orange-100'
+                          }`}
                         >
-                          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 group-hover:bg-orange-200 dark:group-hover:bg-orange-800/40 transition-all duration-200">
+                          <div className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 ${
+                            theme === 'dark'
+                              ? 'bg-orange-900/30 text-orange-400 group-hover:bg-orange-800/40'
+                              : 'bg-orange-100 text-orange-600 group-hover:bg-orange-200'
+                          }`}>
                             <FiRotateCcw className="w-4 h-4" />
                           </div>
                           <span className="font-medium">
@@ -314,9 +422,17 @@ const Header = ({
 
                         <Link
                           to="/contact"
-                          className="group flex items-center gap-4 px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gradient-to-r hover:from-purple-50 hover:to-purple-100 dark:hover:from-purple-900/20 dark:hover:to-purple-800/20 rounded-xl transition-all duration-200 hover:shadow-sm"
+                          className={`group flex items-center gap-4 px-4 py-3 text-sm rounded-xl transition-all duration-200 hover:shadow-sm ${
+                            theme === 'dark'
+                              ? 'text-gray-200 hover:bg-gradient-to-r hover:from-purple-900/20 hover:to-purple-800/20'
+                              : 'text-slate-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-purple-100'
+                          }`}
                         >
-                          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 group-hover:bg-purple-200 dark:group-hover:bg-purple-800/40 transition-all duration-200">
+                          <div className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 ${
+                            theme === 'dark'
+                              ? 'bg-purple-900/30 text-purple-400 group-hover:bg-purple-800/40'
+                              : 'bg-purple-100 text-purple-600 group-hover:bg-purple-200'
+                          }`}>
                             <FiHelpCircle className="w-4 h-4" />
                           </div>
                           <span className="font-medium">Contact Us</span>
@@ -325,12 +441,22 @@ const Header = ({
                     </nav>
 
                     {/* Enhanced Sign Out Section */}
-                    <div className="border-t border-gray-200 dark:border-gray-700 px-3 py-3">
+                    <div className={`border-t px-3 py-3 ${
+                      theme === 'dark' ? 'border-gray-700' : 'border-slate-200/60'
+                    }`}>
                       <button
                         onClick={handleLogout}
-                        className="group w-full flex items-center gap-4 px-4 py-3 text-sm text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-red-900/20 dark:hover:to-red-800/20 rounded-xl transition-all duration-200 hover:shadow-sm font-medium"
+                        className={`group w-full flex items-center gap-4 px-4 py-3 text-sm rounded-xl transition-all duration-200 hover:shadow-sm font-medium ${
+                          theme === 'dark'
+                            ? 'text-red-400 hover:bg-gradient-to-r hover:from-red-900/20 hover:to-red-800/20'
+                            : 'text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100'
+                        }`}
                       >
-                        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 group-hover:bg-red-200 dark:group-hover:bg-red-800/40 transition-all duration-200">
+                        <div className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 ${
+                          theme === 'dark'
+                            ? 'bg-red-900/30 text-red-400 group-hover:bg-red-800/40'
+                            : 'bg-red-100 text-red-600 group-hover:bg-red-200'
+                        }`}>
                           <FiLogOut className="w-4 h-4" />
                         </div>
                         <span>Sign Out</span>
@@ -347,7 +473,7 @@ const Header = ({
                     // Direct redirect to login page
                     if (onLoginClick) onLoginClick();
                   }}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-sm transition-all duration-200 transform hover:scale-105"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-sm transition-all duration-200 transform hover:scale-105"
                 >
                   <FiLogIn className="w-4 h-4" />
                   <span className="text-sm font-medium">Login</span>
@@ -368,27 +494,49 @@ const Header = ({
               {currentUser ? (
                 <div className="flex flex-col h-full">
                   {/* Enhanced User Profile */}
-                  <div className="relative p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-800 dark:to-purple-800">
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-t-2xl"></div>
+                  <div className={`relative p-6 border-b ${
+                    theme === 'dark'
+                      ? 'border-gray-700 bg-gradient-to-br from-blue-800 to-purple-800'
+                      : 'border-slate-200/60 bg-gradient-to-br from-blue-50 to-purple-50'
+                  }`}>
+                    <div className={`absolute inset-0 rounded-t-2xl ${
+                      theme === 'dark'
+                        ? 'bg-gradient-to-br from-blue-500/10 to-purple-500/10'
+                        : 'bg-gradient-to-br from-blue-500/5 to-purple-500/5'
+                    }`}></div>
                     <div className="relative flex items-center gap-4">
                       <div className="relative">
-                        <div className="w-14 h-14 bg-gradient-to-br from-blue-600 to-purple-700 rounded-2xl flex items-center justify-center text-white shadow-xl border-2 border-white dark:border-gray-800">
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-xl border-2 ${
+                          theme === 'dark'
+                            ? 'bg-gradient-to-br from-blue-600 to-purple-700 border-gray-800'
+                            : 'bg-gradient-to-br from-blue-600 to-purple-700 border-white'
+                        }`}>
                           <FiUser className="w-7 h-7" />
                         </div>
                         <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-3 border-white dark:border-gray-900 shadow-lg"></div>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold text-gray-900 dark:text-white text-xl truncate">
+                        <p className={`font-bold text-xl truncate ${
+                          theme === 'dark' ? 'text-white' : 'text-slate-900'
+                        }`}>
                           {currentUser.displayName ||
                             currentUser.email?.split("@")[0] ||
                             "User"}
                         </p>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 truncate">
+                        <p className={`text-sm truncate ${
+                          theme === 'dark' ? 'text-gray-300' : 'text-slate-700'
+                        }`}>
                           {currentUser.email}
                         </p>
                         <div className="flex items-center gap-2 mt-2">
-                          <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold bg-green-200 text-green-900 dark:bg-green-700 dark:text-green-100 shadow-sm">
-                            <span className="w-2.5 h-2.5 bg-green-600 dark:bg-green-400 rounded-full mr-1.5"></span>
+                          <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold shadow-sm ${
+                            theme === 'dark'
+                              ? 'bg-green-700 text-green-100'
+                              : 'bg-green-200 text-green-900'
+                          }`}>
+                            <span className={`w-2.5 h-2.5 rounded-full mr-1.5 ${
+                              theme === 'dark' ? 'bg-green-400' : 'bg-green-600'
+                            }`}></span>
                             Active
                           </span>
                         </div>
@@ -404,9 +552,17 @@ const Header = ({
                           onViewHome && onViewHome();
                           setIsMenuOpen(false);
                         }}
-                        className="group w-full flex items-center gap-4 p-4 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 dark:hover:from-blue-900/20 dark:hover:to-blue-800/20 transition-all duration-300 hover:shadow-md"
+                        className={`group w-full flex items-center gap-4 p-4 rounded-xl transition-all duration-300 hover:shadow-md ${
+                          theme === 'dark'
+                            ? 'text-gray-300 hover:bg-gradient-to-r hover:from-blue-900/20 hover:to-blue-800/20'
+                            : 'text-slate-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100'
+                        }`}
                       >
-                        <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 group-hover:bg-blue-200 dark:group-hover:bg-blue-800/40 transition-all duration-300">
+                        <div className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300 ${
+                          theme === 'dark'
+                            ? 'bg-blue-900/30 text-blue-400 group-hover:bg-blue-800/40'
+                            : 'bg-blue-100 text-blue-600 group-hover:bg-blue-200'
+                        }`}>
                           <FiHome className="w-5 h-5" />
                         </div>
                         <span className="font-medium">Test Series</span>
@@ -417,9 +573,17 @@ const Header = ({
                           onViewWelcome && onViewWelcome();
                           setIsMenuOpen(false);
                         }}
-                        className="group w-full flex items-center gap-4 p-4 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-orange-50 hover:to-orange-100 dark:hover:from-orange-900/20 dark:hover:to-orange-800/20 transition-all duration-300 hover:shadow-md"
+                        className={`group w-full flex items-center gap-4 p-4 rounded-xl transition-all duration-300 hover:shadow-md ${
+                          theme === 'dark'
+                            ? 'text-gray-300 hover:bg-gradient-to-r hover:from-orange-900/20 hover:to-orange-800/20'
+                            : 'text-slate-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-orange-100'
+                        }`}
                       >
-                        <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 group-hover:bg-orange-200 dark:group-hover:bg-orange-800/40 transition-all duration-300">
+                        <div className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300 ${
+                          theme === 'dark'
+                            ? 'bg-orange-900/30 text-orange-400 group-hover:bg-orange-800/40'
+                            : 'bg-orange-100 text-orange-600 group-hover:bg-orange-200'
+                        }`}>
                           <FaPuzzlePiece className="w-5 h-5" />
                         </div>
                         <span className="font-medium">Welcome</span>
@@ -430,9 +594,17 @@ const Header = ({
                           onViewAttempts && onViewAttempts();
                           setIsMenuOpen(false);
                         }}
-                        className="group w-full flex items-center gap-4 p-4 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-purple-50 hover:to-purple-100 dark:hover:from-purple-900/20 dark:hover:to-purple-800/20 transition-all duration-300 hover:shadow-md"
+                        className={`group w-full flex items-center gap-4 p-4 rounded-xl transition-all duration-300 hover:shadow-md ${
+                          theme === 'dark'
+                            ? 'text-gray-300 hover:bg-gradient-to-r hover:from-purple-900/20 hover:to-purple-800/20'
+                            : 'text-slate-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-purple-100'
+                        }`}
                       >
-                        <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 group-hover:bg-purple-200 dark:group-hover:bg-purple-800/40 transition-all duration-300">
+                        <div className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300 ${
+                          theme === 'dark'
+                            ? 'bg-purple-900/30 text-purple-400 group-hover:bg-purple-800/40'
+                            : 'bg-purple-100 text-purple-600 group-hover:bg-purple-200'
+                        }`}>
                           <FiTarget className="w-5 h-5" />
                         </div>
                         <span className="font-medium">My Progress</span>
@@ -444,9 +616,17 @@ const Header = ({
                             onAIGenerator();
                             setIsMenuOpen(false);
                           }}
-                          className="group w-full flex items-center gap-4 p-4 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-green-50 hover:to-green-100 dark:hover:from-green-900/20 dark:hover:to-green-800/20 transition-all duration-300 hover:shadow-md"
+                          className={`group w-full flex items-center gap-4 p-4 rounded-xl transition-all duration-300 hover:shadow-md ${
+                            theme === 'dark'
+                              ? 'text-gray-300 hover:bg-gradient-to-r hover:from-green-900/20 hover:to-green-800/20'
+                              : 'text-slate-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-green-100'
+                          }`}
                         >
-                          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 group-hover:bg-green-200 dark:group-hover:bg-green-800/40 transition-all duration-300">
+                          <div className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300 ${
+                            theme === 'dark'
+                              ? 'bg-green-900/30 text-green-400 group-hover:bg-green-800/40'
+                              : 'bg-green-100 text-green-600 group-hover:bg-green-200'
+                          }`}>
                             <FaBrain className="w-5 h-5" />
                           </div>
                           <span className="font-medium">AI Generator</span>
@@ -456,10 +636,18 @@ const Header = ({
                   </nav>
 
                   {/* Enhanced Logout */}
-                  <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                  <div className={`p-4 border-t ${
+                    theme === 'dark'
+                      ? 'border-gray-700 bg-gray-800/50'
+                      : 'border-slate-200/60 bg-slate-50/50'
+                  }`}>
                     <button
                       onClick={handleLogout}
-                      className="group w-full flex items-center justify-center gap-3 px-6 py-3 rounded-xl text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-red-900/20 dark:hover:to-red-800/20 border border-red-200 dark:border-red-800 transition-all duration-300 hover:shadow-md font-medium"
+                      className={`group w-full flex items-center justify-center gap-3 px-6 py-3 rounded-xl transition-all duration-300 hover:shadow-md font-medium border ${
+                        theme === 'dark'
+                          ? 'text-red-400 hover:bg-gradient-to-r hover:from-red-900/20 hover:to-red-800/20 border-red-800'
+                          : 'text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 border-red-200'
+                      }`}
                     >
                       <FiLogOut className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
                       <span>Sign Out</span>
@@ -470,19 +658,35 @@ const Header = ({
                 /* Mobile menu for non-logged-in users */
                 <div className="flex flex-col h-full">
                   {/* Welcome Message */}
-                  <div className="relative p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-800 dark:to-purple-800">
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-t-2xl"></div>
+                  <div className={`relative p-6 border-b ${
+                    theme === 'dark'
+                      ? 'border-gray-700 bg-gradient-to-br from-blue-800 to-purple-800'
+                      : 'border-slate-200/60 bg-gradient-to-br from-blue-50 to-purple-50'
+                  }`}>
+                    <div className={`absolute inset-0 rounded-t-2xl ${
+                      theme === 'dark'
+                        ? 'bg-gradient-to-br from-blue-500/10 to-purple-500/10'
+                        : 'bg-gradient-to-br from-blue-500/5 to-purple-500/5'
+                    }`}></div>
                     <div className="relative flex items-center gap-4">
                       <div className="relative">
-                        <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl flex items-center justify-center text-white shadow-xl border-2 border-white dark:border-gray-800">
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-xl border-2 ${
+                          theme === 'dark'
+                            ? 'bg-gradient-to-br from-orange-500 to-red-600 border-gray-800'
+                            : 'bg-gradient-to-br from-orange-500 to-red-600 border-white'
+                        }`}>
                           <FaPuzzlePiece className="w-7 h-7" />
                         </div>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold text-gray-900 dark:text-white text-xl truncate">
+                        <p className={`font-bold text-xl truncate ${
+                          theme === 'dark' ? 'text-white' : 'text-slate-900'
+                        }`}>
                           Welcome to QuizMaster
                         </p>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 truncate">
+                        <p className={`text-sm truncate ${
+                          theme === 'dark' ? 'text-gray-300' : 'text-slate-700'
+                        }`}>
                           Browse test series and login to access features
                         </p>
                       </div>
@@ -497,9 +701,17 @@ const Header = ({
                           onViewHome && onViewHome();
                           setIsMenuOpen(false);
                         }}
-                        className="group w-full flex items-center gap-4 p-4 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 dark:hover:from-blue-900/20 dark:hover:to-blue-800/20 transition-all duration-300 hover:shadow-md"
+                        className={`group w-full flex items-center gap-4 p-4 rounded-xl transition-all duration-300 hover:shadow-md ${
+                          theme === 'dark'
+                            ? 'text-gray-300 hover:bg-gradient-to-r hover:from-blue-900/20 hover:to-blue-800/20'
+                            : 'text-slate-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100'
+                        }`}
                       >
-                        <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 group-hover:bg-blue-200 dark:group-hover:bg-blue-800/40 transition-all duration-300">
+                        <div className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300 ${
+                          theme === 'dark'
+                            ? 'bg-blue-900/30 text-blue-400 group-hover:bg-blue-800/40'
+                            : 'bg-blue-100 text-blue-600 group-hover:bg-blue-200'
+                        }`}>
                           <FiHome className="w-5 h-5" />
                         </div>
                         <span className="font-medium">Test Series</span>
@@ -510,9 +722,17 @@ const Header = ({
                           onViewWelcome && onViewWelcome();
                           setIsMenuOpen(false);
                         }}
-                        className="group w-full flex items-center gap-4 p-4 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-orange-50 hover:to-orange-100 dark:hover:from-orange-900/20 dark:hover:to-orange-800/20 transition-all duration-300 hover:shadow-md"
+                        className={`group w-full flex items-center gap-4 p-4 rounded-xl transition-all duration-300 hover:shadow-md ${
+                          theme === 'dark'
+                            ? 'text-gray-300 hover:bg-gradient-to-r hover:from-orange-900/20 hover:to-orange-800/20'
+                            : 'text-slate-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-orange-100'
+                        }`}
                       >
-                        <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 group-hover:bg-orange-200 dark:group-hover:bg-orange-800/40 transition-all duration-300">
+                        <div className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300 ${
+                          theme === 'dark'
+                            ? 'bg-orange-900/30 text-orange-400 group-hover:bg-orange-800/40'
+                            : 'bg-orange-100 text-orange-600 group-hover:bg-orange-200'
+                        }`}>
                           <FaPuzzlePiece className="w-5 h-5" />
                         </div>
                         <span className="font-medium">Welcome</span>
@@ -521,14 +741,18 @@ const Header = ({
                   </nav>
 
                   {/* Login Button */}
-                  <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                  <div className={`p-4 border-t ${
+                    theme === 'dark'
+                      ? 'border-gray-700 bg-gray-800/50'
+                      : 'border-slate-200/60 bg-slate-50/50'
+                  }`}>
                     <button
                       onClick={() => {
                         // Direct redirect to login page
                         if (onLoginClick) onLoginClick();
                         setIsMenuOpen(false);
                       }}
-                      className="group w-full flex items-center justify-center gap-3 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white transition-all duration-300 hover:shadow-md font-medium transform hover:scale-105"
+                      className="group w-full flex items-center justify-center gap-3 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white transition-all duration-300 hover:shadow-md font-medium transform hover:scale-105"
                     >
                       <FiLogIn className="w-5 h-5" />
                       <span>Login / Sign Up</span>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { 
   collection, 
   query, 
@@ -28,6 +29,7 @@ import { FaRobot, FaGraduationCap } from 'react-icons/fa';
 
 const TestSeriesTestsList = ({ testSeries, onBack, onTakeTest, onViewLeaderboard }) => {
   const { currentUser } = useAuth();
+  const { isDark } = useTheme();
   const [tests, setTests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -153,13 +155,21 @@ const TestSeriesTestsList = ({ testSeries, onBack, onTakeTest, onViewLeaderboard
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900/10 to-purple-900/10">
+      <div className={`min-h-screen transition-all duration-500 ${
+        isDark 
+          ? 'bg-gradient-to-br from-gray-900 via-blue-900/10 to-purple-900/10' 
+          : 'bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20'
+      }`}>
         <div className="max-w-6xl mx-auto p-6">
           <div className="animate-pulse space-y-6">
-            <div className="h-8 bg-gray-700 rounded w-64"></div>
+            <div className={`h-8 rounded w-64 ${
+              isDark ? 'bg-gray-700' : 'bg-slate-300'
+            }`}></div>
             <div className="space-y-4">
               {[1, 2, 3].map(i => (
-                <div key={i} className="h-32 bg-gray-700/30 rounded-2xl"></div>
+                <div key={i} className={`h-32 rounded-2xl ${
+                  isDark ? 'bg-gray-700/30' : 'bg-slate-300/30'
+                }`}></div>
               ))}
             </div>
           </div>
@@ -169,45 +179,76 @@ const TestSeriesTestsList = ({ testSeries, onBack, onTakeTest, onViewLeaderboard
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900/10 to-purple-900/10">
+    <div className={`min-h-screen transition-all duration-500 ${
+      isDark 
+        ? 'bg-gradient-to-br from-gray-900 via-blue-900/10 to-purple-900/10' 
+        : 'bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20'
+    }`}>
       <div className="max-w-6xl mx-auto p-3 sm:p-6">
-        {/* Background Elements */}
-        <div className="fixed inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        {/* Professional Background Elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className={`absolute top-20 right-20 w-96 h-96 rounded-full blur-3xl animate-pulse ${
+            isDark ? 'bg-blue-500/10' : 'bg-blue-400/8'
+          }`}></div>
+          <div className={`absolute bottom-20 left-20 w-96 h-96 rounded-full blur-3xl animate-pulse delay-1000 ${
+            isDark ? 'bg-purple-500/10' : 'bg-indigo-400/6'
+          }`}></div>
         </div>
 
         {/* Header */}
         <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 mb-8">
           <button
             onClick={onBack}
-            className="group bg-gray-800/60 hover:bg-gray-700/60 border border-gray-600/40 text-gray-300 hover:text-white rounded-2xl px-4 py-3 transition-all duration-300 flex items-center gap-2"
+            className={`group rounded-2xl px-4 py-3 transition-all duration-300 flex items-center gap-2 ${
+              isDark 
+                ? 'bg-gray-800/60 hover:bg-gray-700/60 border border-gray-600/40 text-gray-300 hover:text-white'
+                : 'bg-white/90 hover:bg-white border border-slate-200/60 text-slate-700 hover:text-slate-800 hover:shadow-slate-300/30'
+            }`}
           >
             <FiArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
             Back to Series
           </button>
           
           <div className="flex items-center gap-4">
-            <div className="p-2 sm:p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-xl">
+            <div className={`p-2 sm:p-3 rounded-2xl shadow-xl ${
+              isDark 
+                ? 'bg-gradient-to-br from-blue-500 to-purple-600'
+                : 'bg-gradient-to-br from-blue-600 to-indigo-600'
+            }`}>
               <FaGraduationCap className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-200 to-purple-200">
+              <h1 className={`text-2xl sm:text-4xl font-black text-transparent bg-clip-text transition-all duration-300 ${
+                isDark 
+                  ? 'bg-gradient-to-r from-white via-blue-200 to-purple-200'
+                  : 'bg-gradient-to-r from-slate-800 via-slate-700 to-slate-600'
+              }`}>
                 {testSeries.title}
               </h1>
-              <p className="text-gray-400 text-base sm:text-lg">All Available Tests • {tests.length} Tests</p>
+              <p className={`text-base sm:text-lg transition-all duration-300 ${
+                isDark ? 'text-gray-400' : 'text-slate-600'
+              }`}>All Available Tests • {tests.length} Tests</p>
             </div>
           </div>
         </div>
+
         {/* Error Display */}
         {error && (
           <div className="relative z-10 mb-8">
-            <div className="bg-red-900/20 border border-red-700/50 rounded-xl p-6">
+            <div className={`rounded-xl p-6 ${
+              isDark 
+                ? 'bg-red-900/20 border border-red-700/50'
+                : 'bg-red-50/80 border border-red-200'
+            }`}>
               <div className="flex items-center gap-3 mb-3">
                 <FiAlertCircle className="w-6 h-6 text-red-400" />
-                <h3 className="text-xl font-bold text-red-300">Error Loading Tests</h3>
+                <h3 className={`text-xl font-bold ${
+                  isDark ? 'text-red-300' : 'text-red-700'
+                }`}>Error Loading Tests</h3>
               </div>
-              <p className="text-red-200 mb-4">{error}</p>
+              <p className={`mb-4 ${
+                isDark ? 'text-red-200' : 'text-red-600'
+              }`}>{error}</p>
               <button
                 onClick={() => {
                   setError(null);
@@ -224,44 +265,80 @@ const TestSeriesTestsList = ({ testSeries, onBack, onTakeTest, onViewLeaderboard
 
         {/* Series Stats */}
         <div className="relative z-10 mb-8">
-          <div className="bg-gradient-to-r from-gray-800/60 to-gray-700/60 backdrop-blur-xl border border-gray-600/40 rounded-3xl p-3 sm:p-6 shadow-2xl">
+          <div className={`backdrop-blur-xl border rounded-3xl p-3 sm:p-6 shadow-2xl transition-all duration-500 ${
+            isDark 
+              ? 'bg-gradient-to-r from-gray-800/60 to-gray-700/60 border-gray-600/40'
+              : 'bg-white/90 border-slate-200/60'
+          }`}>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
-              <div className="bg-blue-500/10 backdrop-blur-sm rounded-xl p-4 border border-blue-500/20">
+              <div className={`backdrop-blur-sm rounded-xl p-4 border ${
+                isDark 
+                  ? 'bg-blue-500/10 border-blue-500/20'
+                  : 'bg-blue-50/80 border-blue-200'
+              }`}>
                 <div className="flex items-center gap-3">
                   <FiBookOpen className="w-6 h-6 text-blue-400" />
                   <div>
-                    <div className="text-2xl font-bold text-blue-300">{tests.length}</div>
-                    <div className="text-sm text-blue-200">Total Tests</div>
+                    <div className={`text-2xl font-bold ${
+                      isDark ? 'text-blue-300' : 'text-blue-700'
+                    }`}>{tests.length}</div>
+                    <div className={`text-sm ${
+                      isDark ? 'text-blue-200' : 'text-blue-600'
+                    }`}>Total Tests</div>
                   </div>
                 </div>
               </div>
               
-              <div className="bg-purple-500/10 backdrop-blur-sm rounded-xl p-4 border border-purple-500/20">
+              <div className={`backdrop-blur-sm rounded-xl p-4 border ${
+                isDark 
+                  ? 'bg-purple-500/10 border-purple-500/20'
+                  : 'bg-purple-50/80 border-purple-200'
+              }`}>
                 <div className="flex items-center gap-3">
                   <FiUsers className="w-6 h-6 text-purple-400" />
                   <div>
-                    <div className="text-2xl font-bold text-purple-300">{testSeries.totalSubscribers || 0}</div>
-                    <div className="text-sm text-purple-200">Students</div>
+                    <div className={`text-2xl font-bold ${
+                      isDark ? 'text-purple-300' : 'text-purple-700'
+                    }`}>{testSeries.totalSubscribers || 0}</div>
+                    <div className={`text-sm ${
+                      isDark ? 'text-purple-200' : 'text-purple-600'
+                    }`}>Students</div>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-emerald-500/10 backdrop-blur-sm rounded-xl p-4 border border-emerald-500/20">
+              <div className={`backdrop-blur-sm rounded-xl p-4 border ${
+                isDark 
+                  ? 'bg-emerald-500/10 border-emerald-500/20'
+                  : 'bg-emerald-50/80 border-emerald-200'
+              }`}>
                 <div className="flex items-center gap-3">
                   <FiClock className="w-6 h-6 text-emerald-400" />
                   <div>
-                    <div className="text-2xl font-bold text-emerald-300">{testSeries.estimatedDuration || 60}</div>
-                    <div className="text-sm text-emerald-200">Total Minutes</div>
+                    <div className={`text-2xl font-bold ${
+                      isDark ? 'text-emerald-300' : 'text-emerald-700'
+                    }`}>{testSeries.estimatedDuration || 60}</div>
+                    <div className={`text-sm ${
+                      isDark ? 'text-emerald-200' : 'text-emerald-600'
+                    }`}>Total Minutes</div>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-yellow-500/10 backdrop-blur-sm rounded-xl p-4 border border-yellow-500/20">
+              <div className={`backdrop-blur-sm rounded-xl p-4 border ${
+                isDark 
+                  ? 'bg-yellow-500/10 border-yellow-500/20'
+                  : 'bg-yellow-50/80 border-yellow-200'
+              }`}>
                 <div className="flex items-center gap-3">
                   <FiStar className="w-6 h-6 text-yellow-400" />
                   <div>
-                    <div className="text-2xl font-bold text-yellow-300">4.8</div>
-                    <div className="text-sm text-yellow-200">Average Rating</div>
+                    <div className={`text-2xl font-bold ${
+                      isDark ? 'text-yellow-300' : 'text-yellow-700'
+                    }`}>4.8</div>
+                    <div className={`text-sm ${
+                      isDark ? 'text-yellow-200' : 'text-yellow-600'
+                    }`}>Average Rating</div>
                   </div>
                 </div>
               </div>
@@ -274,14 +351,24 @@ const TestSeriesTestsList = ({ testSeries, onBack, onTakeTest, onViewLeaderboard
           {tests.length > 0 ? (
             <div className="space-y-4 sm:space-y-6">
               {tests.map((test, index) => (
-                <div key={test.id} className="group bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl border border-gray-600/40 rounded-3xl p-4 sm:p-8 shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 hover:scale-[1.01] hover:border-blue-500/30 overflow-hidden">
+                <div key={test.id} className={`group backdrop-blur-xl border rounded-3xl p-4 sm:p-8 shadow-2xl transition-all duration-500 hover:scale-[1.01] overflow-hidden ${
+                  isDark 
+                    ? 'bg-gradient-to-br from-gray-800/60 to-gray-900/60 border-gray-600/40 hover:shadow-blue-500/10 hover:border-blue-500/30'
+                    : 'bg-white/90 border-slate-200/60 hover:shadow-blue-500/20 hover:border-blue-300/60'
+                }`}>
                   {/* Background Glow */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className={`absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
+                    isDark ? 'bg-gradient-to-br from-blue-500/5 to-purple-500/5' : 'bg-gradient-to-br from-blue-50/30 to-indigo-50/30'
+                  }`}></div>
                   
                   <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
                     {/* Test Number */}
                     <div className="flex-shrink-0">
-                      <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-xl">
+                      <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center shadow-xl ${
+                        isDark 
+                          ? 'bg-gradient-to-br from-blue-500 to-purple-600'
+                          : 'bg-gradient-to-br from-blue-600 to-indigo-600'
+                      }`}>
                         <span className="text-lg sm:text-2xl font-black text-white">{index + 1}</span>
                       </div>
                     </div>
@@ -291,17 +378,25 @@ const TestSeriesTestsList = ({ testSeries, onBack, onTakeTest, onViewLeaderboard
                       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 sm:mb-4 gap-2 sm:gap-0">
                         <div>
                           <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
-                            <h3 className="text-lg sm:text-2xl font-bold text-white group-hover:text-blue-200 transition-colors truncate max-w-[220px] sm:max-w-none">
+                            <h3 className={`text-lg sm:text-2xl font-bold group-hover:text-blue-200 transition-colors truncate max-w-[220px] sm:max-w-none ${
+                              isDark ? 'text-white' : 'text-slate-800'
+                            }`}>
                               {test.title}
                             </h3>
                             {test.isAIGenerated && (
-                              <span className="px-2 sm:px-3 py-0.5 sm:py-1 bg-purple-500/20 border border-purple-500/30 text-purple-300 text-xs font-bold rounded-full flex items-center gap-1.5">
+                              <span className={`px-2 sm:px-3 py-0.5 sm:py-1 border text-xs font-bold rounded-full flex items-center gap-1.5 ${
+                                isDark 
+                                  ? 'bg-purple-500/20 border-purple-500/30 text-purple-300'
+                                  : 'bg-purple-50/80 border-purple-200 text-purple-600'
+                              }`}>
                                 <FaRobot className="w-3 h-3" />
                                 AI Generated
                               </span>
                             )}
                           </div>
-                          <p className="text-gray-300 leading-relaxed mb-2 sm:mb-4 line-clamp-2 sm:line-clamp-none">
+                          <p className={`leading-relaxed mb-2 sm:mb-4 line-clamp-2 sm:line-clamp-none ${
+                            isDark ? 'text-gray-300' : 'text-slate-600'
+                          }`}>
                             {test.description || 'Comprehensive test to evaluate your knowledge and skills.'}
                           </p>
                         </div>
@@ -314,28 +409,36 @@ const TestSeriesTestsList = ({ testSeries, onBack, onTakeTest, onViewLeaderboard
 
                       {/* Test Stats */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
-                        <div className="flex items-center gap-1 sm:gap-2 text-gray-400">
+                        <div className={`flex items-center gap-1 sm:gap-2 ${
+                          isDark ? 'text-gray-400' : 'text-slate-500'
+                        }`}>
                           <FiTarget className="w-4 h-4 text-blue-400" />
                           <span className="text-xs sm:text-sm">
-                            <strong className="text-white">{test.questions?.length || 0}</strong> Questions
+                            <strong className={isDark ? 'text-white' : 'text-slate-800'}>{test.questions?.length || 0}</strong> Questions
                           </span>
                         </div>
-                        <div className="flex items-center gap-1 sm:gap-2 text-gray-400">
+                        <div className={`flex items-center gap-1 sm:gap-2 ${
+                          isDark ? 'text-gray-400' : 'text-slate-500'
+                        }`}>
                           <FiClock className="w-4 h-4 text-emerald-400" />
                           <span className="text-xs sm:text-sm">
-                            <strong className="text-white">{test.timeLimit || 0}</strong> Minutes
+                            <strong className={isDark ? 'text-white' : 'text-slate-800'}>{test.timeLimit || 0}</strong> Minutes
                           </span>
                         </div>
-                        <div className="flex items-center gap-1 sm:gap-2 text-gray-400">
+                        <div className={`flex items-center gap-1 sm:gap-2 ${
+                          isDark ? 'text-gray-400' : 'text-slate-500'
+                        }`}>
                           <FiActivity className="w-4 h-4 text-purple-400" />
                           <span className="text-xs sm:text-sm">
-                            <strong className="text-white">{test.totalAttempts || 0}</strong> Attempts
+                            <strong className={isDark ? 'text-white' : 'text-slate-800'}>{test.totalAttempts || 0}</strong> Attempts
                           </span>
                         </div>
-                        <div className="flex items-center gap-1 sm:gap-2 text-gray-400">
+                        <div className={`flex items-center gap-1 sm:gap-2 ${
+                          isDark ? 'text-gray-400' : 'text-slate-500'
+                        }`}>
                           <FiCalendar className="w-4 h-4 text-yellow-400" />
                           <span className="text-xs sm:text-sm">
-                            <strong className="text-white">{formatDate(test.createdAt)}</strong>
+                            <strong className={isDark ? 'text-white' : 'text-slate-800'}>{formatDate(test.createdAt)}</strong>
                           </span>
                         </div>
                       </div>
@@ -355,7 +458,11 @@ const TestSeriesTestsList = ({ testSeries, onBack, onTakeTest, onViewLeaderboard
                         </button>
                         <button
                           onClick={() => onViewLeaderboard && onViewLeaderboard(test)}
-                          className="w-full sm:w-auto px-4 py-3 sm:px-6 sm:py-4 bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 text-blue-300 hover:text-white hover:bg-blue-600/30 rounded-2xl transition-all duration-300 flex items-center justify-center gap-2 sm:gap-3 hover:scale-105 font-bold"
+                          className={`w-full sm:w-auto px-4 py-3 sm:px-6 sm:py-4 border rounded-2xl transition-all duration-300 flex items-center justify-center gap-2 sm:gap-3 hover:scale-105 font-bold ${
+                            isDark 
+                              ? 'from-blue-600/20 to-purple-600/20 border-blue-500/30 text-blue-300 hover:text-white hover:bg-blue-600/30'
+                              : 'bg-white/90 border-slate-200/60 text-slate-700 hover:bg-white hover:border-slate-300/80 hover:shadow-slate-300/30'
+                          }`}
                         >
                           <FiTrendingUp className="w-5 h-5" />
                           <span>Leaderboard</span>
@@ -368,11 +475,19 @@ const TestSeriesTestsList = ({ testSeries, onBack, onTakeTest, onViewLeaderboard
             </div>
           ) : (
             <div className="text-center py-10 sm:py-20">
-              <div className="w-20 h-20 sm:w-32 sm:h-32 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 backdrop-blur-xl border border-blue-500/30">
+              <div className={`w-20 h-20 sm:w-32 sm:h-32 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 backdrop-blur-xl border ${
+                isDark 
+                  ? 'bg-gradient-to-br from-blue-500/20 to-purple-500/20 border-blue-500/30'
+                  : 'bg-blue-50/80 border-blue-200'
+              }`}>
                 <FiBookOpen className="w-12 h-12 sm:w-16 sm:h-16 text-blue-400" />
               </div>
-              <h3 className="text-xl sm:text-3xl font-bold text-white mb-2 sm:mb-4">No Tests Available</h3>
-              <p className="text-base sm:text-xl text-gray-400 mb-4 sm:mb-8">
+              <h3 className={`text-xl sm:text-3xl font-bold mb-2 sm:mb-4 ${
+                isDark ? 'text-white' : 'text-slate-800'
+              }`}>No Tests Available</h3>
+              <p className={`text-base sm:text-xl mb-4 sm:mb-8 ${
+                isDark ? 'text-gray-400' : 'text-slate-600'
+              }`}>
                 This test series doesn't have any tests yet. Check back later!
               </p>
             </div>

@@ -1,11 +1,13 @@
 import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { FiDatabase } from 'react-icons/fi';
 import { FaFilePdf } from 'react-icons/fa';
 import html2pdf from 'html2pdf.js';
 
 const DownloadModal = ({ attempt, questionAnalysis, onClose, loading, setLoading }) => {
   const { currentUser } = useAuth();
+  const { isDark } = useTheme();
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -342,20 +344,32 @@ const DownloadModal = ({ attempt, questionAnalysis, onClose, loading, setLoading
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-gradient-to-br from-gray-800/95 to-gray-900/95 backdrop-blur-xl border border-gray-600/40 rounded-3xl p-8 max-w-md w-full shadow-2xl">
+      <div className={`backdrop-blur-xl border rounded-3xl p-8 max-w-md w-full shadow-2xl ${
+        isDark 
+          ? 'bg-gradient-to-br from-gray-800/95 to-gray-900/95 border-gray-600/40' 
+          : 'bg-white/95 border-slate-200/60 shadow-slate-200/40'
+      }`}>
         <div className="text-center mb-6">
-          <h3 className="text-2xl font-bold text-white mb-2">Download Report</h3>
-          <p className="text-gray-400">Choose your preferred format</p>
+          <h3 className={`text-2xl font-bold mb-2 ${
+            isDark ? 'text-white' : 'text-slate-800'
+          }`}>Download Report</h3>
+          <p className={isDark ? 'text-gray-400' : 'text-slate-600'}>Choose your preferred format</p>
         </div>
 
         <div className="space-y-4 mb-6">
           <button
             onClick={handleDownloadPDF}
             disabled={loading}
-            className="w-full flex items-center gap-4 p-4 bg-red-600/20 hover:bg-red-600/30 border border-red-500/40 text-red-300 rounded-xl transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`w-full flex items-center gap-4 p-4 border rounded-xl transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
+              isDark 
+                ? 'bg-red-600/20 hover:bg-red-600/30 border-red-500/40 text-red-300' 
+                : 'bg-red-100/60 hover:bg-red-200/60 border-red-400/60 text-red-700'
+            }`}
           >
             {loading ? (
-              <div className="w-6 h-6 border-2 border-red-400 border-t-transparent rounded-full animate-spin"></div>
+              <div className={`w-6 h-6 border-2 border-t-transparent rounded-full animate-spin ${
+                isDark ? 'border-red-400' : 'border-red-600'
+              }`}></div>
             ) : (
               <FaFilePdf className="w-6 h-6" />
             )}
@@ -368,10 +382,16 @@ const DownloadModal = ({ attempt, questionAnalysis, onClose, loading, setLoading
           <button
             onClick={handleDownloadJSON}
             disabled={loading}
-            className="w-full flex items-center gap-4 p-4 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-blue-300 rounded-xl transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`w-full flex items-center gap-4 p-4 border rounded-xl transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
+              isDark 
+                ? 'bg-blue-600/20 hover:bg-blue-600/30 border-blue-500/40 text-blue-300' 
+                : 'bg-blue-100/60 hover:bg-blue-200/60 border-blue-400/60 text-blue-700'
+            }`}
           >
             {loading ? (
-              <div className="w-6 h-6 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+              <div className={`w-6 h-6 border-2 border-t-transparent rounded-full animate-spin ${
+                isDark ? 'border-blue-400' : 'border-blue-600'
+              }`}></div>
             ) : (
               <FiDatabase className="w-6 h-6" />
             )}
@@ -384,7 +404,11 @@ const DownloadModal = ({ attempt, questionAnalysis, onClose, loading, setLoading
 
         <button
           onClick={onClose}
-          className="w-full bg-gray-700/50 hover:bg-gray-600/50 text-gray-300 p-3 rounded-xl transition-colors"
+          className={`w-full p-3 rounded-xl transition-colors ${
+            isDark 
+              ? 'bg-gray-700/50 hover:bg-gray-600/50 text-gray-300' 
+              : 'bg-slate-100/60 hover:bg-slate-200/60 text-slate-700 hover:text-slate-800'
+          }`}
         >
           Close
         </button>

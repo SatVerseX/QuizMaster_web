@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { examCategories, getAllSubcategories } from '../../utils/constants/examCategories';
 import { 
   collection, 
@@ -50,6 +51,7 @@ const TestSeriesList = ({
   onViewTests // NEW: Add this prop
 }) => {
   const { currentUser, isAdmin } = useAuth();
+  const { isDark } = useTheme();
   const [series, setSeries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('all');
@@ -134,6 +136,7 @@ const TestSeriesList = ({
           ...doc.data(),
           testSeriesId: doc.data().testSeriesId
         }));
+        console.log('User subscriptions loaded:', subscriptions); // Debug log
         setUserSubscriptions(subscriptions);
       });
       
@@ -145,7 +148,9 @@ const TestSeriesList = ({
 
   // Check if user has already subscribed to the test series
   const hasUserSubscribed = (testSeriesId) => {
-    return userSubscriptions.some(sub => sub.testSeriesId === testSeriesId);
+    const isSubscribed = userSubscriptions.some(sub => sub.testSeriesId === testSeriesId);
+    console.log(`Checking subscription for series ${testSeriesId}:`, isSubscribed, 'User subscriptions:', userSubscriptions.map(s => s.testSeriesId));
+    return isSubscribed;
   };
 
   const isCreator = (seriesItem) => {
@@ -159,9 +164,15 @@ const TestSeriesList = ({
     
     switch (activeFilter) {
       case 'my-series':
-        return matchesSearch && matchesCategory && matchesSubcategory && isCreator(item);
+        const isSubscribed = hasUserSubscribed(item.id);
+        const isUserCreator = isCreator(item);
+        const shouldShow = matchesSearch && matchesCategory && matchesSubcategory && (isUserCreator || isSubscribed);
+        if (activeFilter === 'my-series') {
+          console.log(`Series "${item.title}": isCreator=${isUserCreator}, isSubscribed=${isSubscribed}, shouldShow=${shouldShow}`);
+        }
+        return shouldShow;
       case 'subscribed':
-        return matchesSearch && matchesCategory && matchesSubcategory;
+        return matchesSearch && matchesCategory && matchesSubcategory && hasUserSubscribed(item.id);
       case 'free':
         return matchesSearch && matchesCategory && matchesSubcategory && !item.isPaid;
       case 'paid':
@@ -209,7 +220,11 @@ const TestSeriesList = ({
     const isSubscribed = hasUserSubscribed(series.id);
     
     return (
-      <div className="group relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl border border-gray-600/40 rounded-2xl sm:rounded-3xl p-4 sm:p-5 lg:p-6 shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 hover:scale-[1.02] hover:border-blue-500/30 overflow-hidden">
+      <div className={`group relative backdrop-blur-xl border rounded-2xl sm:rounded-3xl p-4 sm:p-5 lg:p-6 shadow-2xl transition-all duration-500 hover:scale-[1.02] overflow-hidden ${
+        isDark 
+          ? 'bg-gradient-to-br from-gray-800/60 to-gray-900/60 border-gray-600/40 hover:shadow-blue-500/10 hover:border-blue-500/30'
+          : 'bg-white/90 border-slate-200/60 hover:shadow-slate-300/40 hover:border-slate-300/80'
+      }`}>
         {/* Background Glow Effect */}
         <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 rounded-2xl sm:rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
         
@@ -260,10 +275,16 @@ const TestSeriesList = ({
                 {getCategoryIcon(series.category)}
               </div>
               <div className="flex-1">
-                <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-1 group-hover:text-blue-200 transition-colors leading-tight">
+                <h3 className={`text-lg sm:text-xl lg:text-2xl font-bold mb-1 transition-colors leading-tight ${
+                  isDark 
+                    ? 'text-white group-hover:text-blue-200' 
+                    : 'text-slate-800 group-hover:text-blue-600'
+                }`}>
                   {series.title}
                 </h3>
-                <div className="text-xs sm:text-sm text-gray-400 capitalize">
+                <div className={`text-xs sm:text-sm capitalize ${
+                  isDark ? 'text-gray-400' : 'text-slate-600'
+                }`}>
                   {series.category || 'General'} • {series.createdByName || 'Anonymous'}
                   {series.examCategory && (
                     <span className="ml-2 text-purple-300">
@@ -279,49 +300,83 @@ const TestSeriesList = ({
               </div>
             </div>
             
-            <p className="text-sm sm:text-base text-gray-300 leading-relaxed line-clamp-2">
+            <p className={`text-sm sm:text-base leading-relaxed line-clamp-2 ${
+              isDark ? 'text-gray-300' : 'text-slate-600'
+            }`}>
               {series.description || 'Comprehensive test series to enhance your skills and knowledge.'}
             </p>
           </div>
 
           {/* Stats Grid */}
           <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4">
-            <div className="bg-blue-500/10 backdrop-blur-sm rounded-lg sm:rounded-xl p-2 sm:p-4 border border-blue-500/20">
+            <div className={`backdrop-blur-sm rounded-lg sm:rounded-xl p-2 sm:p-4 border ${
+              isDark 
+                ? 'bg-blue-500/10 border-blue-500/20' 
+                : 'bg-blue-50/80 border-blue-200/60'
+            }`}>
               <div className="flex items-center gap-2 sm:gap-3">
                 <FiBookOpen className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-blue-400" />
                 <div>
-                  <div className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-300">{series.totalTests || 0}</div>
-                  <div className="text-xs sm:text-sm text-blue-200">Tests</div>
+                  <div className={`text-lg sm:text-xl lg:text-2xl font-bold ${
+                    isDark ? 'text-blue-300' : 'text-blue-600'
+                  }`}>{series.totalTests || 0}</div>
+                  <div className={`text-xs sm:text-sm ${
+                    isDark ? 'text-blue-200' : 'text-blue-500'
+                  }`}>Tests</div>
                 </div>
               </div>
             </div>
             
-            <div className="bg-purple-500/10 backdrop-blur-sm rounded-lg sm:rounded-xl p-2 sm:p-4 border border-purple-500/20">
+            <div className={`backdrop-blur-sm rounded-lg sm:rounded-xl p-2 sm:p-4 border ${
+              isDark 
+                ? 'bg-purple-500/10 border-purple-500/20' 
+                : 'bg-purple-50/80 border-purple-200/60'
+            }`}>
               <div className="flex items-center gap-2 sm:gap-3">
                 <FiUsers className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-purple-400" />
                 <div>
-                  <div className="text-lg sm:text-xl lg:text-2xl font-bold text-purple-300">{series.totalSubscribers || 0}</div>
-                  <div className="text-xs sm:text-sm text-purple-200">Students</div>
+                  <div className={`text-lg sm:text-xl lg:text-2xl font-bold ${
+                    isDark ? 'text-purple-300' : 'text-purple-600'
+                  }`}>{series.totalSubscribers || 0}</div>
+                  <div className={`text-xs sm:text-sm ${
+                    isDark ? 'text-purple-200' : 'text-purple-500'
+                  }`}>Students</div>
                 </div>
               </div>
             </div>
 
-            <div className="bg-emerald-500/10 backdrop-blur-sm rounded-lg sm:rounded-xl p-2 sm:p-4 border border-emerald-500/20">
+            <div className={`backdrop-blur-sm rounded-lg sm:rounded-xl p-2 sm:p-4 border ${
+              isDark 
+                ? 'bg-emerald-500/10 border-emerald-500/20' 
+                : 'bg-emerald-50/80 border-emerald-200/60'
+            }`}>
               <div className="flex items-center gap-2 sm:gap-3">
                 <FiClock className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-emerald-400" />
                 <div>
-                  <div className="text-lg sm:text-xl lg:text-2xl font-bold text-emerald-300">{series.estimatedDuration || 60}</div>
-                  <div className="text-xs sm:text-sm text-emerald-200">Minutes</div>
+                  <div className={`text-lg sm:text-xl lg:text-2xl font-bold ${
+                    isDark ? 'text-emerald-300' : 'text-emerald-600'
+                  }`}>{series.estimatedDuration || 60}</div>
+                  <div className={`text-xs sm:text-sm ${
+                    isDark ? 'text-emerald-200' : 'text-emerald-500'
+                  }`}>Minutes</div>
                 </div>
               </div>
             </div>
 
-            <div className="bg-yellow-500/10 backdrop-blur-sm rounded-lg sm:rounded-xl p-2 sm:p-4 border border-yellow-500/20">
+            <div className={`backdrop-blur-sm rounded-lg sm:rounded-xl p-2 sm:p-4 border ${
+              isDark 
+                ? 'bg-yellow-500/10 border-yellow-500/20' 
+                : 'bg-yellow-50/80 border-yellow-200/60'
+            }`}>
               <div className="flex items-center gap-2 sm:gap-3">
                 <FiStar className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-yellow-400" />
                 <div>
-                  <div className="text-lg sm:text-xl lg:text-2xl font-bold text-yellow-300">4.8</div>
-                  <div className="text-xs sm:text-sm text-yellow-200">Rating</div>
+                  <div className={`text-lg sm:text-xl lg:text-2xl font-bold ${
+                    isDark ? 'text-yellow-300' : 'text-yellow-600'
+                  }`}>4.8</div>
+                  <div className={`text-xs sm:text-sm ${
+                    isDark ? 'text-yellow-200' : 'text-yellow-500'
+                  }`}>Rating</div>
                 </div>
               </div>
             </div>
@@ -335,10 +390,14 @@ const TestSeriesList = ({
             
             {series.isPaid && (
               <div className="text-right">
-                <div className="text-3xl font-black text-emerald-400">
+                <div className={`text-3xl font-black ${
+                  isDark ? 'text-emerald-400' : 'text-emerald-600'
+                }`}>
                   ₹{series.price}
                 </div>
-                <div className="text-xs text-gray-400">one-time payment</div>
+                <div className={`text-xs ${
+                  isDark ? 'text-gray-400' : 'text-slate-500'
+                }`}>one-time payment</div>
               </div>
             )}
           </div>
@@ -429,7 +488,11 @@ const TestSeriesList = ({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900/10 to-purple-900/10">
+      <div className={`min-h-screen transition-all duration-500 ${
+        isDark 
+          ? 'bg-gradient-to-br from-gray-900 via-blue-900/10 to-purple-900/10' 
+          : 'bg-white'
+      }`}>
         <div className="container-responsive">
           <div className="fixed inset-0 overflow-hidden pointer-events-none">
             <div className="absolute -top-40 -right-40 w-48 sm:w-80 h-48 sm:h-80 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
@@ -466,23 +529,39 @@ const TestSeriesList = ({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900/10 to-purple-900/10">
+    <div className={`min-h-screen transition-all duration-500 ${
+      isDark 
+        ? 'bg-gradient-to-br from-gray-900 via-blue-900/10 to-purple-900/10' 
+        : 'bg-white'
+    }`}>
       <div className="container-responsive">
         {/* Background Elements */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-40 -right-40 w-48 sm:w-80 h-48 sm:h-80 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute -bottom-40 -left-40 w-48 sm:w-80 h-48 sm:h-80 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 sm:w-96 h-64 sm:h-96 bg-gradient-to-r from-blue-500/5 to-purple-500/5 rounded-full blur-3xl"></div>
+          <div className={`absolute -top-40 -right-40 w-48 sm:w-80 h-48 sm:h-80 rounded-full blur-3xl animate-pulse ${
+            isDark ? 'bg-blue-500/10' : 'bg-blue-400/8'
+          }`}></div>
+          <div className={`absolute -bottom-40 -left-40 w-48 sm:w-80 h-48 sm:h-80 rounded-full blur-3xl animate-pulse delay-1000 ${
+            isDark ? 'bg-purple-500/10' : 'bg-indigo-400/6'
+          }`}></div>
+          <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 sm:w-96 h-64 sm:h-96 rounded-full blur-3xl ${
+            isDark ? 'bg-gradient-to-r from-blue-500/5 to-purple-500/5' : 'bg-blue-300/5'
+          }`}></div>
           
           {/* Additional floating elements */}
-          <div className="absolute top-1/4 right-1/4 w-32 h-32 bg-cyan-500/5 rounded-full blur-2xl animate-pulse delay-2000"></div>
-          <div className="absolute bottom-1/4 right-1/3 w-24 h-24 bg-green-500/5 rounded-full blur-2xl animate-pulse delay-1500"></div>
-          <div className="absolute top-3/4 left-1/3 w-40 h-40 bg-yellow-500/5 rounded-full blur-2xl animate-pulse delay-3000"></div>
+          <div className={`absolute top-1/4 right-1/4 w-32 h-32 rounded-full blur-2xl animate-pulse delay-2000 ${
+            isDark ? 'bg-cyan-500/5' : 'bg-cyan-400/3'
+          }`}></div>
+          <div className={`absolute bottom-1/4 right-1/3 w-24 h-24 rounded-full blur-2xl animate-pulse delay-1500 ${
+            isDark ? 'bg-green-500/5' : 'bg-green-400/3'
+          }`}></div>
+          <div className={`absolute top-3/4 left-1/3 w-40 h-40 rounded-full blur-2xl animate-pulse delay-3000 ${
+            isDark ? 'bg-yellow-500/5' : 'bg-yellow-400/3'
+          }`}></div>
           
           {/* Animated grid pattern */}
-          <div className="absolute inset-0 opacity-5">
+          <div className={`absolute inset-0 ${isDark ? 'opacity-5' : 'opacity-3'}`}>
             <div className="absolute inset-0" style={{
-              backgroundImage: `radial-gradient(circle at 1px 1px, rgba(59, 130, 246, 0.3) 1px, transparent 0)`,
+              backgroundImage: `radial-gradient(circle at 1px 1px, ${isDark ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.1)'} 1px, transparent 0)`,
               backgroundSize: '40px 40px'
             }}></div>
           </div>
@@ -492,18 +571,27 @@ const TestSeriesList = ({
         <div className="relative z-10 mb-8 sm:mb-12">
           <div className="text-center mb-8 sm:mb-12">
             {/* Floating Elements */}
-            <div className="absolute top-0 left-1/4 w-4 h-4 bg-blue-400/30 rounded-full animate-bounce delay-100"></div>
-            <div className="absolute top-8 right-1/4 w-3 h-3 bg-purple-400/30 rounded-full animate-bounce delay-300"></div>
-            <div className="absolute top-16 left-1/3 w-2 h-2 bg-cyan-400/30 rounded-full animate-bounce delay-500"></div>
+            <div className={`absolute top-0 left-1/4 w-4 h-4 rounded-full animate-bounce delay-100 ${
+              isDark ? 'bg-blue-400/30' : 'bg-blue-400/20'
+            }`}></div>
+            <div className={`absolute top-8 right-1/4 w-3 h-3 rounded-full animate-bounce delay-300 ${
+              isDark ? 'bg-purple-400/30' : 'bg-purple-400/20'
+            }`}></div>
+            <div className={`absolute top-16 left-1/3 w-2 h-2 rounded-full animate-bounce delay-500 ${
+              isDark ? 'bg-cyan-400/30' : 'bg-cyan-400/20'
+            }`}></div>
             
             {/* Main Title Section */}
             <div className="relative mb-6 sm:mb-8">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-cyan-600/20 blur-3xl rounded-full"></div>
+              <div className={`absolute inset-0 blur-3xl rounded-full ${
+                isDark ? 'bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-cyan-600/20' : 'bg-gradient-to-r from-blue-400/10 via-purple-400/10 to-cyan-400/10'
+              }`}></div>
               <div className="relative flex items-center justify-center mb-6">
-                <div className="bg-gradient-to-br from-blue-500 via-purple-600 to-cyan-600 p-6 sm:p-8 rounded-3xl mr-6 shadow-2xl animate-pulse animate-glow">
-                  <FaGraduationCap className="w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 text-white" />
-                </div>
-                <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-200 via-purple-200 to-cyan-200 leading-tight gradient-text">
+                <h1 className={`text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black leading-tight gradient-text ${
+                  isDark 
+                    ? 'text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-200 via-purple-200 to-cyan-200'
+                    : 'text-transparent bg-clip-text bg-gradient-to-r from-slate-800 via-blue-600 via-purple-600 to-cyan-600'
+                }`}>
                   Test Series Hub
                 </h1>
               </div>
@@ -511,7 +599,9 @@ const TestSeriesList = ({
             
             {/* Subtitle with enhanced styling */}
             <div className="relative mb-8">
-              <p className="text-lg sm:text-xl lg:text-2xl text-gray-300 flex items-center justify-center gap-3 mb-4">
+              <p className={`text-lg sm:text-xl lg:text-2xl flex items-center justify-center gap-3 mb-4 ${
+                isDark ? 'text-gray-300' : 'text-slate-600'
+              }`}>
                 <FiZap className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400 animate-pulse" />
                 <span className="hidden sm:inline">Comprehensive test series to accelerate your success</span>
                 <span className="sm:hidden">Accelerate your success</span>
@@ -525,12 +615,14 @@ const TestSeriesList = ({
             {/* Enhanced Create Button for Admins */}
             {isAdmin && (
               <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-cyan-600/20 blur-2xl rounded-full animate-pulse"></div>
+                <div className={`absolute inset-0 blur-2xl rounded-full animate-pulse ${
+                  isDark ? 'bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-cyan-600/20' : 'bg-gradient-to-r from-blue-400/10 via-purple-400/10 to-cyan-400/10'
+                }`}></div>
                 <button
                   onClick={onCreateSeries}
-                  className="group relative bg-gradient-to-r from-blue-600 via-purple-600 to-cyan-600 hover:from-blue-700 hover:via-purple-700 hover:to-cyan-700 text-white font-bold rounded-2xl sm:rounded-3xl px-8 sm:px-10 lg:px-12 py-4 sm:py-5 lg:py-6 transition-all duration-500 transform hover:scale-110 shadow-2xl hover:shadow-blue-500/25 border border-blue-400/30"
+                  className="group relative bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-2xl sm:rounded-3xl px-8 sm:px-10 lg:px-12 py-4 sm:py-5 lg:py-6 transition-all duration-500 transform hover:scale-110 shadow-2xl hover:shadow-purple-500/25 border border-purple-400/30"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-2xl sm:rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <div className="absolute inset-0 bg-purple-400/20 rounded-2xl sm:rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                   <div className="relative flex items-center gap-3 sm:gap-4">
                     <div className="p-2 bg-white/20 rounded-xl">
                       <FiPlus className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7" />
@@ -546,11 +638,17 @@ const TestSeriesList = ({
 
         {/* Enhanced Search and Filter */}
         <div className="relative z-10 mb-8 sm:mb-12">
-          <div className="bg-gradient-to-r from-gray-800/80 to-gray-700/80 backdrop-blur-xl border border-gray-600/60 rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl shadow-blue-500/10">
+          <div className={`backdrop-blur-xl border rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl ${
+            isDark 
+              ? 'bg-gradient-to-r from-gray-800/80 to-gray-700/80 border-gray-600/60 shadow-blue-500/10' 
+              : 'bg-white/90 border-slate-200/60 shadow-slate-200/40'
+          }`}>
             {/* Search Bar with enhanced styling */}
             <div className="flex flex-col lg:flex-row gap-6 sm:gap-8 mb-8">
               <div className="relative flex-1">
-                <div className="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 text-gray-400">
+                <div className={`absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 ${
+                  isDark ? 'text-gray-400' : 'text-slate-500'
+                }`}>
                   <FiSearch className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7" />
                 </div>
                 <input
@@ -558,7 +656,11 @@ const TestSeriesList = ({
                   placeholder="Search test series by title, category, or creator..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-14 sm:pl-16 pr-6 sm:pr-8 py-4 sm:py-5 rounded-2xl sm:rounded-3xl bg-gray-900/80 backdrop-blur-sm border-2 border-gray-600/60 text-white placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-300 font-medium text-base sm:text-lg lg:text-xl shadow-lg"
+                  className={`w-full pl-14 sm:pl-16 pr-6 sm:pr-8 py-4 sm:py-5 rounded-2xl sm:rounded-3xl backdrop-blur-sm border-2 focus:outline-none focus:ring-4 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-300 font-medium text-base sm:text-lg lg:text-xl shadow-lg ${
+                    isDark 
+                      ? 'bg-gray-900/80 border-gray-600/60 text-white placeholder-gray-400' 
+                      : 'bg-white/80 border-slate-300/60 text-slate-800 placeholder-slate-500'
+                  }`}
                 />
                 <div className="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2">
                   <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
@@ -571,8 +673,10 @@ const TestSeriesList = ({
                   onClick={() => setViewMode('grid')}
                   className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl transition-all duration-300 transform hover:scale-110 ${
                     viewMode === 'grid'
-                      ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-2xl shadow-blue-500/25 border-2 border-blue-400/30'
-                      : 'bg-gray-700/60 text-gray-300 hover:bg-gray-600/60 border-2 border-gray-600/40 hover:border-gray-500/60'
+                      ? 'bg-purple-600 text-white shadow-2xl shadow-purple-500/25 border-2 border-purple-400/30'
+                      : isDark 
+                        ? 'bg-gray-700/60 text-gray-300 hover:bg-gray-600/60 border-2 border-gray-600/40 hover:border-gray-500/60'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border-2 border-slate-300 hover:border-slate-400'
                   }`}
                 >
                   <FiGrid className="w-6 h-6 sm:w-7 sm:h-7" />
@@ -582,7 +686,9 @@ const TestSeriesList = ({
                   className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl transition-all duration-300 transform hover:scale-110 ${
                     viewMode === 'list'
                       ? 'bg-gradient-to-r from-purple-500 to-cyan-600 text-white shadow-2xl shadow-purple-500/25 border-2 border-purple-400/30'
-                      : 'bg-gray-700/60 text-gray-300 hover:bg-gray-600/60 border-2 border-gray-600/40 hover:border-gray-500/60'
+                      : isDark 
+                        ? 'bg-gray-700/60 text-gray-300 hover:bg-gray-600/60 border-2 border-gray-600/40 hover:border-gray-500/60'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border-2 border-slate-300 hover:border-slate-400'
                   }`}
                 >
                   <FiList className="w-6 h-6 sm:w-7 sm:h-7" />
@@ -594,7 +700,9 @@ const TestSeriesList = ({
             <div className="flex flex-col lg:flex-row gap-4 mb-6">
               {/* Main Category Dropdown */}
               <div className="relative flex-1">
-                <label className="block text-sm font-semibold text-gray-300 mb-2 flex items-center gap-2">
+                <label className={`block text-sm font-semibold mb-2 flex items-center gap-2 ${
+                  isDark ? 'text-gray-300' : 'text-slate-700'
+                }`}>
                   <FiFilter className="w-4 h-4 text-purple-400" />
                   Exam Category
                 </label>
@@ -604,7 +712,11 @@ const TestSeriesList = ({
                     setSelectedExamCategory(e.target.value);
                     setSelectedSubcategory(''); // Reset subcategory when main category changes
                   }}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-900/60 backdrop-blur-sm border border-gray-600/40 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none transition-all duration-300 font-medium text-sm"
+                  className={`w-full px-4 py-3 rounded-xl backdrop-blur-sm border focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none transition-all duration-300 font-medium text-sm ${
+                    isDark 
+                      ? 'bg-gray-900/60 border-gray-600/40 text-white' 
+                      : 'bg-white/80 border-slate-300/60 text-slate-800'
+                  }`}
                 >
                   <option value="">All Categories</option>
                   {examCategories.map(category => (
@@ -613,12 +725,16 @@ const TestSeriesList = ({
                     </option>
                   ))}
                 </select>
-                <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                <FiChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${
+                  isDark ? 'text-gray-400' : 'text-slate-500'
+                }`} />
               </div>
 
               {/* Subcategory Dropdown */}
               <div className="relative flex-1">
-                <label className="block text-sm font-semibold text-gray-300 mb-2 flex items-center gap-2">
+                <label className={`block text-sm font-semibold mb-2 flex items-center gap-2 ${
+                  isDark ? 'text-gray-300' : 'text-slate-700'
+                }`}>
                   <FiFilter className="w-4 h-4 text-blue-400" />
                   Specific Exam
                 </label>
@@ -628,8 +744,12 @@ const TestSeriesList = ({
                   disabled={!selectedExamCategory}
                   className={`w-full px-4 py-3 rounded-xl backdrop-blur-sm border appearance-none transition-all duration-300 font-medium text-sm ${
                     selectedExamCategory
-                      ? 'bg-gray-900/60 border-gray-600/40 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-                      : 'bg-gray-800/40 border-gray-700/40 text-gray-500 cursor-not-allowed'
+                      ? isDark 
+                        ? 'bg-gray-900/60 border-gray-600/40 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+                        : 'bg-white/80 border-slate-300/60 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+                      : isDark 
+                        ? 'bg-gray-800/40 border-gray-700/40 text-gray-500 cursor-not-allowed'
+                        : 'bg-slate-100/80 border-slate-200/60 text-slate-500 cursor-not-allowed'
                   }`}
                 >
                   <option value="">All Exams</option>
@@ -641,7 +761,9 @@ const TestSeriesList = ({
                       </option>
                     ))}
                 </select>
-                <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                <FiChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${
+                  isDark ? 'text-gray-400' : 'text-slate-500'
+                }`} />
               </div>
 
               {/* Clear Filters Button */}
@@ -674,7 +796,9 @@ const TestSeriesList = ({
                   className={`group relative flex items-center gap-3 px-6 sm:px-8 py-3 sm:py-4 rounded-2xl font-bold transition-all duration-500 hover:scale-110 ${
                     activeFilter === filter.id
                       ? `bg-gradient-to-r ${filter.bg} text-white shadow-2xl shadow-${filter.color}-500/25 border-2 ${filter.border}`
-                      : 'bg-gray-800/80 backdrop-blur-xl border-2 border-gray-600/60 text-gray-300 hover:bg-gray-700/80 hover:border-gray-500/60 shadow-lg hover:shadow-xl'
+                      : isDark 
+                        ? 'bg-gray-800/80 backdrop-blur-xl border-2 border-gray-600/60 text-gray-300 hover:bg-gray-700/80 hover:border-gray-500/60 shadow-lg hover:shadow-xl'
+                        : 'bg-white/80 backdrop-blur-xl border-2 border-slate-300/60 text-slate-700 hover:bg-slate-100/80 hover:border-slate-400/60 shadow-lg hover:shadow-xl'
                   }`}
                 >
                   <filter.icon className={`w-5 h-5 sm:w-6 sm:h-6 ${activeFilter === filter.id ? 'animate-pulse' : ''}`} />
@@ -704,7 +828,11 @@ const TestSeriesList = ({
             <div className="text-center py-16 sm:py-24 lg:py-32">
               {/* Enhanced Text Content */}
               <div className="relative mb-8 sm:mb-12">
-                              <h3 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-200 to-purple-200 mb-4 sm:mb-6 leading-tight">
+                              <h3 className={`text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-black text-transparent bg-clip-text mb-4 sm:mb-6 leading-tight ${
+                isDark 
+                  ? 'bg-gradient-to-r from-white via-blue-200 to-purple-200'
+                  : 'bg-gradient-to-r from-slate-800 via-blue-600 to-purple-600'
+              }`}>
                 {(() => {
                   if (searchTerm) return 'No Matching Series Found';
                   if (selectedSubcategory && filteredSeries.length === 0) return 'No Test Series in This Subcategory';
@@ -715,7 +843,9 @@ const TestSeriesList = ({
                   return 'Ready to Begin Your Journey?';
                 })()}
               </h3>
-              <p className="text-base sm:text-lg lg:text-xl xl:text-2xl text-gray-300 mb-6 sm:mb-8 max-w-3xl mx-auto leading-relaxed">
+              <p className={`text-base sm:text-lg lg:text-xl xl:text-2xl mb-6 sm:mb-8 max-w-3xl mx-auto leading-relaxed ${
+                isDark ? 'text-gray-300' : 'text-slate-600'
+              }`}>
                 {(() => {
                   if (searchTerm) return 'Try adjusting your search criteria or exploring different categories to find the perfect test series for you.';
                   if (selectedSubcategory && filteredSeries.length === 0) return `No test series currently exist in the "${selectedSubcategory}" subcategory. Try selecting a different subcategory or check back later for new content.`;
@@ -775,9 +905,9 @@ const TestSeriesList = ({
                 {isAdmin && (
                   <button
                     onClick={onCreateSeries}
-                    className="group relative bg-gradient-to-r from-blue-600 via-purple-600 to-cyan-600 hover:from-blue-700 hover:via-purple-700 hover:to-cyan-700 text-white font-bold rounded-2xl sm:rounded-3xl px-8 sm:px-10 lg:px-12 py-4 sm:py-5 lg:py-6 transition-all duration-500 transform hover:scale-110 shadow-2xl hover:shadow-blue-500/25 border-2 border-blue-400/30"
+                    className="group relative bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-2xl sm:rounded-3xl px-8 sm:px-10 lg:px-12 py-4 sm:py-5 lg:py-6 transition-all duration-500 transform hover:scale-110 shadow-2xl hover:shadow-purple-500/25 border-2 border-purple-400/30"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-2xl sm:rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <div className="absolute inset-0 bg-purple-400/20 rounded-2xl sm:rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <div className="relative flex items-center gap-3 sm:gap-4">
                       <div className="p-2 bg-white/20 rounded-xl">
                         <FiPlus className="w-6 h-6 sm:w-7 sm:h-7" />
