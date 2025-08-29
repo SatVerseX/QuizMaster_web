@@ -3,6 +3,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
+import usePopup from '../../hooks/usePopup';
+import BeautifulPopup from '../common/BeautifulPopup';
 import { FiArrowLeft, FiRefreshCw, FiAlertCircle } from 'react-icons/fi';
 import TestAttemptHeader from './TestAttemptHeader';
 import PerformanceOverview from './PerformanceOverview';
@@ -13,6 +15,7 @@ import ShareModal from './ShareModal';
 const TestAttemptDetails = ({ attempt, onBack, testSeriesId, testSeries: propTestSeries }) => {
   const { currentUser } = useAuth();
   const { isDark } = useTheme();
+  const { popupState, showError, showSuccess, hidePopup } = usePopup();
   const [testDetails, setTestDetails] = useState(null);
   const [testSeries, setTestSeries] = useState(propTestSeries);
   const [loading, setLoading] = useState(true);
@@ -38,6 +41,17 @@ const TestAttemptDetails = ({ attempt, onBack, testSeriesId, testSeries: propTes
 
     loadTestDetails();
   }, [attempt]);
+
+  // Add a small delay to show loading state when attempt data is being loaded
+  useEffect(() => {
+    if (attempt && attempt.id) {
+      setLoading(true);
+      const timer = setTimeout(() => {
+        loadTestDetails();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [attempt?.id]);
 
   // Update testSeries when prop changes
   useEffect(() => {
@@ -154,7 +168,11 @@ const TestAttemptDetails = ({ attempt, onBack, testSeriesId, testSeries: propTes
               Back to History
             </button>
             <button
-              onClick={() => window.location.reload()}
+              onClick={() => {
+                setError(null);
+                setLoading(true);
+                loadTestDetails();
+              }}
               className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2"
             >
               <FiRefreshCw className="w-5 h-5" />
@@ -273,11 +291,30 @@ const TestAttemptDetails = ({ attempt, onBack, testSeriesId, testSeries: propTes
           </button>
           
           <button
-            onClick={() => window.location.reload()}
+            onClick={async () => {
+              if (safeAttempt.testId) {
+                try {
+                  // Load the test data first
+                  const testDoc = await getDoc(doc(db, 'quizzes', safeAttempt.testId));
+                  if (testDoc.exists()) {
+                    const testData = { id: testDoc.id, ...testDoc.data() };
+                    // Navigate to take the test again with proper data
+                    window.location.href = `/test/${safeAttempt.testId}/take`;
+                  } else {
+                    showError('Test not found. It may have been deleted.', 'Test Not Found');
+                  }
+                } catch (error) {
+                  console.error('Error loading test:', error);
+                  showError('Failed to load test. Please try again.', 'Load Error');
+                }
+              } else {
+                showError('Unable to retake test. Test information not available.', 'Retake Error');
+              }
+            }}
             className="group relative bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl px-6 sm:px-8 py-3 sm:py-4 transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-blue-500/25 w-full sm:w-auto"
           >
             <div className="relative flex items-center justify-center gap-3">
-              
+              <FiRefreshCw className="w-5 h-5" />
               <span>Retake Test</span>
             </div>
           </button>
@@ -304,6 +341,12 @@ const TestAttemptDetails = ({ attempt, onBack, testSeriesId, testSeries: propTes
             />
           </ErrorBoundary>
         )}
+
+        {/* Beautiful Popup */}
+        <BeautifulPopup
+          {...popupState}
+          onClose={hidePopup}
+        />
       </div>
     </div>
   );

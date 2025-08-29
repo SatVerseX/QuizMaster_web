@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { collection, addDoc, doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
+import usePopup from '../../hooks/usePopup';
+import BeautifulPopup from '../common/BeautifulPopup';
 import { 
   FiPlus, 
   FiTrash2, 
@@ -28,6 +30,7 @@ import { FaMagic, FaGraduationCap, FaBrain } from 'react-icons/fa';
 
 const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
   const { currentUser } = useAuth();
+  const { popupState, showError, showSuccess, hidePopup } = usePopup();
   const [loading, setLoading] = useState(false);
   const [quizData, setQuizData] = useState({
     title: '',
@@ -94,12 +97,12 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
 
   const handleCreateQuiz = async () => {
     if (!quizData.title.trim()) {
-      alert('Quiz title is required!');
+      showError('Quiz title is required!', 'Validation Error');
       return;
     }
 
     if (quizData.questions.some(q => !q.question.trim() || q.options.some(opt => !opt.trim()))) {
-      alert('All questions and options must be filled!');
+      showError('All questions and options must be filled!', 'Validation Error');
       return;
     }
 
@@ -149,7 +152,7 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
 
     } catch (error) {
       console.error('Error creating quiz:', error);
-      alert('Failed to create quiz. Please try again.');
+      showError('Failed to create quiz. Please try again.', 'Creation Error');
     } finally {
       setLoading(false);
     }
@@ -515,6 +518,12 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
           </div>
         </div>
       </div>
+
+      {/* Beautiful Popup */}
+      <BeautifulPopup
+        {...popupState}
+        onClose={hidePopup}
+      />
     </div>
   );
 };

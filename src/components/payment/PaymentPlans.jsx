@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSubscription } from '../../contexts/SubscriptionContext';
 import { PaymentService } from '../../services/paymentService';
+import usePopup from '../../hooks/usePopup';
+import BeautifulPopup from '../common/BeautifulPopup';
 import { 
   FiCheck, 
   FiStar, 
@@ -16,6 +18,7 @@ import {
 const PaymentPlans = ({ onSuccess, onCancel, requiredPlan = null }) => {
   const { currentUser } = useAuth();
   const { subscription, updateSubscription } = useSubscription();
+  const { popupState, showError, showSuccess, hidePopup } = usePopup();
   const [plans, setPlans] = useState({});
   const [loading, setLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
@@ -41,7 +44,7 @@ const PaymentPlans = ({ onSuccess, onCancel, requiredPlan = null }) => {
       // Load Razorpay script
       const scriptLoaded = await PaymentService.loadRazorpayScript();
       if (!scriptLoaded) {
-        alert('Razorpay SDK failed to load. Please check your internet connection.');
+        showError('Razorpay SDK failed to load. Please check your internet connection.', 'Connection Error');
         return;
       }
 
@@ -79,13 +82,13 @@ const PaymentPlans = ({ onSuccess, onCancel, requiredPlan = null }) => {
               onSuccess && onSuccess(verificationResult.subscription);
               
               // Show success message
-              alert(`🎉 Payment successful! Welcome to ${orderData.plan.name}!`);
+              showSuccess(`Welcome to ${orderData.plan.name}!`, 'Payment Successful');
             } else {
-              alert('❌ Payment verification failed. Please contact support.');
+              showError('Payment verification failed. Please contact support.', 'Verification Failed');
             }
           } catch (error) {
             console.error('Payment verification failed:', error);
-            alert('❌ Payment verification failed. Please contact support.');
+            showError('Payment verification failed. Please contact support.', 'Verification Failed');
           }
         },
 
@@ -140,7 +143,7 @@ const PaymentPlans = ({ onSuccess, onCancel, requiredPlan = null }) => {
       
     } catch (error) {
       console.error('Payment error:', error);
-      alert('❌ Payment failed. Please try again.');
+      showError('Payment failed. Please try again.', 'Payment Error');
     } finally {
       setLoading(false);
       setSelectedPlan(null);
@@ -356,6 +359,12 @@ const PaymentPlans = ({ onSuccess, onCancel, requiredPlan = null }) => {
           </button>
         </div>
       )}
+
+      {/* Beautiful Popup */}
+      <BeautifulPopup
+        {...popupState}
+        onClose={hidePopup}
+      />
     </div>
   );
 };

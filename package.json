@@ -6,8 +6,13 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:prod": "cross-env NODE_ENV=production vite build",
+    "build:dev": "cross-env NODE_ENV=development vite build",
+    "build:prod:win": "scripts\\build-prod.bat",
+    "build:prod:unix": "scripts/build-prod.sh",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "vite preview --port 3000"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -17,12 +22,13 @@
     "@tailwindcss/postcss": "^4.1.11",
     "@tailwindcss/vite": "^4.1.11",
     "axios": "^1.10.0",
-    "firebase": "^12.0.0",
-    "framer-motion": "^12.23.6",
+    "firebase": "^10.7.1",
+    "framer-motion": "^12.23.12",
     "html2pdf.js": "^0.10.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-icons": "^5.5.0",
+    "react-intersection-observer": "^9.16.0",
     "react-razorpay": "^3.0.1",
     "react-router-dom": "^7.7.0",
     "tailwindcss": "^4.1.11",
@@ -32,11 +38,13 @@
     "@eslint/js": "^9.30.1",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
-    "@vitejs/plugin-react": "^4.6.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "cross-env": "^10.0.0",
     "eslint": "^9.30.1",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.3.0",
-    "vite": "^7.0.4"
+    "terser": "^5.28.1",
+    "vite": "^5.4.0"
   }
 }

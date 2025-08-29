@@ -2,8 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { FaPlay, FaPause, FaStop, FaDownload, FaMicrophone, FaSpinner, FaCog } from 'react-icons/fa';
 import VoiceExplanationService from '../../services/VoiceExplanationService'; // Gemini Flash voice service
 import VoiceSettings from './VoiceSettings';
+import usePopup from '../../../hooks/usePopup';
+import BeautifulPopup from '../../common/BeautifulPopup';
 
 const TestSeriesVoiceExplainer = ({ testSeries, testResults, reviewData }) => {
+  const { popupState, showError, showSuccess, hidePopup } = usePopup();
   const [isGenerating, setIsGenerating] = useState(false);
   const [audioBlob, setAudioBlob] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -56,7 +59,7 @@ const TestSeriesVoiceExplainer = ({ testSeries, testResults, reviewData }) => {
         audioRef.current.load();
       }
     } catch (error) {
-      alert('Voice generation failed. Try again.');
+      showError('Voice generation failed. Try again.', 'Voice Generation Error');
       console.error(error);
     }
     setIsGenerating(false);
@@ -177,6 +180,12 @@ const TestSeriesVoiceExplainer = ({ testSeries, testResults, reviewData }) => {
           </div>
         </div>
       )}
+
+      {/* Beautiful Popup */}
+      <BeautifulPopup
+        {...popupState}
+        onClose={hidePopup}
+      />
     </div>
   );
 };

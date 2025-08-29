@@ -33,6 +33,7 @@ import RefundPolicy from './components/legal/RefundPolicy';
 import ContactUs from './components/legal/ContactUs';
 import { db } from './lib/firebase';
 import { doc, updateDoc, increment, getDoc } from 'firebase/firestore';
+import { logger } from './utils/logger';
 
 const AppContent = () => {
   const { currentUser, isAdmin } = useAuth();
@@ -58,7 +59,7 @@ const AppContent = () => {
         totalViews: increment(1)
       });
     } catch (error) {
-      console.error('Failed to record free series view:', error);
+      logger.error('Failed to record free series view:', error);
     }
   };
 
@@ -104,19 +105,159 @@ const AppContent = () => {
       // Handle test-specific routes
       if (path.includes('/take')) {
         setCurrentView('take-test');
+        // Load test data from URL
+        const testId = path.split('/')[2];
+        if (testId && (!selectedItem || selectedItem.test?.id !== testId)) {
+          setIsLoadingSeries(true);
+          getDoc(doc(db, 'quizzes', testId))
+            .then((snap) => {
+              if (snap.exists()) {
+                const testData = { id: snap.id, ...snap.data() };
+                // Also try to load the test series if available
+                if (testData.testSeriesId) {
+                  return getDoc(doc(db, 'test-series', testData.testSeriesId))
+                    .then((seriesSnap) => {
+                      if (seriesSnap.exists()) {
+                        const seriesData = { id: seriesSnap.id, ...seriesSnap.data() };
+                        setSelectedItem({ test: testData, testSeries: seriesData });
+                      } else {
+                        setSelectedItem({ test: testData });
+                      }
+                    });
+                } else {
+                  setSelectedItem({ test: testData });
+                }
+              } else {
+                logger.error('Test not found:', testId);
+                navigate('/test-series');
+              }
+            })
+            .catch((err) => {
+              logger.error('Failed to load test:', err);
+              navigate('/test-series');
+            })
+            .finally(() => setIsLoadingSeries(false));
+        }
       } else if (path.includes('/leaderboard')) {
+        logger.log('App: Loading test leaderboard for path:', path);
         setCurrentView('test-leaderboard');
+        // Load test data from URL for leaderboard
+        const testId = path.split('/')[2];
+        logger.log('App: Extracted testId:', testId);
+        if (testId && (!selectedItem || selectedItem.id !== testId)) {
+          logger.log('App: Loading test data from Firestore for testId:', testId);
+          setIsLoadingSeries(true);
+          getDoc(doc(db, 'quizzes', testId))
+            .then((snap) => {
+              if (snap.exists()) {
+                const testData = { id: snap.id, ...snap.data() };
+                logger.log('App: Test data loaded:', testData);
+                // Also try to load the test series if available
+                if (testData.testSeriesId) {
+                  return getDoc(doc(db, 'test-series', testData.testSeriesId))
+                    .then((seriesSnap) => {
+                      if (seriesSnap.exists()) {
+                        const seriesData = { id: seriesSnap.id, ...seriesSnap.data() };
+                        logger.log('App: Series data loaded:', seriesData);
+                        setSelectedItem({ ...testData, testSeriesId: testData.testSeriesId });
+                      } else {
+                        setSelectedItem(testData);
+                      }
+                    });
+                } else {
+                  setSelectedItem(testData);
+                }
+              } else {
+                logger.error('Test not found:', testId);
+                navigate('/test-series');
+              }
+            })
+            .catch((err) => {
+              logger.error('Failed to load test:', err);
+              navigate('/test-series');
+            })
+            .finally(() => setIsLoadingSeries(false));
+        } else {
+          logger.log('App: Test data already loaded or no testId:', { testId, selectedItemId: selectedItem?.id });
+        }
       } else {
         // Default to take-test for test routes
         setCurrentView('take-test');
       }
     } else if (path.startsWith('/attempt/')) {
       setCurrentView('attempt-details');
+      // Load attempt data from URL
+      const attemptId = path.split('/')[2];
+      if (attemptId && (!selectedItem || selectedItem.id !== attemptId)) {
+        setIsLoadingSeries(true);
+        getDoc(doc(db, 'test-attempts', attemptId))
+          .then((snap) => {
+            if (snap.exists()) {
+              setSelectedItem({ id: snap.id, ...snap.data() });
+            } else {
+              logger.error('Attempt not found:', attemptId);
+              // Redirect to test history if attempt not found
+              navigate('/test-history');
+            }
+          })
+          .catch((err) => {
+            logger.error('Failed to load attempt:', err);
+            // Redirect to test history on error
+            navigate('/test-history');
+          })
+          .finally(() => setIsLoadingSeries(false));
+      }
     } else if (path.startsWith('/quiz/')) {
       if (path.includes('/take')) {
         setCurrentView('take-quiz');
+        // Load quiz data from URL
+        const quizId = path.split('/')[2];
+        if (quizId && (!selectedItem || selectedItem.id !== quizId)) {
+          setIsLoadingSeries(true);
+          getDoc(doc(db, 'quizzes', quizId))
+            .then((snap) => {
+              if (snap.exists()) {
+                const quizData = { id: snap.id, ...snap.data() };
+                setSelectedItem(quizData);
+              } else {
+                console.error('Quiz not found:', quizId);
+                navigate('/test-series');
+              }
+            })
+            .catch((err) => {
+              console.error('Failed to load quiz:', err);
+              navigate('/test-series');
+            })
+            .finally(() => setIsLoadingSeries(false));
+        }
       } else if (path.includes('/leaderboard')) {
+        logger.log('App: Loading quiz leaderboard for path:', path);
         setCurrentView('leaderboard');
+        // Load quiz data from URL for leaderboard
+        const quizId = path.split('/')[2];
+        logger.log('App: Extracted quizId:', quizId);
+        if (quizId && (!selectedItem || selectedItem.id !== quizId)) {
+          logger.log('App: Loading quiz data from Firestore for quizId:', quizId);
+          setIsLoadingSeries(true);
+          getDoc(doc(db, 'quizzes', quizId))
+            .then((snap) => {
+              if (snap.exists()) {
+                const quizData = { id: snap.id, ...snap.data() };
+                logger.log('App: Quiz data loaded:', quizData);
+                setSelectedItem(quizData);
+              } else {
+                logger.error('Quiz not found:', quizId);
+                navigate('/test-series');
+            }
+            })
+            .catch((err) => {
+              logger.error('Failed to load quiz:', err);
+              navigate('/test-series');
+            })
+            .finally(() => setIsLoadingSeries(false));
+        } else {
+          logger.log('App: Quiz data already loaded or no quizId:', { quizId, selectedItemId: selectedItem?.id });
+        }
       } else {
         // Default to take-quiz for quiz routes
         setCurrentView('take-quiz');
@@ -144,7 +285,7 @@ const AppContent = () => {
           }
         })
         .catch((err) => {
-          console.error('Failed to load test series:', err);
+          logger.error('Failed to load test series:', err);
         })
         .finally(() => setIsLoadingSeries(false));
     }
@@ -219,7 +360,7 @@ const AppContent = () => {
 
   // ENHANCED: Better test completion handling
   const handleTestCompleted = (attemptData) => {
-    console.log('Test completed successfully:', attemptData);
+    logger.log('Test completed successfully:', attemptData);
     // Navigate to attempt details immediately after test completion
     setSelectedItem(attemptData);
     setCurrentView('attempt-details');
@@ -517,6 +658,18 @@ const AppContent = () => {
 
       // Test attempt views
       case 'take-test':
+        if (isLoadingSeries || !selectedItem?.test) {
+          return (
+            <div className="animate-fade-in">
+              <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                  <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-lg text-gray-600 dark:text-gray-300">Loading test data...</p>
+                </div>
+              </div>
+            </div>
+          );
+        }
         return (
           <div className="animate-fade-in">
             <TestAttemptViewer
@@ -560,6 +713,18 @@ const AppContent = () => {
 
       // Individual test leaderboard
       case 'test-leaderboard':
+        if (isLoadingSeries) {
+          return (
+            <div className="animate-fade-in">
+              <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                  <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-lg text-gray-600 dark:text-gray-300">Loading quiz data...</p>
+                </div>
+              </div>
+            </div>
+          );
+        }
         return (
           <div className="animate-fade-in">
             <LeaderBoard
@@ -585,6 +750,18 @@ const AppContent = () => {
         );
 
       case 'take-quiz':
+        if (isLoadingSeries) {
+          return (
+            <div className="animate-fade-in">
+              <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                  <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-lg text-gray-600 dark:text-gray-300">Loading quiz data...</p>
+                </div>
+              </div>
+            </div>
+          );
+        }
         return (
           <div className="animate-fade-in">
             <QuizTaker
@@ -620,6 +797,18 @@ const AppContent = () => {
 
       // General quiz leaderboard (different from test leaderboard)
       case 'leaderboard':
+        if (isLoadingSeries) {
+          return (
+            <div className="animate-fade-in">
+              <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                  <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-lg text-gray-600 dark:text-gray-300">Loading quiz data...</p>
+                </div>
+              </div>
+            </div>
+          );
+        }
         return (
           <div className="animate-fade-in">
             <LeaderBoard
@@ -699,10 +888,11 @@ const AppContent = () => {
       </main>
 
       {/* Login Popup */}
-      <LoginPopup 
+      <LoginPopup
         isOpen={showLoginPopup}
         onClose={handleCloseLoginPopup}
         onLoginClick={handleLoginClick}
+        pendingAction={pendingAction}
       />
       
       {/* Professional Footer - only shown when not on welcome page */}

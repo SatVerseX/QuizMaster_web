@@ -14,6 +14,8 @@ import {
   getDoc
 } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
+import usePopup from '../../hooks/usePopup';
+import BeautifulPopup from '../common/BeautifulPopup';
 import { 
   FiDollarSign,
   FiUsers,
@@ -63,6 +65,7 @@ const TestSeriesDashboard = ({
   const navigate = useNavigate();
   const { currentUser, isAdmin } = useAuth();
   const { isDark } = useTheme();
+  const { popupState, showSuccess, showError, showConfirm, hidePopup } = usePopup();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
@@ -289,10 +292,10 @@ const TestSeriesDashboard = ({
         }
       }
       
-      alert('✅ Payment settings saved successfully!');
+      showSuccess('Payment settings saved successfully!', 'Settings Saved');
     } catch (error) {
       console.error('Error saving payment settings:', error);
-      alert('❌ Failed to save payment settings');
+      showError('Failed to save payment settings', 'Save Error');
     } finally {
       setSaving(false);
     }
@@ -304,21 +307,25 @@ const TestSeriesDashboard = ({
   };
 
   const handleDeleteQuiz = async (quizId) => {
-    if (window.confirm('Are you sure you want to delete this test? This action cannot be undone.')) {
-      try {
-        await deleteDoc(doc(db, 'quizzes', quizId));
-        
-        await updateDoc(doc(db, 'test-series', testSeries.id), {
-          totalQuizzes: Math.max(0, (dashboardData.quizzes.length - 1)),
-          updatedAt: new Date()
-        });
-        
-        alert('✅ Test deleted successfully!');
-      } catch (error) {
-        console.error('Error deleting quiz:', error);
-        alert('❌ Failed to delete test. Please try again.');
+    showConfirm(
+      'Are you sure you want to delete this test? This action cannot be undone.',
+      'Confirm Deletion',
+      async () => {
+        try {
+          await deleteDoc(doc(db, 'quizzes', quizId));
+          
+          await updateDoc(doc(db, 'test-series', testSeries.id), {
+            totalQuizzes: Math.max(0, (dashboardData.quizzes.length - 1)),
+            updatedAt: new Date()
+          });
+          
+          showSuccess('Test deleted successfully!', 'Test Deleted');
+        } catch (error) {
+          console.error('Error deleting quiz:', error);
+          showError('Failed to delete test. Please try again.', 'Delete Error');
+        }
       }
-    }
+    );
   };
 
   // NEW: Handle test taking
@@ -1060,6 +1067,12 @@ const TestSeriesDashboard = ({
           </div>
         </div>
       )}
+
+      {/* Beautiful Popup */}
+      <BeautifulPopup
+        {...popupState}
+        onClose={hidePopup}
+      />
     </div>
   );
 };

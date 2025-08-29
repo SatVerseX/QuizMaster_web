@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { FiX, FiLogIn, FiArrowRight, FiCheck, FiStar, FiUsers, FiAward } from 'react-icons/fi';
-import { FaPuzzlePiece, FaRocket, FaGraduationCap } from 'react-icons/fa';
+import { FiX, FiLogIn, FiArrowRight, FiCheck, FiStar, FiUsers, FiAward, FiTarget, FiTrendingUp, FiBookOpen } from 'react-icons/fi';
+import { FaPuzzlePiece, FaRocket, FaGraduationCap, FaCrown } from 'react-icons/fa';
 import { useTheme } from '../../contexts/ThemeContext';
 
-const LoginPopup = ({ isOpen, onClose, onLoginClick }) => {
+const LoginPopup = ({ isOpen, onClose, onLoginClick, pendingAction }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const { isDark } = useTheme();
@@ -17,6 +17,110 @@ const LoginPopup = ({ isOpen, onClose, onLoginClick }) => {
       setIsVisible(false);
     }
   }, [isOpen]);
+
+  // Get specific message and icon based on pending action
+  const getActionDetails = (action) => {
+    switch (action) {
+      case 'view-test-history':
+        return {
+          title: 'Track Your Progress',
+          subtitle: 'Login to view your test history and performance analytics',
+          icon: FiTarget,
+          color: 'from-blue-500 to-indigo-500',
+          features: [
+            { icon: FiTrendingUp, title: 'Performance Analytics', desc: 'Track your improvement over time' },
+            { icon: FiAward, title: 'Achievement History', desc: 'View all your completed tests and scores' },
+            { icon: FiBookOpen, title: 'Detailed Reports', desc: 'Analyze your strengths and weaknesses' }
+          ]
+        };
+      case 'view-attempts':
+        return {
+          title: 'View Your Attempts',
+          subtitle: 'Login to access your complete test attempt history',
+          icon: FiTarget,
+          color: 'from-blue-500 to-indigo-500',
+          features: [
+            { icon: FiTrendingUp, title: 'Performance Analytics', desc: 'Track your improvement over time' },
+            { icon: FiAward, title: 'Achievement History', desc: 'View all your completed tests and scores' },
+            { icon: FiBookOpen, title: 'Detailed Reports', desc: 'Analyze your strengths and weaknesses' }
+          ]
+        };
+      case 'take-test':
+        return {
+          title: 'Take Tests',
+          subtitle: 'Login to access premium test series and track your progress',
+          icon: FiBookOpen,
+          color: 'from-green-500 to-emerald-500',
+          features: [
+            { icon: FaCrown, title: 'Premium Content', desc: 'Access exclusive test series' },
+            { icon: FiUsers, title: 'Leaderboards', desc: 'Compete with other students' },
+            { icon: FiAward, title: 'Certificates', desc: 'Earn certificates for your achievements' }
+          ]
+        };
+      case 'take-quiz':
+        return {
+          title: 'Take Quizzes',
+          subtitle: 'Login to access quizzes and track your performance',
+          icon: FiBookOpen,
+          color: 'from-purple-500 to-pink-500',
+          features: [
+            { icon: FiStar, title: 'Practice Tests', desc: 'Improve your skills with practice' },
+            { icon: FiUsers, title: 'Leaderboards', desc: 'Compete with other students' },
+            { icon: FiAward, title: 'Achievements', desc: 'Earn badges for your progress' }
+          ]
+        };
+      case 'view-leaderboard':
+        return {
+          title: 'View Leaderboards',
+          subtitle: 'Login to see how you rank among other students',
+          icon: FiUsers,
+          color: 'from-yellow-500 to-orange-500',
+          features: [
+            { icon: FiAward, title: 'Global Rankings', desc: 'See where you stand worldwide' },
+            { icon: FiTrendingUp, title: 'Progress Tracking', desc: 'Monitor your ranking improvements' },
+            { icon: FiStar, title: 'Achievements', desc: 'Compare with top performers' }
+          ]
+        };
+      case 'create-series':
+        return {
+          title: 'Create Test Series',
+          subtitle: 'Login to create and manage your own test series',
+          icon: FaRocket,
+          color: 'from-purple-500 to-pink-500',
+          features: [
+            { icon: FiBookOpen, title: 'Content Creation', desc: 'Build comprehensive test series' },
+            { icon: FiUsers, title: 'Student Management', desc: 'Track student progress and performance' },
+            { icon: FiAward, title: 'Analytics', desc: 'Get detailed insights and reports' }
+          ]
+        };
+      case 'ai-generator':
+        return {
+          title: 'AI Test Generator',
+          subtitle: 'Login to use our AI-powered test generation tool',
+          icon: FaRocket,
+          color: 'from-indigo-500 to-purple-500',
+          features: [
+            { icon: FiStar, title: 'AI-Powered', desc: 'Generate tests with artificial intelligence' },
+            { icon: FiBookOpen, title: 'Smart Content', desc: 'Create relevant and challenging questions' },
+            { icon: FiAward, title: 'Time Saving', desc: 'Generate tests in minutes, not hours' }
+          ]
+        };
+      default:
+        return {
+          title: 'Welcome!',
+          subtitle: 'Unlock your full potential with QuizMaster',
+          icon: FaPuzzlePiece,
+          color: 'from-orange-500 to-red-500',
+          features: [
+            { icon: FaGraduationCap, title: 'Premium Tests', desc: 'Access exclusive content' },
+            { icon: FiUsers, title: 'Leaderboards', desc: 'Compete with peers' },
+            { icon: FiAward, title: 'Progress Tracking', desc: 'Monitor your growth' }
+          ]
+        };
+    }
+  };
+
+  const actionDetails = getActionDetails(pendingAction);
 
   if (!isOpen) return null;
 
@@ -76,8 +180,8 @@ const LoginPopup = ({ isOpen, onClose, onLoginClick }) => {
           <div className="flex justify-center mb-6 sm:mb-8 lg:mb-10">
             <div className="flex items-center gap-3">
               <div className="relative">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl sm:rounded-3xl shadow-lg shadow-orange-500/25 transition-all duration-300">
-                  <FaPuzzlePiece className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
+                <div className={`w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center bg-gradient-to-br ${actionDetails.color} rounded-2xl sm:rounded-3xl shadow-lg shadow-orange-500/25 transition-all duration-300`}>
+                  <actionDetails.icon className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
                 </div>
               </div>
               <div className="text-left">
@@ -99,82 +203,40 @@ const LoginPopup = ({ isOpen, onClose, onLoginClick }) => {
             <h2 className={`text-2xl sm:text-3xl font-bold mb-2 sm:mb-4 transition-all duration-300 ${
               isDark ? 'text-white' : 'text-slate-800'
             }`}>
-              Welcome!
+              {actionDetails.title}
             </h2>
             <p className={`text-base sm:text-lg transition-all duration-300 ${
               isDark ? 'text-slate-300' : 'text-slate-600'
             }`}>
-              Unlock your full potential with QuizMaster
+              {actionDetails.subtitle}
             </p>
           </div>
 
           {/* Feature Highlights with Better Alignment and Spacing - Matching WelcomePage */}
           <div className="grid grid-cols-1 gap-4 sm:gap-6 mb-6 sm:mb-8 lg:mb-10">
-            <div className={`flex items-center gap-3 p-3 sm:p-4 rounded-xl border shadow-sm transition-all duration-300 ${
-              isDark 
-                ? 'bg-slate-700/50 border-slate-600/50' 
-                : 'bg-white border-slate-200/60'
-            }`}>
-              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 border shadow-sm transition-all duration-300 ${
+            {actionDetails.features.map((feature, index) => (
+              <div key={index} className={`flex items-center gap-3 p-3 sm:p-4 rounded-xl border shadow-sm transition-all duration-300 ${
                 isDark 
-                  ? 'bg-slate-600/50 border-slate-500/50' 
-                  : 'bg-white border-blue-200/60'
+                  ? 'bg-slate-700/50 border-slate-600/50' 
+                  : 'bg-white border-slate-200/60'
               }`}>
-                <FaGraduationCap className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+                <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 border shadow-sm transition-all duration-300 ${
+                  isDark 
+                    ? 'bg-slate-600/50 border-slate-500/50' 
+                    : 'bg-white border-blue-200/60'
+                }`}>
+                  <feature.icon className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className={`text-sm font-semibold mb-1 transition-all duration-300 ${
+                    isDark ? 'text-white' : 'text-slate-800'
+                  }`}>{feature.title}</div>
+                  <div className={`text-xs transition-all duration-300 ${
+                    isDark ? 'text-slate-400' : 'text-slate-600'
+                  }`}>{feature.desc}</div>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <div className={`text-sm font-semibold mb-1 transition-all duration-300 ${
-                  isDark ? 'text-white' : 'text-slate-800'
-                }`}>Premium Tests</div>
-                <div className={`text-xs transition-all duration-300 ${
-                  isDark ? 'text-slate-400' : 'text-slate-600'
-                }`}>Access exclusive content</div>
-              </div>
-            </div>
-
-            <div className={`flex items-center gap-3 p-3 sm:p-4 rounded-xl border shadow-sm transition-all duration-300 ${
-              isDark 
-                ? 'bg-slate-700/50 border-slate-600/50' 
-                : 'bg-white border-slate-200/60'
-            }`}>
-              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 border shadow-sm transition-all duration-300 ${
-                isDark 
-                  ? 'bg-slate-600/50 border-slate-500/50' 
-                  : 'bg-white border-purple-200/60'
-              }`}>
-                <FiUsers className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className={`text-sm font-semibold mb-1 transition-all duration-300 ${
-                  isDark ? 'text-white' : 'text-slate-800'
-                }`}>Leaderboards</div>
-                <div className={`text-xs transition-all duration-300 ${
-                  isDark ? 'text-slate-400' : 'text-slate-600'
-                }`}>Compete with peers</div>
-              </div>
-            </div>
-
-            <div className={`flex items-center gap-3 p-3 sm:p-4 rounded-xl border shadow-sm transition-all duration-300 ${
-              isDark 
-                ? 'bg-slate-700/50 border-slate-600/50' 
-                : 'bg-white border-slate-200/60'
-            }`}>
-              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 border shadow-sm transition-all duration-300 ${
-                isDark 
-                  ? 'bg-slate-600/50 border-slate-500/50' 
-                  : 'bg-white border-green-200/60'
-              }`}>
-                <FiAward className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className={`text-sm font-semibold mb-1 transition-all duration-300 ${
-                  isDark ? 'text-white' : 'text-slate-800'
-                }`}>Progress Tracking</div>
-                <div className={`text-xs transition-all duration-300 ${
-                  isDark ? 'text-slate-400' : 'text-slate-600'
-                }`}>Monitor your growth</div>
-              </div>
-            </div>
+            ))}
           </div>
 
           {/* Enhanced Login Button with Better Spacing - Matching WelcomePage */}
@@ -186,7 +248,22 @@ const LoginPopup = ({ isOpen, onClose, onLoginClick }) => {
               <FiLogIn className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110" />
               <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </div>
-            <span className="text-base sm:text-lg">Get Started Now</span>
+            <span className="text-base sm:text-lg">
+              {pendingAction === 'view-test-history' || pendingAction === 'view-attempts' 
+                ? 'Login to View Progress' 
+                : pendingAction === 'take-test' 
+                ? 'Login to Take Tests'
+                : pendingAction === 'take-quiz'
+                ? 'Login to Take Quizzes'
+                : pendingAction === 'view-leaderboard'
+                ? 'Login to View Rankings'
+                : pendingAction === 'create-series'
+                ? 'Login to Create Series'
+                : pendingAction === 'ai-generator'
+                ? 'Login to Use AI Generator'
+                : 'Get Started Now'
+              }
+            </span>
             <FiArrowRight className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:translate-x-1" />
           </button>
 

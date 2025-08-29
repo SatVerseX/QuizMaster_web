@@ -1,6 +1,8 @@
 import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import usePopup from '../../hooks/usePopup';
+import BeautifulPopup from '../common/BeautifulPopup';
 import { FiDatabase } from 'react-icons/fi';
 import { FaFilePdf } from 'react-icons/fa';
 import html2pdf from 'html2pdf.js';
@@ -8,6 +10,7 @@ import html2pdf from 'html2pdf.js';
 const DownloadModal = ({ attempt, questionAnalysis, onClose, loading, setLoading }) => {
   const { currentUser } = useAuth();
   const { isDark } = useTheme();
+  const { popupState, showSuccess, showError, hidePopup } = usePopup();
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -242,17 +245,18 @@ const DownloadModal = ({ attempt, questionAnalysis, onClose, loading, setLoading
         
         onClose();
         setTimeout(() => {
-          alert('Complete test report PDF downloaded successfully!');
+          showSuccess('Complete test report PDF downloaded successfully!', 'PDF Downloaded');
         }, 500);
       } catch (error) {
         console.error("Error in PDF conversion:", error);
-        alert(`PDF generation error: ${error.message}`);
+        showError(`PDF generation error: ${error.message}`, 'PDF Generation Error');
         
         // Fallback approach - if html2pdf fails, offer data export
-        const confirmTryJSON = window.confirm("PDF generation failed. Would you like to download the data as JSON instead?");
-        if (confirmTryJSON) {
-          handleDownloadJSON();
-        }
+        showConfirm(
+          "PDF generation failed. Would you like to download the data as JSON instead?",
+          "PDF Generation Failed",
+          () => handleDownloadJSON()
+        );
       } finally {
         if (document.body.contains(reportContainer)) {
           document.body.removeChild(reportContainer);
@@ -260,7 +264,7 @@ const DownloadModal = ({ attempt, questionAnalysis, onClose, loading, setLoading
       }
     } catch (error) {
       console.error('Overall PDF error:', error);
-      alert(`Failed to generate PDF: ${error.message}`);
+      showError(`Failed to generate PDF: ${error.message}`, 'PDF Generation Failed');
     } finally {
       setLoading(false);
     }
@@ -331,12 +335,12 @@ const DownloadModal = ({ attempt, questionAnalysis, onClose, loading, setLoading
 
       onClose();
       setTimeout(() => {
-        alert('📊 JSON Data downloaded successfully!');
+        showSuccess('JSON Data downloaded successfully!', 'JSON Downloaded');
       }, 100);
       
     } catch (error) {
       console.error('Error downloading JSON:', error);
-      alert('❌ Failed to download JSON data.');
+      showError('Failed to download JSON data.', 'Download Error');
     } finally {
       setLoading(false);
     }
@@ -413,6 +417,12 @@ const DownloadModal = ({ attempt, questionAnalysis, onClose, loading, setLoading
           Close
         </button>
       </div>
+
+      {/* Beautiful Popup */}
+      <BeautifulPopup
+        {...popupState}
+        onClose={hidePopup}
+      />
     </div>
   );
 };

@@ -638,72 +638,46 @@ const TestSeriesList = ({
 
         {/* Enhanced Search and Filter */}
         <div className="relative z-10 mb-8 sm:mb-12">
-          <div className={`backdrop-blur-xl border rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl ${
+          <div className={`backdrop-blur-xl border rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 xl:p-10 shadow-2xl ${
             isDark 
               ? 'bg-gradient-to-r from-gray-800/80 to-gray-700/80 border-gray-600/60 shadow-blue-500/10' 
               : 'bg-white/90 border-slate-200/60 shadow-slate-200/40'
           }`}>
             {/* Search Bar with enhanced styling */}
-            <div className="flex flex-col lg:flex-row gap-6 sm:gap-8 mb-8">
+            <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8">
               <div className="relative flex-1">
-                <div className={`absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 ${
+                <div className={`absolute left-3 sm:left-4 lg:left-6 top-1/2 -translate-y-1/2 ${
                   isDark ? 'text-gray-400' : 'text-slate-500'
                 }`}>
-                  <FiSearch className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7" />
+                  <FiSearch className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" />
                 </div>
                 <input
                   type="text"
-                  placeholder="Search test series by title, category, or creator..."
+                  placeholder="Search test series..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className={`w-full pl-14 sm:pl-16 pr-6 sm:pr-8 py-4 sm:py-5 rounded-2xl sm:rounded-3xl backdrop-blur-sm border-2 focus:outline-none focus:ring-4 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-300 font-medium text-base sm:text-lg lg:text-xl shadow-lg ${
+                  className={`w-full pl-12 sm:pl-14 lg:pl-16 pr-4 sm:pr-6 lg:pr-8 py-3 sm:py-4 lg:py-5 rounded-2xl sm:rounded-3xl backdrop-blur-sm border-2 focus:outline-none focus:ring-4 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-300 font-medium text-sm sm:text-base lg:text-lg xl:text-xl shadow-lg text-center sm:text-left ${
                     isDark 
                       ? 'bg-gray-900/80 border-gray-600/60 text-white placeholder-gray-400' 
                       : 'bg-white/80 border-slate-300/60 text-slate-800 placeholder-slate-500'
                   }`}
                 />
-                <div className="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2">
-                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                <div className="absolute right-3 sm:right-4 lg:right-6 top-1/2 -translate-y-1/2">
+                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-400 rounded-full animate-pulse"></div>
                 </div>
               </div>
               
-              {/* View Mode Toggle with enhanced styling */}
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl transition-all duration-300 transform hover:scale-110 ${
-                    viewMode === 'grid'
-                      ? 'bg-purple-600 text-white shadow-2xl shadow-purple-500/25 border-2 border-purple-400/30'
-                      : isDark 
-                        ? 'bg-gray-700/60 text-gray-300 hover:bg-gray-600/60 border-2 border-gray-600/40 hover:border-gray-500/60'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border-2 border-slate-300 hover:border-slate-400'
-                  }`}
-                >
-                  <FiGrid className="w-6 h-6 sm:w-7 sm:h-7" />
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl transition-all duration-300 transform hover:scale-110 ${
-                    viewMode === 'list'
-                      ? 'bg-gradient-to-r from-purple-500 to-cyan-600 text-white shadow-2xl shadow-purple-500/25 border-2 border-purple-400/30'
-                      : isDark 
-                        ? 'bg-gray-700/60 text-gray-300 hover:bg-gray-600/60 border-2 border-gray-600/40 hover:border-gray-500/60'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border-2 border-slate-300 hover:border-slate-400'
-                  }`}
-                >
-                  <FiList className="w-6 h-6 sm:w-7 sm:h-7" />
-                </button>
-              </div>
+
             </div>
 
             {/* Exam Category Dropdowns */}
-            <div className="flex flex-col lg:flex-row gap-4 mb-6">
+            <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 mb-6">
               {/* Main Category Dropdown */}
               <div className="relative flex-1">
-                <label className={`block text-sm font-semibold mb-2 flex items-center gap-2 ${
+                <label className={`block text-xs sm:text-sm font-semibold mb-2 flex items-center gap-2 ${
                   isDark ? 'text-gray-300' : 'text-slate-700'
                 }`}>
-                  <FiFilter className="w-4 h-4 text-purple-400" />
+                  <FiFilter className="w-3 h-3 sm:w-4 sm:h-4 text-purple-400" />
                   Exam Category
                 </label>
                 <select
@@ -712,7 +686,7 @@ const TestSeriesList = ({
                     setSelectedExamCategory(e.target.value);
                     setSelectedSubcategory(''); // Reset subcategory when main category changes
                   }}
-                  className={`w-full px-4 py-3 rounded-xl backdrop-blur-sm border focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none transition-all duration-300 font-medium text-sm ${
+                  className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl backdrop-blur-sm border focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none transition-all duration-300 font-medium text-xs sm:text-sm ${
                     isDark 
                       ? 'bg-gray-900/60 border-gray-600/40 text-white' 
                       : 'bg-white/80 border-slate-300/60 text-slate-800'
@@ -725,24 +699,24 @@ const TestSeriesList = ({
                     </option>
                   ))}
                 </select>
-                <FiChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${
+                <FiChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 sm:w-4 sm:h-4 pointer-events-none ${
                   isDark ? 'text-gray-400' : 'text-slate-500'
                 }`} />
               </div>
 
               {/* Subcategory Dropdown */}
               <div className="relative flex-1">
-                <label className={`block text-sm font-semibold mb-2 flex items-center gap-2 ${
+                <label className={`block text-xs sm:text-sm font-semibold mb-2 flex items-center gap-2 ${
                   isDark ? 'text-gray-300' : 'text-slate-700'
                 }`}>
-                  <FiFilter className="w-4 h-4 text-blue-400" />
+                  <FiFilter className="w-3 h-3 sm:w-4 sm:h-4 text-blue-400" />
                   Specific Exam
                 </label>
                 <select
                   value={selectedSubcategory}
                   onChange={(e) => setSelectedSubcategory(e.target.value)}
                   disabled={!selectedExamCategory}
-                  className={`w-full px-4 py-3 rounded-xl backdrop-blur-sm border appearance-none transition-all duration-300 font-medium text-sm ${
+                  className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl backdrop-blur-sm border appearance-none transition-all duration-300 font-medium text-xs sm:text-sm ${
                     selectedExamCategory
                       ? isDark 
                         ? 'bg-gray-900/60 border-gray-600/40 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
@@ -761,7 +735,7 @@ const TestSeriesList = ({
                       </option>
                     ))}
                 </select>
-                <FiChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${
+                <FiChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 sm:w-4 sm:h-4 pointer-events-none ${
                   isDark ? 'text-gray-400' : 'text-slate-500'
                 }`} />
               </div>
@@ -774,7 +748,7 @@ const TestSeriesList = ({
                       setSelectedExamCategory('');
                       setSelectedSubcategory('');
                     }}
-                    className="px-4 py-3 rounded-xl bg-red-600/20 border border-red-500/40 text-red-300 hover:bg-red-600/30 hover:border-red-500/60 transition-all duration-300 font-medium text-sm"
+                    className="px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl bg-red-600/20 border border-red-500/40 text-red-300 hover:bg-red-600/30 hover:border-red-500/60 transition-all duration-300 font-medium text-xs sm:text-sm"
                   >
                     Clear Filters
                   </button>
@@ -783,7 +757,7 @@ const TestSeriesList = ({
             </div>
 
             {/* Enhanced Filter Buttons */}
-            <div className="flex flex-wrap gap-4 justify-center">
+            <div className="flex flex-wrap gap-2 sm:gap-3 lg:gap-4 justify-center">
               {[
                 { id: 'all', label: 'All Series', icon: FiBookOpen, color: 'blue', bg: 'from-blue-500 to-blue-600', border: 'border-blue-400/30' },
                 { id: 'my-series', label: 'My Series', icon: FiUsers, color: 'purple', bg: 'from-purple-500 to-purple-600', border: 'border-purple-400/30' },
@@ -793,7 +767,7 @@ const TestSeriesList = ({
                 <button
                   key={filter.id}
                   onClick={() => setActiveFilter(filter.id)}
-                  className={`group relative flex items-center gap-3 px-6 sm:px-8 py-3 sm:py-4 rounded-2xl font-bold transition-all duration-500 hover:scale-110 ${
+                  className={`group relative flex items-center gap-2 sm:gap-3 px-3 sm:px-4 lg:px-6 xl:px-8 py-2.5 sm:py-3 lg:py-4 rounded-xl sm:rounded-2xl font-bold transition-all duration-500 hover:scale-105 sm:hover:scale-110 ${
                     activeFilter === filter.id
                       ? `bg-gradient-to-r ${filter.bg} text-white shadow-2xl shadow-${filter.color}-500/25 border-2 ${filter.border}`
                       : isDark 
@@ -801,10 +775,10 @@ const TestSeriesList = ({
                         : 'bg-white/80 backdrop-blur-xl border-2 border-slate-300/60 text-slate-700 hover:bg-slate-100/80 hover:border-slate-400/60 shadow-lg hover:shadow-xl'
                   }`}
                 >
-                  <filter.icon className={`w-5 h-5 sm:w-6 sm:h-6 ${activeFilter === filter.id ? 'animate-pulse' : ''}`} />
-                  <span className="text-sm sm:text-base lg:text-lg">{filter.label}</span>
+                  <filter.icon className={`w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 ${activeFilter === filter.id ? 'animate-pulse' : ''}`} />
+                  <span className="text-xs sm:text-sm lg:text-base xl:text-lg">{filter.label}</span>
                   {activeFilter === filter.id && (
-                    <div className="w-3 h-3 bg-white rounded-full animate-ping"></div>
+                    <div className="w-2 h-2 sm:w-3 sm:h-3 bg-white rounded-full animate-ping"></div>
                   )}
                 </button>
               ))}
@@ -887,7 +861,7 @@ const TestSeriesList = ({
                 {isAdmin && (
                   <button
                     onClick={onCreateSeries}
-                    className="group relative bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-2xl sm:rounded-3xl px-8 sm:px-10 lg:px-12 py-4 sm:py-5 lg:py-6 transition-all duration-500 transform hover:scale-110 shadow-2xl hover:shadow-purple-500/25 border-2 border-purple-400/30"
+                    className="group relative bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-2xl sm:rounded-3xl px-8 sm:px-10 lg:px-12 py-4 sm:py-5 lg:py-6 transition-all duration-500 transform hover:scale-110 shadow-2xl hover:shadow-purple-500/25 border border-purple-400/30"
                   >
                     <div className="absolute inset-0 bg-purple-400/20 rounded-2xl sm:rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <div className="relative flex items-center gap-3 sm:gap-4">

@@ -23,7 +23,7 @@ import {
 
 const Footer = () => {
   const { theme, isDark } = useTheme();
-  const { isAdmin } = useAuth();
+  const { isAdmin, currentUser } = useAuth();
   const [showScrollTop, setShowScrollTop] = React.useState(false);
 
   React.useEffect(() => {
@@ -132,7 +132,9 @@ const Footer = () => {
                     { icon: FiBookOpen, label: 'Create Series', to: '/create-series' },
                     { icon: FiHelpCircle, label: 'AI Generator', to: '/ai-generator' }
                   ] : []),
-                  { icon: FiTarget, label: 'My Progress', to: '/test-history' }
+                  ...(currentUser ? [
+                    { icon: FiTarget, label: 'My Progress', to: '/test-history' }
+                  ] : [])
                 ].map((link, index) => (
                   <li key={index}>
                     <Link

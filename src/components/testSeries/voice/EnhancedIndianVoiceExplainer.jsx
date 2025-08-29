@@ -15,8 +15,11 @@ import {
 } from 'react-icons/fa';
 import { FiSettings, FiMapPin } from 'react-icons/fi';
 import IndianLanguageVoiceService from '../services/IndianLanguageVoiceService';
+import usePopup from '../../../hooks/usePopup';
+import BeautifulPopup from '../../common/BeautifulPopup';
 
 const EnhancedIndianVoiceExplainer = ({ testSeries, testResults, reviewData }) => {
+  const { popupState, showError, showSuccess, hidePopup } = usePopup();
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioBlob, setAudioBlob] = useState(null);
@@ -104,7 +107,7 @@ ${testSeries.topics?.map(topic => `- ${topic}`).join('\n') || 'इस टेस�
       }
     } catch (error) {
       console.error('Error generating Indian voice explanation:', error);
-      alert(`Failed to generate voice explanation in ${indianLanguages[selectedLanguage].name}. Please try again.`);
+      showError(`Failed to generate voice explanation in ${indianLanguages[selectedLanguage].name}. Please try again.`, 'Voice Generation Error');
     } finally {
       setIsGenerating(false);
     }
@@ -458,6 +461,12 @@ ${testSeries.topics?.map(topic => `- ${topic}`).join('\n') || 'इस टेस�
           </div>
         </div>
       </div>
+
+      {/* Beautiful Popup */}
+      <BeautifulPopup
+        {...popupState}
+        onClose={hidePopup}
+      />
     </div>
   );
 };

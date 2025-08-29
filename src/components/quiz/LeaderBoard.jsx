@@ -3,6 +3,7 @@ import { collection, query, where, orderBy, limit, onSnapshot } from 'firebase/f
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { logger } from '../../utils/logger';
 import { 
   FiAward, 
   FiUser, 
@@ -30,6 +31,7 @@ import {
 } from 'react-icons/fa';
 
 const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest = false }) => {
+  logger.log('LeaderBoard component rendered with props:', { quizId, quizTitle, testSeriesId, isIndividualTest });
   const { currentUser } = useAuth();
   const { isDark } = useTheme();
   const [leaderboard, setLeaderboard] = useState([]);
@@ -38,6 +40,7 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('best');
   const [showFilters, setShowFilters] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const [stats, setStats] = useState({
     totalAttempts: 0,
     averageScore: 0,
@@ -46,18 +49,52 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
   });
 
   useEffect(() => {
+    logger.log('LeaderBoard useEffect - quizId:', quizId, 'currentUser:', currentUser?.uid, 'filter:', filter);
+    
     if (!quizId) {
+      logger.warn('LeaderBoard: No quizId provided');
       setError('Quiz ID is required');
       setLoading(false);
       return;
     }
 
+    logger.log('LeaderBoard: Loading leaderboard for quizId:', quizId);
     loadLeaderboard();
   }, [quizId, currentUser, filter]);
+
+  // Show loading state while quizId is being loaded
+  if (!quizId) {
+    return (
+      <div className={`min-h-screen transition-all duration-500 ${
+        isDark 
+          ? 'bg-gradient-to-br from-gray-900 via-blue-900/20 to-purple-900/20' 
+          : 'bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20'
+      }`}>
+        <div className="max-w-6xl mx-auto p-6">
+          <div className="flex justify-center items-center min-h-[400px]">
+            <div className="text-center">
+              <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${
+                isDark ? 'bg-blue-500/20' : 'bg-blue-50/80'
+              }`}>
+                <FiRefreshCw className="w-10 h-10 text-blue-400 animate-spin" />
+              </div>
+              <h3 className={`text-xl font-bold mb-2 ${
+                isDark ? 'text-white' : 'text-blue-700'
+              }`}>Loading Quiz Data...</h3>
+              <p className={isDark ? 'text-blue-400' : 'text-blue-600'}>Please wait while we fetch the quiz information</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const loadLeaderboard = () => {
     setLoading(true);
     setError(null);
+    
+    // Reset retry count on successful load
+    setRetryCount(0);
 
     try {
       // Updated to use 'test-attempts' collection for consistency
@@ -135,15 +172,35 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
           setLoading(false);
         },
         (err) => {
-          console.error('Error loading leaderboard:', err);
-          setError('Failed to load leaderboard data');
+          logger.error('Error loading leaderboard:', err);
+          let errorMessage = 'Failed to load leaderboard data';
+          
+          // Provide more specific error messages
+          if (err.code === 'permission-denied') {
+            errorMessage = 'Access denied. You may not have permission to view this leaderboard.';
+          } else if (err.code === 'unavailable') {
+            errorMessage = 'Service temporarily unavailable. Please try again later.';
+          } else if (err.code === 'not-found') {
+            errorMessage = 'Quiz not found. It may have been deleted or moved.';
+          }
+          
+          setError(errorMessage);
           setLoading(false);
+          
+          // Auto-retry with exponential backoff for certain errors
+          if (err.code === 'unavailable' && retryCount < 3) {
+            const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+            setTimeout(() => {
+              setRetryCount(prev => prev + 1);
+              loadLeaderboard();
+            }, delay);
+          }
         }
       );
 
       return unsubscribe;
     } catch (err) {
-      console.error('Error setting up leaderboard query:', err);
+      logger.error('Error setting up leaderboard query:', err);
       setError('Failed to initialize leaderboard');
       setLoading(false);
     }
@@ -271,12 +328,27 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
                 isDark ? 'text-white' : 'text-red-700'
               }`}>Error Loading Leaderboard</h3>
               <p className={isDark ? 'text-red-400' : 'text-red-600'}>{error}</p>
+              {error === 'Quiz ID is required' && (
+                <div className="text-sm mt-2 space-y-2">
+                  <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    This usually happens when the quiz data hasn't loaded yet. Please wait a moment or refresh the page.
+                  </p>
+                  <p className={`${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                    If the problem persists, try going back and selecting the quiz again.
+                  </p>
+                </div>
+              )}
               <button
                 onClick={loadLeaderboard}
                 className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold transition-colors flex items-center gap-2 mx-auto"
               >
                 <FiRefreshCw className="w-4 h-4" />
                 Try Again
+                {retryCount > 0 && (
+                  <span className="text-xs bg-red-700 px-2 py-1 rounded-full">
+                    {retryCount}/3
+                  </span>
+                )}
               </button>
             </div>
           </div>

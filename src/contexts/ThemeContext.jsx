@@ -17,9 +17,20 @@ export const ThemeProvider = ({ children }) => {
     if (savedTheme) {
       return savedTheme === 'dark';
     }
-    // Then check system preference
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    // Default to light theme instead of system preference
+    return false;
   });
+
+  // Clear any existing dark theme preference on first load for new users
+  useEffect(() => {
+    const hasVisitedBefore = localStorage.getItem('hasVisitedBefore');
+    if (!hasVisitedBefore) {
+      // This is a new user, ensure light theme
+      localStorage.setItem('hasVisitedBefore', 'true');
+      localStorage.setItem('theme', 'light');
+      setIsDark(false);
+    }
+  }, []);
 
   useEffect(() => {
     const root = document.documentElement;

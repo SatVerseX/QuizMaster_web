@@ -4,6 +4,8 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { PaymentService } from '../../services/paymentService';
 import { doc, updateDoc, arrayUnion, addDoc, collection } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
+import usePopup from '../../hooks/usePopup';
+import BeautifulPopup from '../common/BeautifulPopup';
 import { 
   FiCheck, 
   FiCreditCard, 
@@ -29,6 +31,7 @@ import { FaGraduationCap } from 'react-icons/fa';
 const TestSeriesSubscription = ({ testSeries, onSuccess, onCancel }) => {
   const { currentUser } = useAuth();
   const { isDark } = useTheme();
+  const { popupState, showSuccess, showError, hidePopup } = usePopup();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isTestMode, setIsTestMode] = useState(false);
@@ -116,9 +119,9 @@ const TestSeriesSubscription = ({ testSeries, onSuccess, onCancel }) => {
 
                 onSuccess();
                 if (isTestMode) {
-                  alert('🧪 TEST MODE: Subscription successful! You now have lifetime access.');
+                  showSuccess('TEST MODE: Subscription successful! You now have lifetime access.', 'Test Mode Success');
                 } else {
-                  alert('🎉 Subscription successful! You now have lifetime access!');
+                  showSuccess('Subscription successful! You now have lifetime access!', 'Subscription Success');
                 }
               }
             } catch (error) {
@@ -772,6 +775,12 @@ const TestSeriesSubscription = ({ testSeries, onSuccess, onCancel }) => {
           </div>
         </div>
       </div>
+
+      {/* Beautiful Popup */}
+      <BeautifulPopup
+        {...popupState}
+        onClose={hidePopup}
+      />
     </div>
   );
 };

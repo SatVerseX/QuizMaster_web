@@ -3,6 +3,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { addDoc, collection, doc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
+import usePopup from '../../hooks/usePopup';
+import BeautifulPopup from '../common/BeautifulPopup';
 import { 
   FiClock, 
   FiArrowLeft, 
@@ -31,6 +33,7 @@ import { FaGraduationCap, FaBrain, FaRocket, FaTrophy, FaMagic } from 'react-ico
 const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
   const { currentUser } = useAuth();
   const { isDark } = useTheme();
+  const { popupState, showError, showSuccess, hidePopup } = usePopup();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [timeLeft, setTimeLeft] = useState((test.timeLimit || 30) * 60);
@@ -171,7 +174,7 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
       
     } catch (error) {
       console.error('Error submitting test:', error);
-      alert('Failed to submit test. Please try again.');
+      showError('Failed to submit test. Please try again.', 'Submission Error');
     } finally {
       setLoading(false);
     }
@@ -1247,6 +1250,12 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
           </div>
         )}
       </div>
+
+      {/* Beautiful Popup */}
+      <BeautifulPopup
+        {...popupState}
+        onClose={hidePopup}
+      />
     </div>
   );
 };

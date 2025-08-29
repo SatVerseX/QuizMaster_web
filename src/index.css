@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+/* Base styles */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply antialiased;
+  }
+}
+
 /* Custom responsive utilities */
 @layer utilities {
   /* Mobile-first responsive containers */

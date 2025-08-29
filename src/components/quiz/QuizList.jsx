@@ -198,13 +198,15 @@ const QuizList = ({ onTakeQuiz, onCreateQuiz, onViewAttempts, onViewLeaderboard,
             
             {/* Enhanced Action Buttons */}
             <div className="flex flex-col sm:flex-row items-stretch gap-4">
-              <button
-                onClick={onViewAttempts}
-                className="group flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-2xl hover:from-purple-700 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:-translate-y-1"
-              >
-                <FiTarget className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                My Progress
-              </button>
+              {currentUser && (
+                <button
+                  onClick={onViewAttempts}
+                  className="group flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-2xl hover:from-purple-700 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:-translate-y-1"
+                >
+                  <FiTarget className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  My Progress
+                </button>
+              )}
               
               {/* AI Generator Button - Enhanced */}
               <button

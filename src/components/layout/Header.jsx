@@ -10,28 +10,13 @@ import {
   FiRotateCcw,
   FiTarget,
   FiHome,
-  FiAward,
   FiMenu,
-  FiBookOpen,
-  FiGrid,
-  FiEdit,
-  FiX,
-  FiSettings,
   FiHelpCircle,
-  FiBell,
-  FiSearch,
   FiShield,
   FiFileText,
-  FiChevronRight,
   FiLogIn,
 } from "react-icons/fi";
-import {
-  FaTrophy,
-  FaGraduationCap,
-  FaBrain,
-  FaQuestionCircle,
-  FaPuzzlePiece,
-} from "react-icons/fa";
+import { FaBrain, FaPuzzlePiece } from "react-icons/fa";
 
 const Header = ({
   onViewAttempts,
@@ -106,22 +91,24 @@ const Header = ({
   };
 
   return (
-    <header className={`fixed top-0 inset-x-0 z-50 transition-all duration-500 safe-area-top ${
-      theme === 'dark' 
-        ? 'bg-gray-900/95 backdrop-blur-xl border-gray-700/50 shadow-2xl shadow-gray-900/20' 
-        : 'bg-white/95 backdrop-blur-xl border-slate-200/60 shadow-xl shadow-slate-200/40'
-    } border-b`}>
+    <header
+      className={`fixed top-0 inset-x-0 z-50 transition-all duration-500 safe-area-top ${
+        theme === "dark"
+          ? "bg-gray-900/95 backdrop-blur-xl border-gray-700/50 shadow-2xl shadow-gray-900/20"
+          : "bg-white/95 backdrop-blur-xl border-slate-200/60 shadow-xl shadow-slate-200/40"
+      } border-b`}
+    >
       <div className="container-responsive">
         <div className="flex justify-between items-center h-16 px-4 sm:px-6">
           {/* Enhanced Logo - Mobile Optimized */}
-          <div className="flex items-center flex-1 min-w-0">
+          <div cl assName="flex items-center flex-1 min-w-0">
             <button
               onClick={() => onViewHome && onViewHome()}
               className="group flex items-center relative"
               onMouseEnter={() => setLogoHovered(true)}
               onMouseLeave={() => setLogoHovered(false)}
             >
-              <div
+             <div
                 className={`mr-3 p-2.5 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 text-white transform transition-all duration-300 shadow-lg shadow-orange-500/20 ${
                   logoHovered
                     ? "scale-110 rotate-3 shadow-xl shadow-orange-500/40"
@@ -164,14 +151,14 @@ const Header = ({
             <button
               onClick={toggleTheme}
               className={`group relative p-2.5 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md border ${
-                theme === 'dark'
-                  ? 'text-gray-200 hover:bg-gradient-to-r hover:from-blue-900/30 hover:to-purple-900/30 border-gray-700/50'
-                  : 'text-slate-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 border-slate-200/60'
+                theme === "dark"
+                  ? "text-gray-200 hover:bg-gradient-to-r hover:from-blue-900/30 hover:to-purple-900/30 border-gray-700/50"
+                  : "text-slate-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 border-slate-200/60"
               }`}
-              title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+              title={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
             >
               <div className="relative">
-                {theme === 'dark' ? (
+                {theme === "dark" ? (
                   <FiSun className="w-5 h-5 transition-all duration-300 group-hover:scale-110 group-hover:text-yellow-500" />
                 ) : (
                   <FiMoon className="w-5 h-5 transition-all duration-300 group-hover:scale-110 group-hover:text-blue-600" />
@@ -182,9 +169,9 @@ const Header = ({
 
             <button
               className={`group relative p-2.5 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md border ${
-                theme === 'dark'
-                  ? 'text-gray-200 hover:bg-gradient-to-r hover:from-blue-900/30 hover:to-purple-900/30 border-gray-700/50'
-                  : 'text-slate-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 border-slate-200/60'
+                theme === "dark"
+                  ? "text-gray-200 hover:bg-gradient-to-r hover:from-blue-900/30 hover:to-purple-900/30 border-gray-700/50"
+                  : "text-slate-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 border-slate-200/60"
               }`}
               onClick={toggleMenu}
               aria-label="Toggle menu"
@@ -201,17 +188,19 @@ const Header = ({
             {/* Navigation Menu */}
             {currentUser && (
               <nav className="flex items-center mr-4 max-w-[60vw] xl:max-w-[65vw] 2xl:max-w-[70vw] overflow-x-auto no-scrollbar">
-                <div className={`flex space-x-1 whitespace-nowrap rounded-lg p-1 shadow-inner border ${
-                  theme === 'dark'
-                    ? 'bg-gray-800 border-gray-700/50'
-                    : 'bg-slate-100 border-slate-200/60'
-                }`}>
+                <div
+                  className={`flex space-x-1 whitespace-nowrap rounded-lg p-1 shadow-inner border ${
+                    theme === "dark"
+                      ? "bg-gray-800 border-gray-700/50"
+                      : "bg-slate-100 border-slate-200/60"
+                  }`}
+                >
                   <button
                     onClick={() => onViewHome && onViewHome()}
                     className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 ${
-                      theme === 'dark'
-                        ? 'text-gray-300 hover:bg-gray-700 hover:shadow-sm'
-                        : 'text-slate-700 hover:bg-white hover:shadow-sm'
+                      theme === "dark"
+                        ? "text-gray-300 hover:bg-gray-700 hover:shadow-sm"
+                        : "text-slate-700 hover:bg-white hover:shadow-sm"
                     }`}
                     title="Test Series"
                   >
@@ -222,9 +211,9 @@ const Header = ({
                   <button
                     onClick={() => onViewAttempts && onViewAttempts()}
                     className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 ${
-                      theme === 'dark'
-                        ? 'text-gray-300 hover:bg-gray-700 hover:shadow-sm'
-                        : 'text-slate-700 hover:bg-white hover:shadow-sm'
+                      theme === "dark"
+                        ? "text-gray-300 hover:bg-gray-700 hover:shadow-sm"
+                        : "text-slate-700 hover:bg-white hover:shadow-sm"
                     }`}
                     title="My Progress"
                   >
@@ -236,9 +225,9 @@ const Header = ({
                     <button
                       onClick={() => onAIGenerator()}
                       className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 ${
-                        theme === 'dark'
-                          ? 'text-gray-300 hover:bg-gray-700 hover:shadow-sm'
-                          : 'text-slate-700 hover:bg-white hover:shadow-sm'
+                        theme === "dark"
+                          ? "text-gray-300 hover:bg-gray-700 hover:shadow-sm"
+                          : "text-slate-700 hover:bg-white hover:shadow-sm"
                       }`}
                       title="AI Generator"
                     >
@@ -254,14 +243,14 @@ const Header = ({
             <button
               onClick={toggleTheme}
               className={`group relative p-2.5 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md border ${
-                theme === 'dark'
-                  ? 'text-gray-200 hover:bg-gradient-to-r hover:from-blue-900/30 hover:to-purple-900/30 border-gray-700/50'
-                  : 'text-slate-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 border-slate-200/60'
+                theme === "dark"
+                  ? "text-gray-200 hover:bg-gradient-to-r hover:from-blue-900/30 hover:to-purple-900/30 border-gray-700/50"
+                  : "text-slate-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 border-slate-200/60"
               }`}
-              title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+              title={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
             >
               <div className="relative">
-                {theme === 'dark' ? (
+                {theme === "dark" ? (
                   <FiSun className="w-5 h-5 transition-all duration-300 group-hover:scale-110 group-hover:text-yellow-500" />
                 ) : (
                   <FiMoon className="w-5 h-5 transition-all duration-300 group-hover:scale-110 group-hover:text-blue-600" />
@@ -279,19 +268,21 @@ const Header = ({
               >
                 <button
                   className={`user-menu-trigger flex items-center gap-2 px-4 py-2 rounded-lg shadow-sm border transition-all duration-200 ${
-                    theme === 'dark'
-                      ? 'bg-gray-800 border-gray-700 hover:bg-gray-700'
-                      : 'bg-white border-slate-200/60 hover:bg-slate-50'
+                    theme === "dark"
+                      ? "bg-gray-800 border-gray-700 hover:bg-gray-700"
+                      : "bg-white border-slate-200/60 hover:bg-slate-50"
                   }`}
                   onClick={() => setIsUserMenuOpen((v) => !v)}
                   aria-haspopup="menu"
                   aria-expanded={isUserMenuOpen}
                 >
-                  <div className={`flex items-center justify-center w-7 h-7 rounded-full overflow-hidden ${
-                    theme === 'dark'
-                      ? 'bg-blue-900/30 text-blue-400'
-                      : 'bg-blue-100 text-blue-600'
-                  }`}>
+                  <div
+                    className={`flex items-center justify-center w-7 h-7 rounded-full overflow-hidden ${
+                      theme === "dark"
+                        ? "bg-blue-900/30 text-blue-400"
+                        : "bg-blue-100 text-blue-600"
+                    }`}
+                  >
                     {currentUser?.photoURL && !avatarError ? (
                       <img
                         src={currentUser.photoURL}
@@ -305,9 +296,11 @@ const Header = ({
                       <FiUser className="icon-responsive" />
                     )}
                   </div>
-                  <span className={`text-sm font-medium max-w-40 truncate ${
-                    theme === 'dark' ? 'text-gray-200' : 'text-slate-800'
-                  }`}>
+                  <span
+                    className={`text-sm font-medium max-w-40 truncate ${
+                      theme === "dark" ? "text-gray-200" : "text-slate-800"
+                    }`}
+                  >
                     {currentUser.displayName ||
                       currentUser.email?.split("@")[0] ||
                       "User"}
@@ -316,17 +309,21 @@ const Header = ({
 
                 {/* Dropdown */}
                 {isUserMenuOpen && (
-                  <div className={`user-menu-panel absolute right-0 top-full mt-3 w-80 rounded-2xl shadow-2xl border overflow-hidden z-50 backdrop-blur-xl ${
-                    theme === 'dark'
-                      ? 'bg-gray-800 border-gray-700'
-                      : 'bg-white border-slate-200/60'
-                  }`}>
+                  <div
+                    className={`user-menu-panel absolute right-0 top-full mt-3 w-80 rounded-2xl shadow-2xl border overflow-hidden z-50 backdrop-blur-xl ${
+                      theme === "dark"
+                        ? "bg-gray-800 border-gray-700"
+                        : "bg-white border-slate-200/60"
+                    }`}
+                  >
                     {/* Enhanced User Profile Section */}
-                    <div className={`px-6 py-5 border-b ${
-                      theme === 'dark'
-                        ? 'border-gray-700 bg-gradient-to-br from-blue-900/20 to-purple-900/20'
-                        : 'border-slate-200/60 bg-gradient-to-br from-blue-50/50 to-purple-50/50'
-                    }`}>
+                    <div
+                      className={`px-6 py-5 border-b ${
+                        theme === "dark"
+                          ? "border-gray-700 bg-gradient-to-br from-blue-900/20 to-purple-900/20"
+                          : "border-slate-200/60 bg-gradient-to-br from-blue-50/50 to-purple-50/50"
+                      }`}
+                    >
                       <div className="flex items-center gap-4">
                         <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 text-white overflow-hidden shadow-lg">
                           {currentUser?.photoURL && !avatarError ? (
@@ -343,16 +340,22 @@ const Header = ({
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className={`text-base font-bold truncate mb-1 ${
-                            theme === 'dark' ? 'text-white' : 'text-slate-900'
-                          }`}>
+                          <div
+                            className={`text-base font-bold truncate mb-1 ${
+                              theme === "dark" ? "text-white" : "text-slate-900"
+                            }`}
+                          >
                             {currentUser.displayName ||
                               currentUser.email?.split("@")[0] ||
                               "User"}
                           </div>
-                          <div className={`text-sm truncate ${
-                            theme === 'dark' ? 'text-gray-300' : 'text-slate-600'
-                          }`}>
+                          <div
+                            className={`text-sm truncate ${
+                              theme === "dark"
+                                ? "text-gray-300"
+                                : "text-slate-600"
+                            }`}
+                          >
                             {currentUser.email}
                           </div>
                         </div>
@@ -365,16 +368,18 @@ const Header = ({
                         <Link
                           to="/privacy"
                           className={`group flex items-center gap-4 px-4 py-3 text-sm rounded-xl transition-all duration-200 hover:shadow-sm ${
-                            theme === 'dark'
-                              ? 'text-gray-200 hover:bg-gradient-to-r hover:from-blue-900/20 hover:to-blue-800/20'
-                              : 'text-slate-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100'
+                            theme === "dark"
+                              ? "text-gray-200 hover:bg-gradient-to-r hover:from-blue-900/20 hover:to-blue-800/20"
+                              : "text-slate-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100"
                           }`}
                         >
-                          <div className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 ${
-                            theme === 'dark'
-                              ? 'bg-blue-900/30 text-blue-400 group-hover:bg-blue-800/40'
-                              : 'bg-blue-100 text-blue-600 group-hover:bg-blue-200'
-                          }`}>
+                          <div
+                            className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 ${
+                              theme === "dark"
+                                ? "bg-blue-900/30 text-blue-400 group-hover:bg-blue-800/40"
+                                : "bg-blue-100 text-blue-600 group-hover:bg-blue-200"
+                            }`}
+                          >
                             <FiShield className="w-4 h-4" />
                           </div>
                           <span className="font-medium">Privacy Policy</span>
@@ -383,16 +388,18 @@ const Header = ({
                         <Link
                           to="/terms"
                           className={`group flex items-center gap-4 px-4 py-3 text-sm rounded-xl transition-all duration-200 hover:shadow-sm ${
-                            theme === 'dark'
-                              ? 'text-gray-200 hover:bg-gradient-to-r hover:from-green-900/20 hover:to-green-800/20'
-                              : 'text-slate-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-green-100'
+                            theme === "dark"
+                              ? "text-gray-200 hover:bg-gradient-to-r hover:from-green-900/20 hover:to-green-800/20"
+                              : "text-slate-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-green-100"
                           }`}
                         >
-                          <div className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 ${
-                            theme === 'dark'
-                              ? 'bg-green-900/30 text-green-400 group-hover:bg-green-800/40'
-                              : 'bg-green-100 text-green-600 group-hover:bg-green-200'
-                          }`}>
+                          <div
+                            className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 ${
+                              theme === "dark"
+                                ? "bg-green-900/30 text-green-400 group-hover:bg-green-800/40"
+                                : "bg-green-100 text-green-600 group-hover:bg-green-200"
+                            }`}
+                          >
                             <FiFileText className="w-4 h-4" />
                           </div>
                           <span className="font-medium">
@@ -403,16 +410,18 @@ const Header = ({
                         <Link
                           to="/refunds"
                           className={`group flex items-center gap-4 px-4 py-3 text-sm rounded-xl transition-all duration-200 hover:shadow-sm ${
-                            theme === 'dark'
-                              ? 'text-gray-200 hover:bg-gradient-to-r hover:from-orange-900/20 hover:to-orange-800/20'
-                              : 'text-slate-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-orange-100'
+                            theme === "dark"
+                              ? "text-gray-200 hover:bg-gradient-to-r hover:from-orange-900/20 hover:to-orange-800/20"
+                              : "text-slate-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-orange-100"
                           }`}
                         >
-                          <div className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 ${
-                            theme === 'dark'
-                              ? 'bg-orange-900/30 text-orange-400 group-hover:bg-orange-800/40'
-                              : 'bg-orange-100 text-orange-600 group-hover:bg-orange-200'
-                          }`}>
+                          <div
+                            className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 ${
+                              theme === "dark"
+                                ? "bg-orange-900/30 text-orange-400 group-hover:bg-orange-800/40"
+                                : "bg-orange-100 text-orange-600 group-hover:bg-orange-200"
+                            }`}
+                          >
                             <FiRotateCcw className="w-4 h-4" />
                           </div>
                           <span className="font-medium">
@@ -423,16 +432,18 @@ const Header = ({
                         <Link
                           to="/contact"
                           className={`group flex items-center gap-4 px-4 py-3 text-sm rounded-xl transition-all duration-200 hover:shadow-sm ${
-                            theme === 'dark'
-                              ? 'text-gray-200 hover:bg-gradient-to-r hover:from-purple-900/20 hover:to-purple-800/20'
-                              : 'text-slate-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-purple-100'
+                            theme === "dark"
+                              ? "text-gray-200 hover:bg-gradient-to-r hover:from-purple-900/20 hover:to-purple-800/20"
+                              : "text-slate-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-purple-100"
                           }`}
                         >
-                          <div className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 ${
-                            theme === 'dark'
-                              ? 'bg-purple-900/30 text-purple-400 group-hover:bg-purple-800/40'
-                              : 'bg-purple-100 text-purple-600 group-hover:bg-purple-200'
-                          }`}>
+                          <div
+                            className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 ${
+                              theme === "dark"
+                                ? "bg-purple-900/30 text-purple-400 group-hover:bg-purple-800/40"
+                                : "bg-purple-100 text-purple-600 group-hover:bg-purple-200"
+                            }`}
+                          >
                             <FiHelpCircle className="w-4 h-4" />
                           </div>
                           <span className="font-medium">Contact Us</span>
@@ -441,22 +452,28 @@ const Header = ({
                     </nav>
 
                     {/* Enhanced Sign Out Section */}
-                    <div className={`border-t px-3 py-3 ${
-                      theme === 'dark' ? 'border-gray-700' : 'border-slate-200/60'
-                    }`}>
+                    <div
+                      className={`border-t px-3 py-3 ${
+                        theme === "dark"
+                          ? "border-gray-700"
+                          : "border-slate-200/60"
+                      }`}
+                    >
                       <button
                         onClick={handleLogout}
                         className={`group w-full flex items-center gap-4 px-4 py-3 text-sm rounded-xl transition-all duration-200 hover:shadow-sm font-medium ${
-                          theme === 'dark'
-                            ? 'text-red-400 hover:bg-gradient-to-r hover:from-red-900/20 hover:to-red-800/20'
-                            : 'text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100'
+                          theme === "dark"
+                            ? "text-red-400 hover:bg-gradient-to-r hover:from-red-900/20 hover:to-red-800/20"
+                            : "text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100"
                         }`}
                       >
-                        <div className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 ${
-                          theme === 'dark'
-                            ? 'bg-red-900/30 text-red-400 group-hover:bg-red-800/40'
-                            : 'bg-red-100 text-red-600 group-hover:bg-red-200'
-                        }`}>
+                        <div
+                          className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 ${
+                            theme === "dark"
+                              ? "bg-red-900/30 text-red-400 group-hover:bg-red-800/40"
+                              : "bg-red-100 text-red-600 group-hover:bg-red-200"
+                          }`}
+                        >
                           <FiLogOut className="w-4 h-4" />
                         </div>
                         <span>Sign Out</span>
@@ -494,53 +511,73 @@ const Header = ({
               {currentUser ? (
                 <div className="flex flex-col h-full">
                   {/* Enhanced User Profile */}
-                  <div className={`relative p-6 border-b transition-all duration-300 ${
-                    theme === 'dark'
-                      ? 'border-gray-700 bg-gradient-to-br from-gray-800 to-gray-900'
-                      : 'border-slate-200 bg-white'
-                  }`}>
-                    <div className={`absolute inset-0 rounded-t-2xl transition-all duration-300 ${
-                      theme === 'dark'
-                        ? 'bg-gradient-to-br from-blue-500/20 to-purple-500/20'
-                        : 'bg-gradient-to-br from-blue-50 to-purple-50'
-                    }`}></div>
+                  <div
+                    className={`relative p-6 border-b transition-all duration-300 ${
+                      theme === "dark"
+                        ? "border-gray-700 bg-gradient-to-br from-gray-800 to-gray-900"
+                        : "border-slate-200 bg-white"
+                    }`}
+                  >
+                    <div
+                      className={`absolute inset-0 rounded-t-2xl transition-all duration-300 ${
+                        theme === "dark"
+                          ? "bg-gradient-to-br from-blue-500/20 to-purple-500/20"
+                          : "bg-gradient-to-br from-blue-50 to-purple-50"
+                      }`}
+                    ></div>
                     <div className="relative flex items-center gap-4">
                       <div className="relative">
-                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-xl border-2 transition-all duration-300 ${
-                          theme === 'dark'
-                            ? 'bg-gradient-to-br from-blue-600 to-purple-700 border-gray-700 shadow-blue-500/20'
-                            : 'bg-gradient-to-br from-blue-600 to-purple-700 border-white shadow-slate-300/20'
-                        }`}>
+                        <div
+                          className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-xl border-2 transition-all duration-300 ${
+                            theme === "dark"
+                              ? "bg-gradient-to-br from-blue-600 to-purple-700 border-gray-700 shadow-blue-500/20"
+                              : "bg-gradient-to-br from-blue-600 to-purple-700 border-white shadow-slate-300/20"
+                          }`}
+                        >
                           <FiUser className="w-7 h-7" />
                         </div>
-                        <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-3 shadow-lg transition-all duration-300 ${
-                          theme === 'dark'
-                            ? 'bg-green-500 border-gray-800'
-                            : 'bg-green-500 border-white'
-                        }`}></div>
+                        <div
+                          className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-3 shadow-lg transition-all duration-300 ${
+                            theme === "dark"
+                              ? "bg-green-500 border-gray-800"
+                              : "bg-green-500 border-white"
+                          }`}
+                        ></div>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className={`font-bold text-xl truncate transition-all duration-300 ${
-                          theme === 'dark' ? 'text-white' : 'text-slate-800'
-                        }`}>
+                        <p
+                          className={`font-bold text-xl truncate transition-all duration-300 ${
+                            theme === "dark" ? "text-white" : "text-slate-800"
+                          }`}
+                        >
                           {currentUser.displayName ||
                             currentUser.email?.split("@")[0] ||
                             "User"}
                         </p>
-                        <p className={`text-sm truncate transition-all duration-300 ${
-                          theme === 'dark' ? 'text-gray-300' : 'text-slate-600'
-                        }`}>
+                        <p
+                          className={`text-sm truncate transition-all duration-300 ${
+                            theme === "dark"
+                              ? "text-gray-300"
+                              : "text-slate-600"
+                          }`}
+                        >
                           {currentUser.email}
                         </p>
                         <div className="flex items-center gap-2 mt-2">
-                          <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold shadow-sm transition-all duration-300 ${
-                            theme === 'dark'
-                              ? 'bg-green-600 text-green-100 border border-green-500'
-                              : 'bg-green-100 text-green-800 border border-green-300'
-                          }`}>
-                            <span className={`w-2.5 h-2.5 rounded-full mr-1.5 transition-all duration-300 ${
-                              theme === 'dark' ? 'bg-green-400' : 'bg-green-600'
-                            }`}></span>
+                          <span
+                            className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold shadow-sm transition-all duration-300 ${
+                              theme === "dark"
+                                ? "bg-green-600 text-green-100 border border-green-500"
+                                : "bg-green-100 text-green-800 border border-green-300"
+                            }`}
+                          >
+                            <span
+                              className={`w-2.5 h-2.5 rounded-full mr-1.5 transition-all duration-300 ${
+                                theme === "dark"
+                                  ? "bg-green-400"
+                                  : "bg-green-600"
+                              }`}
+                            ></span>
                             Active
                           </span>
                         </div>
@@ -549,9 +586,11 @@ const Header = ({
                   </div>
 
                   {/* Enhanced Navigation Links */}
-                  <nav className={`flex-1 py-6 transition-all duration-300 ${
-                    theme === 'dark' ? 'bg-gray-900' : 'bg-white'
-                  }`}>
+                  <nav
+                    className={`flex-1 py-6 transition-all duration-300 ${
+                      theme === "dark" ? "bg-gray-900" : "bg-white"
+                    }`}
+                  >
                     <div className="space-y-2 px-4">
                       <button
                         onClick={() => {
@@ -559,16 +598,18 @@ const Header = ({
                           setIsMenuOpen(false);
                         }}
                         className={`group w-full flex items-center gap-4 p-4 rounded-xl transition-all duration-300 hover:shadow-md ${
-                          theme === 'dark'
-                            ? 'text-gray-200 hover:bg-gray-800 border border-transparent hover:border-blue-500/30'
-                            : 'text-slate-700 hover:bg-slate-50 border border-transparent hover:border-slate-200'
+                          theme === "dark"
+                            ? "text-gray-200 hover:bg-gray-800 border border-transparent hover:border-blue-500/30"
+                            : "text-slate-700 hover:bg-slate-50 border border-transparent hover:border-slate-200"
                         }`}
                       >
-                        <div className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300 ${
-                          theme === 'dark'
-                            ? 'bg-blue-900/50 text-blue-400 group-hover:bg-blue-800/60 border border-blue-700/50'
-                            : 'bg-blue-100 text-blue-600 group-hover:bg-blue-200 border border-blue-200'
-                        }`}>
+                        <div
+                          className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300 ${
+                            theme === "dark"
+                              ? "bg-blue-900/50 text-blue-400 group-hover:bg-blue-800/60 border border-blue-700/50"
+                              : "bg-blue-100 text-blue-600 group-hover:bg-blue-200 border border-blue-200"
+                          }`}
+                        >
                           <FiHome className="w-5 h-5" />
                         </div>
                         <span className="font-medium">Test Series</span>
@@ -580,16 +621,18 @@ const Header = ({
                           setIsMenuOpen(false);
                         }}
                         className={`group w-full flex items-center gap-4 p-4 rounded-xl transition-all duration-300 hover:shadow-md ${
-                          theme === 'dark'
-                            ? 'text-gray-200 hover:bg-gray-800 border border-transparent hover:border-purple-500/30'
-                            : 'text-slate-700 hover:bg-slate-50 border border-transparent hover:border-slate-200'
+                          theme === "dark"
+                            ? "text-gray-200 hover:bg-gray-800 border border-transparent hover:border-purple-500/30"
+                            : "text-slate-700 hover:bg-slate-50 border border-transparent hover:border-slate-200"
                         }`}
                       >
-                        <div className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300 ${
-                          theme === 'dark'
-                            ? 'bg-purple-900/50 text-purple-400 group-hover:bg-purple-800/60 border border-purple-700/50'
-                            : 'bg-purple-100 text-purple-600 group-hover:bg-purple-200 border border-purple-200'
-                        }`}>
+                        <div
+                          className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300 ${
+                            theme === "dark"
+                              ? "bg-purple-900/50 text-purple-400 group-hover:bg-purple-800/60 border border-purple-700/50"
+                              : "bg-purple-100 text-purple-600 group-hover:bg-purple-200 border border-purple-200"
+                          }`}
+                        >
                           <FiTarget className="w-5 h-5" />
                         </div>
                         <span className="font-medium">My Progress</span>
@@ -601,16 +644,18 @@ const Header = ({
                           setIsMenuOpen(false);
                         }}
                         className={`group w-full flex items-center gap-4 p-4 rounded-xl transition-all duration-300 hover:shadow-md ${
-                          theme === 'dark'
-                            ? 'text-gray-200 hover:bg-gray-800 border border-transparent hover:border-orange-500/30'
-                            : 'text-slate-700 hover:bg-slate-50 border border-transparent hover:border-slate-200'
+                          theme === "dark"
+                            ? "text-gray-200 hover:bg-gray-800 border border-transparent hover:border-orange-500/30"
+                            : "text-slate-700 hover:bg-slate-50 border border-transparent hover:border-slate-200"
                         }`}
                       >
-                        <div className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300 ${
-                          theme === 'dark'
-                            ? 'bg-orange-900/50 text-orange-400 group-hover:bg-orange-800/60 border border-orange-700/50'
-                            : 'bg-orange-100 text-orange-600 group-hover:bg-orange-200 border border-orange-200'
-                        }`}>
+                        <div
+                          className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300 ${
+                            theme === "dark"
+                              ? "bg-orange-900/50 text-orange-400 group-hover:bg-orange-800/60 border border-orange-700/50"
+                              : "bg-orange-100 text-orange-600 group-hover:bg-orange-200 border border-orange-200"
+                          }`}
+                        >
                           <FaPuzzlePiece className="w-5 h-5" />
                         </div>
                         <span className="font-medium">Welcome</span>
@@ -623,16 +668,18 @@ const Header = ({
                             setIsMenuOpen(false);
                           }}
                           className={`group w-full flex items-center gap-4 p-4 rounded-xl transition-all duration-300 hover:shadow-md ${
-                            theme === 'dark'
-                              ? 'text-gray-200 hover:bg-gray-800 border border-transparent hover:border-green-500/30'
-                              : 'text-slate-700 hover:bg-slate-50 border border-transparent hover:border-slate-200'
+                            theme === "dark"
+                              ? "text-gray-200 hover:bg-gray-800 border border-transparent hover:border-green-500/30"
+                              : "text-slate-700 hover:bg-slate-50 border border-transparent hover:border-slate-200"
                           }`}
                         >
-                          <div className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300 ${
-                            theme === 'dark'
-                              ? 'bg-green-900/50 text-green-400 group-hover:bg-green-800/60 border border-green-700/50'
-                              : 'bg-green-100 text-green-600 group-hover:bg-green-200 border border-green-200'
-                          }`}>
+                          <div
+                            className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300 ${
+                              theme === "dark"
+                                ? "bg-green-900/50 text-green-400 group-hover:bg-green-800/60 border border-green-700/50"
+                                : "bg-green-100 text-green-600 group-hover:bg-green-200 border border-green-200"
+                            }`}
+                          >
                             <FaBrain className="w-5 h-5" />
                           </div>
                           <span className="font-medium">AI Generator</span>
@@ -642,22 +689,28 @@ const Header = ({
                   </nav>
 
                   {/* Enhanced Sign Out Section */}
-                  <div className={`border-t px-4 py-4 transition-all duration-300 ${
-                    theme === 'dark' ? 'border-gray-700 bg-gray-900' : 'bg-white'
-                  }`}>
+                  <div
+                    className={`border-t px-4 py-4 transition-all duration-300 ${
+                      theme === "dark"
+                        ? "border-gray-700 bg-gray-900"
+                        : "bg-white"
+                    }`}
+                  >
                     <button
                       onClick={handleLogout}
                       className={`group w-full flex items-center gap-4 px-4 py-3 text-sm rounded-xl transition-all duration-300 hover:shadow-md font-medium ${
-                        theme === 'dark'
-                          ? 'text-red-400 hover:bg-gray-800 border border-transparent hover:border-red-500/30'
-                          : 'text-red-600 hover:bg-slate-50 border border-transparent hover:border-red-200'
+                        theme === "dark"
+                          ? "text-red-400 hover:bg-gray-800 border border-transparent hover:border-red-500/30"
+                          : "text-red-600 hover:bg-slate-50 border border-transparent hover:border-red-200"
                       }`}
                     >
-                      <div className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-300 ${
-                        theme === 'dark'
-                          ? 'bg-red-900/50 text-red-400 group-hover:bg-red-800/60 border border-red-700/50'
-                          : 'bg-red-100 text-red-600 group-hover:bg-red-200 border border-red-200'
-                      }`}>
+                      <div
+                        className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-300 ${
+                          theme === "dark"
+                            ? "bg-red-900/50 text-red-400 group-hover:bg-red-800/60 border border-red-700/50"
+                            : "bg-red-100 text-red-600 group-hover:bg-red-200 border border-red-200"
+                        }`}
+                      >
                         <FiLogOut className="w-4 h-4" />
                       </div>
                       <span>Sign Out</span>
@@ -668,35 +721,47 @@ const Header = ({
                 /* Mobile menu for non-logged-in users */
                 <div className="flex flex-col h-full">
                   {/* Welcome Message */}
-                  <div className={`relative p-6 border-b transition-all duration-300 ${
-                    theme === 'dark'
-                      ? 'border-gray-700 bg-gradient-to-br from-gray-800 to-gray-900'
-                      : 'border-slate-200 bg-white'
-                  }`}>
-                    <div className={`absolute inset-0 rounded-t-2xl transition-all duration-300 ${
-                      theme === 'dark'
-                        ? 'bg-gradient-to-br from-orange-500/20 to-red-500/20'
-                        : 'bg-gradient-to-br from-orange-50 to-red-50'
-                    }`}></div>
+                  <div
+                    className={`relative p-6 border-b transition-all duration-300 ${
+                      theme === "dark"
+                        ? "border-gray-700 bg-gradient-to-br from-gray-800 to-gray-900"
+                        : "border-slate-200 bg-white"
+                    }`}
+                  >
+                    <div
+                      className={`absolute inset-0 rounded-t-2xl transition-all duration-300 ${
+                        theme === "dark"
+                          ? "bg-gradient-to-br from-orange-500/20 to-red-500/20"
+                          : "bg-gradient-to-br from-orange-50 to-red-50"
+                      }`}
+                    ></div>
                     <div className="relative flex items-center gap-4">
                       <div className="relative">
-                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-xl border-2 transition-all duration-300 ${
-                          theme === 'dark'
-                            ? 'bg-gradient-to-br from-orange-500 to-red-600 border-gray-700 shadow-orange-500/20'
-                            : 'bg-gradient-to-br from-orange-500 to-red-600 border-white shadow-slate-300/20'
-                        }`}>
+                        <div
+                          className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-xl border-2 transition-all duration-300 ${
+                            theme === "dark"
+                              ? "bg-gradient-to-br from-orange-500 to-red-600 border-gray-700 shadow-orange-500/20"
+                              : "bg-gradient-to-br from-orange-500 to-red-600 border-white shadow-slate-300/20"
+                          }`}
+                        >
                           <FaPuzzlePiece className="w-7 h-7" />
                         </div>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className={`font-bold text-xl truncate transition-all duration-300 ${
-                          theme === 'dark' ? 'text-white' : 'text-slate-800'
-                        }`}>
+                        <p
+                          className={`font-bold text-xl truncate transition-all duration-300 ${
+                            theme === "dark" ? "text-white" : "text-slate-800"
+                          }`}
+                        >
                           Welcome to QuizMaster
                         </p>
-                        <p className={`text-sm truncate transition-all duration-300 ${
-                          theme === 'dark' ? 'text-gray-300' : 'text-slate-600'
-                        }`}>
+                        <p
+                          className={`text-sm truncate transition-all duration-300 ${
+                            theme === "dark"
+                              ? "text-gray-300"
+                              : "text-slate-600"
+                          }`}
+                        >
                           Browse test series and login to access features
                         </p>
                       </div>
@@ -704,9 +769,11 @@ const Header = ({
                   </div>
 
                   {/* Navigation Links for Non-logged-in Users */}
-                  <nav className={`flex-1 py-6 transition-all duration-300 ${
-                    theme === 'dark' ? 'bg-gray-900' : 'bg-white'
-                  }`}>
+                  <nav
+                    className={`flex-1 py-6 transition-all duration-300 ${
+                      theme === "dark" ? "bg-gray-900" : "bg-white"
+                    }`}
+                  >
                     <div className="space-y-2 px-4">
                       <button
                         onClick={() => {
@@ -714,16 +781,18 @@ const Header = ({
                           setIsMenuOpen(false);
                         }}
                         className={`group w-full flex items-center gap-4 p-4 rounded-xl transition-all duration-300 hover:shadow-md ${
-                          theme === 'dark'
-                            ? 'text-gray-200 hover:bg-gray-800 border border-transparent hover:border-blue-500/30'
-                            : 'text-slate-700 hover:bg-slate-50 border border-transparent hover:border-slate-200'
+                          theme === "dark"
+                            ? "text-gray-200 hover:bg-gray-800 border border-transparent hover:border-blue-500/30"
+                            : "text-slate-700 hover:bg-slate-50 border border-transparent hover:border-slate-200"
                         }`}
                       >
-                        <div className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300 ${
-                          theme === 'dark'
-                            ? 'bg-blue-900/50 text-blue-400 group-hover:bg-blue-800/60 border border-blue-700/50'
-                            : 'bg-blue-100 text-blue-600 group-hover:bg-blue-200 border border-blue-200'
-                        }`}>
+                        <div
+                          className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300 ${
+                            theme === "dark"
+                              ? "bg-blue-900/50 text-blue-400 group-hover:bg-blue-800/60 border border-blue-700/50"
+                              : "bg-blue-100 text-blue-600 group-hover:bg-blue-200 border border-blue-200"
+                          }`}
+                        >
                           <FiHome className="w-5 h-5" />
                         </div>
                         <span className="font-medium">Test Series</span>
@@ -735,16 +804,18 @@ const Header = ({
                           setIsMenuOpen(false);
                         }}
                         className={`group w-full flex items-center gap-4 p-4 rounded-xl transition-all duration-300 hover:shadow-md ${
-                          theme === 'dark'
-                            ? 'text-gray-200 hover:bg-gray-800 border border-transparent hover:border-orange-500/30'
-                            : 'text-slate-700 hover:bg-slate-50 border border-transparent hover:border-slate-200'
+                          theme === "dark"
+                            ? "text-gray-200 hover:bg-gray-800 border border-transparent hover:border-orange-500/30"
+                            : "text-slate-700 hover:bg-slate-50 border border-transparent hover:border-slate-200"
                         }`}
                       >
-                        <div className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300 ${
-                          theme === 'dark'
-                            ? 'bg-orange-900/50 text-orange-400 group-hover:bg-orange-800/60 border border-orange-700/50'
-                            : 'bg-orange-100 text-orange-600 group-hover:bg-orange-200 border border-orange-200'
-                        }`}>
+                        <div
+                          className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300 ${
+                            theme === "dark"
+                              ? "bg-orange-900/50 text-orange-400 group-hover:bg-orange-800/60 border border-orange-700/50"
+                              : "bg-orange-100 text-orange-600 group-hover:bg-orange-200 border border-orange-200"
+                          }`}
+                        >
                           <FaPuzzlePiece className="w-5 h-5" />
                         </div>
                         <span className="font-medium">Welcome</span>
@@ -753,9 +824,13 @@ const Header = ({
                   </nav>
 
                   {/* Login Button */}
-                  <div className={`border-t px-4 py-4 transition-all duration-300 ${
-                    theme === 'dark' ? 'border-gray-700 bg-gray-900' : 'bg-white'
-                  }`}>
+                  <div
+                    className={`border-t px-4 py-4 transition-all duration-300 ${
+                      theme === "dark"
+                        ? "border-gray-700 bg-gray-900"
+                        : "bg-white"
+                    }`}
+                  >
                     <button
                       onClick={() => {
                         // Direct redirect to login page

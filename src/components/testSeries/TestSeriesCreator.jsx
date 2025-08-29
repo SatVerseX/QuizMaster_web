@@ -4,6 +4,8 @@ import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { examCategories } from '../../utils/constants/examCategories';
+import usePopup from '../../hooks/usePopup';
+import BeautifulPopup from '../common/BeautifulPopup';
 import { 
   FiPlus, 
   FiDollarSign, 
@@ -21,6 +23,7 @@ import {
 const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
   const { currentUser } = useAuth();
   const { isDark } = useTheme();
+  const { popupState, showError, showSuccess, hidePopup } = usePopup();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1); // 1: Basic Info, 2: Pricing & Payments
 
@@ -112,7 +115,7 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
       
     } catch (error) {
       console.error('Error creating test series:', error);
-      alert('Failed to create test series. Please try again.');
+      showError('Failed to create test series. Please try again.', 'Creation Error');
     } finally {
       setLoading(false);
     }
@@ -750,6 +753,12 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
         </div>
         </div>
       </div>
+
+      {/* Beautiful Popup */}
+      <BeautifulPopup
+        {...popupState}
+        onClose={hidePopup}
+      />
     </div>
   );
 };

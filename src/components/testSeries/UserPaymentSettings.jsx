@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
+import usePopup from '../../hooks/usePopup';
+import BeautifulPopup from '../common/BeautifulPopup';
 import { 
   FiCreditCard, 
   FiSave, 
@@ -17,6 +19,7 @@ import { FaRupeeSign, FaPhoneAlt, FaUniversity } from 'react-icons/fa';
 
 const UserPaymentSettings = ({ onClose, showModal = false }) => {
   const { currentUser } = useAuth();
+  const { popupState, showError, showSuccess, hidePopup } = usePopup();
   const [paymentData, setPaymentData] = useState({
     bankAccount: {
       accountNumber: '',
@@ -83,20 +86,20 @@ const UserPaymentSettings = ({ onClose, showModal = false }) => {
       // Validate required fields
       if (activeTab === 'bank') {
         if (!paymentData.bankAccount.accountNumber || !paymentData.bankAccount.ifscCode) {
-          alert('Please fill all bank account details');
+          showError('Please fill all bank account details', 'Validation Error');
           return;
         }
         
         // Validate IFSC format
         const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
         if (!ifscRegex.test(paymentData.bankAccount.ifscCode)) {
-          alert('Please enter a valid IFSC code');
+          showError('Please enter a valid IFSC code', 'Invalid IFSC Code');
           return;
         }
       }
 
       if (activeTab === 'upi' && !paymentData.upi.upiId) {
-        alert('Please enter UPI ID');
+        showError('Please enter UPI ID', 'Validation Error');
         return;
       }
 
@@ -113,7 +116,7 @@ const UserPaymentSettings = ({ onClose, showModal = false }) => {
       if (onClose) onClose();
     } catch (error) {
       console.error('Error saving payment settings:', error);
-      alert('❌ Failed to save payment settings');
+      showError('Failed to save payment settings', 'Save Error');
     } finally {
       setSaving(false);
     }
@@ -304,7 +307,15 @@ const UserPaymentSettings = ({ onClose, showModal = false }) => {
     );
   }
 
-  return content;
+  return (
+    <>
+      {content}
+      <BeautifulPopup
+        {...popupState}
+        onClose={hidePopup}
+      />
+    </>
+  );
 };
 
 export default UserPaymentSettings;
