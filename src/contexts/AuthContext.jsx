@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
@@ -26,19 +26,17 @@ export const AuthProvider = ({ children }) => {
   const [isCreator, setIsCreator] = useState(false);
 
   // Email/Password signup
-  const signup = async (email, password, displayName) => {
+  const signup = useCallback(async (email, password, displayName) => {
     const { user } = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(user, { displayName });
     return user;
-  };
+  }, []);
 
   // Email/Password login
-  const login = (email, password) => {
-    return signInWithEmailAndPassword(auth, email, password);
-  };
+  const login = useCallback((email, password) => signInWithEmailAndPassword(auth, email, password), []);
 
   // Google Sign In
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = useCallback(async () => {
     try {
       // Configure Google provider
       googleProvider.setCustomParameters({
@@ -51,12 +49,10 @@ export const AuthProvider = ({ children }) => {
       console.error('Google sign in error:', error);
       throw error;
     }
-  };
+  }, []);
 
   // Logout
-  const logout = () => {
-    return signOut(auth);
-  };
+  const logout = useCallback(() => signOut(auth), []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -79,7 +75,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, [currentUser]);
 
-  const value = {
+  const value = useMemo(() => ({
     currentUser,
     signup,
     login,
@@ -88,7 +84,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     isAdmin,
     isCreator
-  };
+  }), [currentUser, signup, login, signInWithGoogle, logout, loading, isAdmin, isCreator]);
 
   return (
     <AuthContext.Provider value={value}>

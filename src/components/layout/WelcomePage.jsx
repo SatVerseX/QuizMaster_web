@@ -2,11 +2,12 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useTheme } from "../../contexts/ThemeContext";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "../../lib/firebase";
 
 import {
   FiArrowRight,
   FiBook,
-  FiCpu,
   FiAward,
   FiTrendingUp,
   FiUsers,
@@ -26,13 +27,14 @@ import { motion, useScroll, useTransform } from "framer-motion";
 
 import ComplaintForm from "../feedback/ComplaintForm";
 import RecommendationForm from "../feedback/RecommendationForm";
+import InfiniteLogoCarousel from "../common/InfiniteLogoCarousel";
 
 const FadeSlide = ({ children, delay = 0, className = "" }) => (
   <motion.div
-    initial={{ opacity: 0, y: 40, scale: 0.96 }}
+    initial={{ opacity: 0, y: 24, scale: 0.98 }}
     whileInView={{ opacity: 1, y: 0, scale: 1 }}
     transition={{
-      duration: 0.6,
+      duration: 0.4,
       delay: delay / 1000,
       ease: [0.22, 1, 0.36, 1],
     }}
@@ -43,7 +45,7 @@ const FadeSlide = ({ children, delay = 0, className = "" }) => (
   </motion.div>
 );
 
-const Parallax = ({ children, start = 0, end = 120 }) => {
+const Parallax = ({ children, start = 0, end = 80 }) => {
   const { scrollYProgress } = useScroll({
     offset: ["start start", "end start"],
   });
@@ -53,7 +55,7 @@ const Parallax = ({ children, start = 0, end = 120 }) => {
 
 const Stagger = ({ items, render, baseDelay = 0 }) =>
   items.map((item, i) => (
-    <FadeSlide key={i} delay={baseDelay + i * 40}>
+    <FadeSlide key={i} delay={baseDelay + i * 30}>
       {render(item, i)}
     </FadeSlide>
   ));
@@ -62,30 +64,30 @@ const featureCards = [
   {
     icon: FaBrain,
     title: "AI-Powered Assessment Generation",
-    desc: "Adapts questions to learning objectives and skill levels.",
+    desc: "",
     color: "blue",
   },
   {
     icon: FiTrendingUp,
     title: "Advanced Analytics Dashboard",
-    desc: "Deep performance insights and predictive analytics.",
+    desc: "",
     color: "purple",
   },
   {
     icon: FaTrophy,
     title: "Enterprise Certification System",
-    desc: "Blockchain-verified certificates and badges.",
+    desc: "",
     color: "emerald",
   },
 ];
 
 const trustMetrics = [
-  { icon: FiUsers, value: "50 000+", label: "Active Learners", color: "blue" },
-  { icon: FiBook, value: "10 000+", label: "Assessments", color: "purple" },
-  { icon: FiBriefcase, value: "1 500+", label: "Educators", color: "green" },
+  { icon: FiUsers, value: "50,000+", label: "Active Learners", color: "blue" },
+  { icon: FiBook, value: "10,000+", label: "Assessments", color: "purple" },
+  { icon: FiBriefcase, value: "1,500+", label: "Educators", color: "green" },
   {
     icon: FiCheckCircle,
-    value: "2.5 M+",
+    value: "2.5M+",
     label: "Tests Completed",
     color: "yellow",
   },
@@ -151,8 +153,30 @@ const WelcomePage = ({ onGetStarted, onCreateSeries }) => {
   const [showComplaint, setShowComplaint] = useState(false);
   const [showRecommendation, setShowRecommendation] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [examinationLogos, setExaminationLogos] = useState([]);
+  const [logosLoading, setLogosLoading] = useState(true);
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    fetchExaminationLogos();
+  }, []);
+
+  const fetchExaminationLogos = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, "examinationLogos"));
+      const logosData = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setExaminationLogos(logosData);
+    } catch (error) {
+      console.error("Error fetching examination logos:", error);
+      setExaminationLogos([]);
+    } finally {
+      setLogosLoading(false);
+    }
+  };
 
   const mode = (light, dark) => (isDark ? dark : light);
 
@@ -163,40 +187,33 @@ const WelcomePage = ({ onGetStarted, onCreateSeries }) => {
         "bg-gradient-to-br from-gray-900 via-blue-900/10 to-purple-900/10"
       )}
     >
+      {/* Hero Section - Reduced padding and spacing */}
       <section
-        className={`section-padding relative transition-opacity duration-[1200ms] ${
+        className={`py-12 lg:py-16 px-4 sm:px-6 lg:px-8 relative transition-opacity duration-700 ${
           mounted ? "opacity-100" : "opacity-0"
         }`}
       >
-        {/* background blobs */}
+        {/* Subtle background elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div
-            className={`absolute top-20 right-20 w-96 h-96 rounded-full blur-3xl animate-pulse ${mode(
-              "bg-blue-400/8",
-              "bg-blue-500/10"
+            className={`absolute top-20 right-20 w-72 h-72 rounded-full blur-3xl animate-pulse ${mode(
+              "bg-blue-400/6",
+              "bg-blue-500/8"
             )}`}
           />
           <div
-            className={`absolute bottom-20 left-20 w-96 h-96 rounded-full blur-3xl animate-pulse delay-1000 ${mode(
-              "bg-indigo-400/6",
-              "bg-purple-500/10"
-            )}`}
-          />
-          <div
-            className={`absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full blur-3xl animate-pulse delay-500 ${mode(
-              "bg-blue-300/5",
-              "bg-orange-500/10"
+            className={`absolute bottom-20 left-20 w-72 h-72 rounded-full blur-3xl animate-pulse delay-1000 ${mode(
+              "bg-indigo-400/4",
+              "bg-purple-500/8"
             )}`}
           />
         </div>
 
-        <div className="container-responsive relative z-10">
-          <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-16">
-            {/* ------------- text column ------------- */}
-            <FadeSlide delay={200} className="flex-1 text-center lg:text-left">
-              
-
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold mb-8 leading-tight">
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
+            {/* Text Column - Reduced spacing */}
+            <FadeSlide delay={100} className="flex-1 text-center lg:text-left">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold mb-6 leading-tight tracking-tight">
                 <span
                   className={`text-transparent bg-clip-text ${mode(
                     "bg-gradient-to-r from-slate-800 via-slate-700 to-slate-600",
@@ -207,12 +224,12 @@ const WelcomePage = ({ onGetStarted, onCreateSeries }) => {
                 </span>
                 <div className="mt-2 flex items-center justify-center lg:justify-start">
                   <div
-                    className={`p-3 mr-4 rounded-xl shadow-lg ${mode(
+                    className={`p-2.5 mr-3 rounded-xl shadow-lg ${mode(
                       "bg-gradient-to-br from-orange-500 to-red-600",
                       "bg-gradient-to-br from-orange-500 to-red-600"
                     )}`}
                   >
-                    <FaPuzzlePiece className="w-8 h-8 lg:w-10 lg:h-10 text-white" />
+                    <FaPuzzlePiece className="w-6 h-6 lg:w-8 lg:h-8 text-white" />
                   </div>
                   <span
                     className={`text-transparent bg-clip-text ${mode(
@@ -226,7 +243,7 @@ const WelcomePage = ({ onGetStarted, onCreateSeries }) => {
               </h1>
 
               <p
-                className={`text-lg lg:text-xl mb-10 max-w-xl mx-auto lg:mx-0 leading-relaxed font-medium ${mode(
+                className={`text-lg lg:text-xl mb-8 max-w-xl mx-auto lg:mx-0 leading-relaxed ${mode(
                   "text-slate-600",
                   "text-gray-300"
                 )}`}
@@ -236,196 +253,111 @@ const WelcomePage = ({ onGetStarted, onCreateSeries }) => {
                 AI-powered platform.
               </p>
 
-              {/* call to action */}
-              <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
+              {/* CTA Buttons - Reduced padding and spacing */}
+              <div className="flex  flex-col sm:flex-row items-center gap-3 justify-center lg:justify-start">
                 <button
                   onClick={onGetStarted}
-                  className={`group relative w-full sm:w-auto px-8 py-4 font-semibold rounded-xl shadow-lg transition-transform hover:scale-105 text-lg ${mode(
-                    "bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:shadow-blue-500/30",
-                    "bg-gradient-to-r from-blue-600 via-blue-700 to-purple-600 text-white hover:shadow-blue-500/25"
+                  className={`flex justify-center group relative w-full sm:w-auto px-6 py-3 font-semibold rounded-xl shadow-lg transition-all duration-200 hover:scale-105 text-base  ${mode(
+                    "bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:shadow-blue-500/25",
+                    "bg-gradient-to-r from-blue-600 via-blue-700 to-purple-600 text-white hover:shadow-blue-500/20"
                   )}`}
                 >
-                  <span className="relative flex items-center gap-3">
-                    Get Started{" "}
-                    <FiArrowRight className="w-5 h-5 group-hover:translate-x-[4px]" />
+                  <span className="relative flex  items-center gap-2">
+                    Get Started
+                    <FiArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </span>
                 </button>
 
                 {isAdmin && (
                   <button
                     onClick={onCreateSeries}
-                    className={`group relative w-full sm:w-auto px-8 py-4 font-semibold rounded-xl border-2 shadow-lg transition-transform hover:scale-105 text-lg ${mode(
+                    className={`group relative w-full sm:w-auto px-6 py-3 font-semibold rounded-xl border-2 shadow-lg transition-all duration-200 hover:scale-105 text-base ${mode(
                       "bg-white text-slate-700 border-slate-300 hover:bg-slate-50 hover:border-slate-400",
                       "bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 text-white border-emerald-500/40"
                     )}`}
                   >
-                    <span className="relative flex items-center gap-3">
-                      <FiPlus className="w-5 h-5" />
+                    <span className="relative flex items-center gap-2">
+                      <FiPlus className="w-4 h-4" />
                       Create Series
                     </span>
                   </button>
                 )}
               </div>
-
-              
             </FadeSlide>
 
-            {/* ------------- visual card ------------- */}
-            <FadeSlide delay={400} className="flex-1 relative">
-              <div
-                className={`relative p-6 sm:p-8 rounded-2xl border backdrop-blur-sm ${mode(
-                  "bg-white border-slate-200/60 hover:shadow-slate-300/20",
-                  "bg-gradient-to-br from-gray-800/80 to-gray-900/80 border-gray-700/50 hover:shadow-blue-500/10"
-                )}`}
-              >
-                {/* quiz preview */}
-                <div className="mb-6 sm:mb-8">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div
-                      className={`p-3 rounded-xl border ${mode(
-                        "bg-white border-blue-200/60 shadow-sm",
-                        "bg-gradient-to-br from-blue-500/20 to-purple-500/20 border-blue-500/30"
-                      )}`}
-                    >
-                      <FaBrain
-                        className={`w-6 h-6 ${mode(
-                          "text-blue-600",
-                          "text-blue-400"
-                        )}`}
-                      />
-                    </div>
-                    <h3
-                      className={`text-2xl font-bold ${mode(
-                        "text-slate-800",
-                        "text-white"
-                      )}`}
-                    >
-                      Advanced Physics Assessment
-                    </h3>
-                  </div>
-
-                  <div
-                    className={`rounded-xl p-6 border ${mode(
-                      "bg-white border-slate-200/60 shadow-sm",
-                      "bg-gray-800/60 border-gray-700/50"
-                    )}`}
-                  >
-                    <p
-                      className={`mb-4 font-medium ${mode(
-                        "text-slate-700",
-                        "text-gray-300"
-                      )}`}
-                    >
-                      What is the fundamental unit of force in the International
-                      System of Units?
-                    </p>
-                    <div className="space-y-3">
-                      {[
-                        "A. Newton (N)",
-                        "B. Joule (J)",
-                        "C. Watt (W)",
-                        "D. Pascal (Pa)",
-                      ].map((opt, idx) => (
-                        <div
-                          key={idx}
-                          className={`p-3 rounded-lg border cursor-pointer transition-transform hover:scale-[1.02] ${
-                            idx === 0
-                              ? mode(
-                                  "bg-blue-50 border-blue-300/60 text-blue-700",
-                                  "bg-blue-600/30 border-blue-500/50 text-blue-200"
-                                )
-                              : mode(
-                                  "bg-white border-slate-200/60 hover:border-blue-300/60 text-slate-700",
-                                  "bg-gray-700/70 border-gray-600/50 hover:border-blue-500/50 text-gray-200"
-                                )
-                          }`}
-                        >
-                          <span className="text-sm font-medium">{opt}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="my-6">
-                    <div className="flex justify-between mb-2 text-sm font-medium">
-                      <span className={mode("text-slate-500", "text-gray-400")}>
-                        Question 1 of 25
-                      </span>
-                      <span className={mode("text-blue-600", "text-blue-400")}>
-                        4 %
-                      </span>
-                    </div>
-                    <div
-                      className={
-                        mode("bg-slate-200", "bg-gray-700") +
-                        " w-full h-2 rounded-full"
-                      }
-                    >
-                      <div className="bg-gradient-to-r from-blue-500 to-indigo-500 h-2 rounded-full w-[4%]" />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex gap-2">
-                      {[1, 2, 3, "…", 25].map((n, i) => (
-                        <div
-                          key={i}
-                          className={`w-8 h-8 rounded-lg border flex items-center justify-center text-sm font-medium ${
-                            i === 0
-                              ? mode(
-                                  "bg-blue-100 border-blue-400/60 text-blue-700",
-                                  "bg-blue-600/30 border-blue-500/50 text-blue-300"
-                                )
-                              : i === 1
-                              ? mode(
-                                  "bg-blue-50 border-blue-300/50 text-blue-600",
-                                  "bg-blue-600/20 border-blue-500/40 text-blue-400"
-                                )
-                              : mode(
-                                  "bg-white border-slate-300/60 text-slate-500",
-                                  "bg-gray-700 border-gray-600 text-gray-400"
-                                )
-                          }`}
-                        >
-                          {n}
-                        </div>
-                      ))}
-                    </div>
-                    <button
-                      className={`px-6 py-2 rounded-lg font-semibold ${mode(
-                        "bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700",
-                        "bg-gradient-to-r from-green-600 to-emerald-600 text-white"
-                      )}`}
-                    >
-                      Continue
-                    </button>
-                  </div>
+            {/* Professional QuizMaster Advertisement Image */}
+            <FadeSlide delay={200} className="flex-1 relative">
+              <div className="relative">
+                {/* Main Advertisement Image */}
+                <div className="relative rounded-3xl overflow-hidden shadow-2xl transform hover:scale-[1.02] transition-transform duration-300">
+                  <img
+                    src="https://res.cloudinary.com/dn9rqfdyg/image/upload/v1756867651/quizmaster-advertisement-removebg-preview_mfxcyn.png"
+                    alt="QuizMaster Professional Advertisement"
+                    className="w-full h-auto object-contain rounded-3xl"
+                    style={{ maxHeight: '600px' }}
+                  />
+                  
+                  {/* Subtle overlay for better text contrast */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent pointer-events-none"></div>
                 </div>
 
-                {/* stats */}
-                <div className="grid grid-cols-3 gap-4 mb-6">
+                {/* Floating Elements for Visual Appeal */}
+                <Parallax>
+                  <div
+                    className={`absolute -top-4 -right-4 p-3 rounded-2xl border shadow-lg rotate-6 backdrop-blur-sm ${mode(
+                      "bg-white border-orange-200/60 shadow-orange-200/30",
+                      "bg-gradient-to-br from-orange-500/10 to-red-500/10 border-orange-500/30"
+                    )}`}
+                  >
+                    <FaGraduationCap
+                      className={`w-6 h-6 ${mode(
+                        "text-orange-600",
+                        "text-orange-400"
+                      )}`}
+                    />
+                  </div>
+                </Parallax>
+                
+                <Parallax start={0} end={-80}>
+                  <div
+                    className={`absolute -bottom-4 -left-4 p-3 rounded-2xl border shadow-lg -rotate-6 backdrop-blur-sm ${mode(
+                      "bg-white border-blue-200/60 shadow-blue-200/30",
+                      "bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-blue-500/30"
+                    )}`}
+                  >
+                    <FaRocket
+                      className={`w-6 h-6 ${mode(
+                        "text-blue-600",
+                        "text-blue-400"
+                      )}`}
+                    />
+                  </div>
+                </Parallax>
+
+                {/* Trust Indicators */}
+                <div className="mt-6 grid grid-cols-3 gap-4">
                   {[
-                    { icon: FiBook, val: "25", lab: "Questions", c: "blue" },
-                    { icon: FiCpu, val: "45", lab: "Minutes", c: "indigo" },
-                    { icon: FiAward, val: "100", lab: "Points", c: "emerald" },
+                    { icon: FiUsers, val: "50K+", lab: "Active Users", c: "blue" },
+                    { icon: FiBook, val: "10K+", lab: "Assessments", c: "purple" },
+                    { icon: FiAward, val: "4.9★", lab: "Rating", c: "yellow" },
                   ].map((s, i) => (
                     <div
                       key={i}
-                      className={`rounded-xl p-3 border hover:scale-105 transition-transform ${
+                      className={`rounded-xl p-3 border transition-transform hover:scale-105 ${
                         isDark
-                          ? `bg-${s.c}-500/10 border-${s.c}-500/20`
-                          : `bg-white border-${s.c}-200/60 shadow-sm`
+                          ? `bg-gray-800/50 border-gray-700/50`
+                          : `bg-white border-slate-200/60 shadow-sm`
                       }`}
                     >
                       <div className="flex items-center gap-2">
                         <s.icon
-                          className={`w-5 h-5 ${
+                          className={`w-4 h-4 ${
                             isDark ? `text-${s.c}-400` : `text-${s.c}-600`
                           }`}
                         />
                         <div>
                           <div
-                            className={`font-bold ${
+                            className={`font-bold text-sm ${
                               isDark ? `text-${s.c}-300` : `text-${s.c}-700`
                             }`}
                           >
@@ -443,129 +375,200 @@ const WelcomePage = ({ onGetStarted, onCreateSeries }) => {
                     </div>
                   ))}
                 </div>
-
-                {/* progress footer */}
-                <div>
-                  <div className="flex justify-between text-xs font-medium mb-1">
-                    <span className={mode("text-blue-600", "text-blue-400")}>
-                      Assessment Progress
-                    </span>
-                    <span className={mode("text-blue-600", "text-blue-400")}>
-                      4 %
-                    </span>
-                  </div>
-                  <div
-                    className={
-                      mode("bg-slate-200", "bg-gray-700") +
-                      " w-full h-2 rounded-full"
-                    }
-                  >
-                    <div className="bg-gradient-to-r from-blue-500 to-indigo-500 h-2 rounded-full w-[4%]" />
-                  </div>
-                </div>
-
-                {/* floating icons */}
-                <Parallax>
-                  <div
-                    className={`absolute -top-8 -right-8 p-4 rounded-2xl border shadow-lg rotate-6 backdrop-blur-sm ${mode(
-                      "bg-white border-orange-200/60 shadow-orange-200/30",
-                      "bg-gradient-to-br from-orange-500/10 to-red-500/10 border-orange-500/30"
-                    )}`}
-                  >
-                    <FaGraduationCap
-                      className={`w-8 h-8 ${mode(
-                        "text-orange-600",
-                        "text-orange-400"
-                      )}`}
-                    />
-                  </div>
-                </Parallax>
-                <Parallax start={0} end={-120}>
-                  <div
-                    className={`absolute -bottom-8 -left-8 p-4 rounded-2xl border shadow-lg -rotate-6 backdrop-blur-sm ${mode(
-                      "bg-white border-blue-200/60 shadow-blue-200/30",
-                      "bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-blue-500/30"
-                    )}`}
-                  >
-                    <FaRocket
-                      className={`w-8 h-8 ${mode(
-                        "text-blue-600",
-                        "text-blue-400"
-                      )}`}
-                    />
-                  </div>
-                </Parallax>
               </div>
             </FadeSlide>
           </div>
         </div>
       </section>
 
-      <section className="section-padding">
-        <div className="container-responsive">
+      {/* Features Section - Reduced padding */}
+      <section className="py-12 px-4 sm:px-6 lg:px-8">
+  <div className="max-w-7xl mx-auto">
+    <FadeSlide className="text-center mb-12">
+      <h2
+        className={`text-3xl lg:text-4xl font-bold mb-4 tracking-tight ${mode(
+          "text-slate-800",
+          "text-white"
+        )}`}
+      >
+        Enterprise-Grade Features
+      </h2>
+      <p
+        className={`text-lg max-w-2xl mx-auto ${mode(
+          "text-slate-600",
+          "text-gray-300"
+        )}`}
+      >
+        Powerful tools for education, corporate training and professional
+        development.
+      </p>
+    </FadeSlide>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <Stagger
+        items={featureCards}
+        baseDelay={50}
+        render={(f) => (
+          <div
+            className={`group p-6 rounded-2xl border transition-all duration-300 ${
+              isDark
+                ? `bg-gray-800/50 border-gray-700/50 hover:border-${f.color}-500/50 hover:shadow-${f.color}-500/20`
+                : `bg-${f.color}-500/10 border-slate-200/60 hover:border-${f.color}-300/60 hover:shadow-${f.color}-300/20`
+            }`}
+          >
+            <div className="text-center">
+              <span
+                className={`w-14 h-14 flex items-center justify-center rounded-2xl mb-5 mx-auto transition-colors ${
+                  isDark
+                    ? `bg-${f.color}-500/20 text-${f.color}-400 group-hover:bg-${f.color}-500/30`
+                    : `bg-white text-${f.color}-600 group-hover:bg-${f.color}-200/60`
+                }`}
+              >
+                <f.icon className="w-7 h-7" />
+              </span>
+              <h3
+                className={`text-xl font-bold mb-3 ${mode(
+                  `text-${f.color}-700`,
+                  "text-white"
+                )}`}
+              >
+                {f.title}
+              </h3>
+              <p
+                className={`text-sm leading-relaxed ${mode(
+                  "text-slate-600",
+                  "text-gray-300"
+                )}`}
+              >
+                {f.description}
+              </p>
+            </div>
+          </div>
+        )}
+      />
+    </div>
+  </div>
+</section>
+
+
+      {/* Professional Learning Showcase Section */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
           <FadeSlide className="text-center mb-16">
             <h2
-              className={`text-4xl lg:text-5xl font-bold mb-6 ${mode(
+              className={`text-3xl lg:text-4xl font-bold mb-4 tracking-tight ${mode(
                 "text-slate-800",
                 "text-white"
               )}`}
             >
-              Enterprise-Grade Features
+              Experience Learning Excellence
             </h2>
             <p
-              className={`text-xl max-w-3xl mx-auto ${mode(
+              className={`text-lg max-w-2xl mx-auto ${mode(
                 "text-slate-600",
                 "text-gray-300"
               )}`}
             >
-              Powerful tools for education, corporate training and professional
-              development.
+              Discover how QuizMaster transforms education through interactive learning and collaborative experiences.
             </p>
           </FadeSlide>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <Stagger
-              items={featureCards}
-              baseDelay={100}
-              render={(f) => (
-                <div
-                  className={`group p-8 rounded-2xl border hover:scale-105 hover:shadow-xl transition-shadow ${
-                    isDark
-                      ? `bg-gray-800/50 border-gray-700/50 hover:border-${f.color}-500/50 hover:shadow-${f.color}-500/20`
-                      : `bg-white border-slate-200/60 hover:border-${f.color}-300/60 hover:shadow-${f.color}-300/20`
-                  }`}
-                >
-                  <div
-                    className={`w-16 h-16 flex items-center justify-center rounded-2xl mb-6 ${
-                      isDark
-                        ? `bg-${f.color}-500/20 text-${f.color}-400 group-hover:bg-${f.color}-500/30`
-                        : `bg-${f.color}-50 text-${f.color}-600 group-hover:bg-${f.color}-100`
-                    }`}
-                  >
-                    <f.icon className="w-8 h-8" />
+          <div className="relative">
+            {/* Professional Learning Journey Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              {/* Left Column - Interactive Study Session */}
+              <motion.div
+                initial={{ opacity: 0, x: -50 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+                viewport={{ once: false, amount: 0.3 }}
+                className="relative"
+              >
+                <div className="relative transition-all duration-300 hover:scale-[1.02]">
+                  {/* Image Container */}
+                  <div className="relative mb-6">
+                    <img
+                      src="https://res.cloudinary.com/dn9rqfdyg/image/upload/v1756869452/Generated_Image_September_03__2025_-_8_34AM-removebg-preview_mhxetl.png"
+                      alt="Interactive Study Session - QuizMaster Learning"
+                      className="w-full h-auto object-contain"
+                      style={{ maxHeight: '350px' }}
+                    />
+                    
+
                   </div>
-                  <h3
-                    className={`text-xl font-bold mb-4 ${mode(
-                      "text-slate-800",
-                      "text-white"
-                    )}`}
-                  >
-                    {f.title}
-                  </h3>
-                  <p className={mode("text-slate-600", "text-gray-300")}>
-                    {f.desc}
-                  </p>
+
+                  {/* Content */}
+                  <div className="text-center">
+                    <h3 className={`text-2xl font-bold mb-3 ${mode("text-slate-800", "text-white")}`}>
+                      Interactive Learning
+                    </h3>
+                    
+                  </div>
                 </div>
-              )}
-            />
+              </motion.div>
+
+              {/* Right Column - Collaborative Learning */}
+              <motion.div
+                initial={{ opacity: 0, x: 50 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+                viewport={{ once: false, amount: 0.3 }}
+                className="relative"
+              >
+                <div className="relative transition-all duration-300 hover:scale-[1.02]">
+                  {/* Image Container */}
+                  <div className="relative mb-6">
+                    <img
+                      src="https://res.cloudinary.com/dn9rqfdyg/image/upload/v1756869452/Generated_Image_September_03__2025_-_8_36AM-removebg-preview_mrlorc.png"
+                      alt="Collaborative Learning Environment - QuizMaster"
+                      className="w-full h-auto object-contain"
+                      style={{ maxHeight: '350px' }}
+                    />
+                    
+
+                  </div>
+
+                  {/* Content */}
+                  <div className="text-center">
+                    <h3 className={`text-2xl font-bold mb-3 ${mode("text-slate-800", "text-white")}`}>
+                      Collaborative Environment
+                    </h3>
+                    
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Professional Connection Element */}
+            <div className="flex justify-center mt-12">
+              <div className={`relative px-8 py-4 rounded-full border backdrop-blur-sm ${mode(
+                "bg-white border-emerald-200/60 shadow-lg",
+                "bg-gradient-to-r from-emerald-500/10 to-green-500/10 border-emerald-500/30 shadow-lg"
+              )}`}>
+                <div className="flex items-center gap-3">
+                  <FiArrowRight className={`w-5 h-5 ${mode("text-emerald-600", "text-emerald-400")}`} />
+                  <span className={`font-semibold ${mode("text-emerald-700", "text-emerald-300")}`}>
+                    Seamless Learning Journey
+                  </span>
+                  <FiArrowRight className={`w-5 h-5 ${mode("text-emerald-600", "text-emerald-400")}`} />
+                </div>
+              </div>
+            </div>
+
+
+
+
+
+
           </div>
         </div>
       </section>
 
-      <section className="section-padding">
-        <div className="container-responsive">
+      {/* Trust Metrics - More compact layout */}
+      <section className="py-10 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
           <div
-            className={`mt-16 pt-10 border-t ${mode(
+            className={`py-8 border-t ${mode(
               "border-slate-200",
               "border-gray-800"
             )}`}
@@ -576,14 +579,14 @@ const WelcomePage = ({ onGetStarted, onCreateSeries }) => {
                 render={(m) => (
                   <div className="flex flex-col items-center">
                     <div
-                      className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 border ${
+                      className={`w-14 h-14 rounded-full flex items-center justify-center mb-3 border transition-colors ${
                         isDark
                           ? `bg-${m.color}-500/10 border-${m.color}-500/30`
                           : `bg-white border-${m.color}-200/60 shadow-sm`
                       }`}
                     >
                       <m.icon
-                        className={`w-8 h-8 ${
+                        className={`w-7 h-7 ${
                           isDark ? `text-${m.color}-400` : `text-${m.color}-600`
                         }`}
                       />
@@ -596,7 +599,12 @@ const WelcomePage = ({ onGetStarted, onCreateSeries }) => {
                     >
                       {m.value}
                     </div>
-                    <div className={mode("text-slate-600", "text-gray-400")}>
+                    <div
+                      className={`text-sm ${mode(
+                        "text-slate-600",
+                        "text-gray-400"
+                      )}`}
+                    >
                       {m.label}
                     </div>
                   </div>
@@ -607,29 +615,65 @@ const WelcomePage = ({ onGetStarted, onCreateSeries }) => {
         </div>
       </section>
 
-      <section className="section-padding">
-        <div className="container-responsive">
-          <FadeSlide className="text-center mb-16">
-            <h2
-              className={`text-4xl lg:text-5xl font-bold mb-6 ${mode(
+      {/* Examination Logos - Infinite Carousel */}
+      <section className="py-10 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <FadeSlide className="text-center mb-10">
+            <h3
+              className={`text-2xl lg:text-3xl font-bold mb-3 ${mode(
                 "text-slate-800",
                 "text-white"
               )}`}
             >
-              Discover the incredible value we offer!
-            </h2>
+              Trusted by Leading Examination Bodies
+            </h3>
             <p
-              className={`text-xl max-w-3xl mx-auto ${mode(
+              className={`text-sm ${mode(
                 "text-slate-600",
-                "text-gray-300"
+                "text-gray-400"
               )}`}
             >
-              Unlock amazing benefits tailored just for you!
+              Join thousands of students preparing for competitive exams
             </p>
           </FadeSlide>
 
-          {/* billing toggle */}
-          <div className="flex justify-center mb-12">
+          {logosLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+            </div>
+          ) : (
+            <InfiniteLogoCarousel 
+              logos={examinationLogos.length > 0 ? examinationLogos : []}
+              className="w-full"
+              onLogoClick={(logo) => {
+                if (logo.websiteUrl) {
+                  window.open(logo.websiteUrl, '_blank', 'noopener,noreferrer');
+                }
+              }}
+              showNames={true}
+              speed={35}
+            />
+          )}
+        </div>
+      </section>
+
+      {/* Pricing Section - More compact */}
+      <section className="py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <FadeSlide className="text-center mb-12">
+            <h2
+              className={`text-3xl lg:text-4xl font-bold mb-4 ${mode(
+                "text-slate-800",
+                "text-white"
+              )}`}
+            >
+              Choose Your Plan
+            </h2>
+            
+          </FadeSlide>
+
+          {/* Billing Toggle - Reduced spacing */}
+          <div className="flex justify-center mb-10">
             <div
               className={`flex items-center p-1 rounded-xl border ${mode(
                 "bg-white border-slate-200 shadow-lg",
@@ -640,7 +684,7 @@ const WelcomePage = ({ onGetStarted, onCreateSeries }) => {
                 <button
                   key={i}
                   onClick={() => setBilling(b)}
-                  className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
+                  className={`px-5 py-2.5 rounded-lg font-semibold text-sm transition-colors ${
                     billing === b
                       ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg"
                       : mode(
@@ -655,14 +699,14 @@ const WelcomePage = ({ onGetStarted, onCreateSeries }) => {
             </div>
           </div>
 
-          {/* plan cards */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          {/* Plan Cards - Reduced padding and spacing */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
             <Stagger
               items={plans}
-              baseDelay={100}
+              baseDelay={50}
               render={(p) => (
                 <div
-                  className={`group relative p-8 rounded-2xl border flex flex-col hover:scale-105 hover:shadow-xl transition-shadow ${
+                  className={`group relative p-6 rounded-2xl border flex flex-col transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${
                     isDark
                       ? `bg-gray-800/50 border-gray-700/50 ${
                           p.popular
@@ -678,7 +722,7 @@ const WelcomePage = ({ onGetStarted, onCreateSeries }) => {
                 >
                   {p.popular && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <span className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-semibold px-4 py-1 rounded-full">
+                      <span className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
                         🔥 Most popular
                       </span>
                     </div>
@@ -686,16 +730,16 @@ const WelcomePage = ({ onGetStarted, onCreateSeries }) => {
 
                   <div className="text-center flex-1">
                     <h3
-                      className={`text-2xl font-bold mb-4 ${mode(
+                      className={`text-xl font-bold mb-3 ${mode(
                         "text-slate-800",
                         "text-white"
                       )}`}
                     >
                       {p.name}
                     </h3>
-                    <div className="mb-6">
+                    <div className="mb-5">
                       <div
-                        className={`text-4xl font-bold ${mode(
+                        className={`text-3xl font-bold ${mode(
                           "text-slate-800",
                           "text-white"
                         )}`}
@@ -709,30 +753,30 @@ const WelcomePage = ({ onGetStarted, onCreateSeries }) => {
                     </div>
                     <p
                       className={
-                        mode("text-slate-600", "text-gray-300") + " mb-8"
+                        mode("text-slate-600", "text-gray-300") + " mb-6"
                       }
                     >
                       {p.blurb}
                     </p>
 
                     <ul
-                      className={`space-y-3 mb-8 ${mode(
+                      className={`space-y-2 mb-6 text-left ${mode(
                         "text-slate-600",
                         "text-gray-300"
                       )}`}
                     >
                       {p.features.map((f, i) => (
-                        <li key={i} className="flex items-center gap-3">
-                          <FiCheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" />
-                          <span>{f}</span>
+                        <li key={i} className="flex items-start gap-2">
+                          <FiCheckCircle className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                          <span className="text-sm">{f}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
 
-                  <div className="mt-auto pt-6">
+                  <div className="mt-auto pt-4">
                     <button
-                      className={`w-full py-3 px-6 rounded-xl font-semibold transition-transform hover:scale-105 ${
+                      className={`w-full py-2.5 px-5 rounded-xl font-semibold text-sm transition-all duration-200 hover:scale-105 ${
                         p.popular
                           ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white"
                           : mode(
@@ -749,12 +793,12 @@ const WelcomePage = ({ onGetStarted, onCreateSeries }) => {
             />
           </div>
 
-          {/* pricing footnote */}
-          <div className="text-center mt-12">
+          {/* Pricing Footnote - Reduced spacing */}
+          <div className="text-center mt-8">
             <p className={mode("text-slate-500", "text-gray-400") + " text-sm"}>
               All plans include a 7-day free trial. Cancel anytime.
             </p>
-            <div className="flex items-center justify-center gap-6 mt-4 text-sm">
+            <div className="flex items-center justify-center gap-6 mt-3 text-sm">
               {["No Setup Fees", "Instant Access", "Secure Payment"].map(
                 (txt, i) => (
                   <div
@@ -774,61 +818,15 @@ const WelcomePage = ({ onGetStarted, onCreateSeries }) => {
         </div>
       </section>
 
-      <section className="section-padding">
-        <div className="container-responsive">
-          <FadeSlide delay={400}>
-            <div
-              className={`p-8 rounded-2xl border ${mode(
-                "bg-white border-slate-200/60 shadow-sm",
-                "bg-gray-800/50 border-gray-700/50"
-              )}`}
-            >
-              <div className="text-center mb-8">
-                <h3
-                  className={`text-2xl font-bold mb-4 ${mode(
-                    "text-slate-800",
-                    "text-white"
-                  )}`}
-                >
-                  Help Us Improve
-                </h3>
-                <p className={mode("text-slate-600", "text-gray-300")}>
-                  Your feedback drives our continuous innovation.
-                </p>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
-                <button
-                  onClick={() => setShowComplaint(true)}
-                  className={`flex items-center justify-center gap-3 px-6 py-3 rounded-xl font-semibold shadow-lg transition-transform hover:scale-105 border ${mode(
-                    "bg-white text-red-600 border-red-200/60 hover:bg-red-50 hover:border-red-300/60",
-                    "bg-gradient-to-r from-red-600 to-pink-500 text-white border-red-400/30"
-                  )}`}
-                >
-                  <FiCheckCircle className="w-5 h-5" />
-                  Report Issue
-                </button>
-                <button
-                  onClick={() => setShowRecommendation(true)}
-                  className={`flex items-center justify-center gap-3 px-6 py-3 rounded-xl font-semibold shadow-lg transition-transform hover:scale-105 border ${mode(
-                    "bg-white text-blue-600 border-blue-200/60 hover:bg-blue-50 hover:border-blue-300/60",
-                    "bg-gradient-to-r from-cyan-600 to-blue-500 text-white border-cyan-400/30"
-                  )}`}
-                >
-                  <FiPlus className="w-5 h-5" />
-                  Suggest Feature
-                </button>
-              </div>
-            </div>
-          </FadeSlide>
-        </div>
-      </section>
+      {/* Feedback Section moved to Footer */}
 
+      {/* Admin Dashboard Button - Smaller and refined */}
       {isAdmin && (
-        <Parallax start={0} end={-60}>
-          <div className="fixed z-50 top-6 right-8">
+        <Parallax start={0} end={-40}>
+          <div className="fixed z-50 top-4 right-6">
             <button
               onClick={() => navigate("/admin-dashboard")}
-              className={`px-6 py-3 rounded-full font-semibold shadow-lg hover:scale-105 transition-transform border-2 ${mode(
+              className={`px-5 py-2.5 rounded-full font-semibold text-sm shadow-lg hover:scale-105 transition-all duration-200 border-2 ${mode(
                 "bg-white text-slate-700 border-slate-300 hover:bg-slate-50 hover:border-slate-400",
                 "bg-gradient-to-r from-teal-500 to-cyan-600 text-white border-white/70 hover:from-cyan-600 hover:to-teal-500"
               )}`}
@@ -839,6 +837,7 @@ const WelcomePage = ({ onGetStarted, onCreateSeries }) => {
         </Parallax>
       )}
 
+      {/* Modal Components - Unchanged */}
       {showComplaint && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div
@@ -883,6 +882,24 @@ const WelcomePage = ({ onGetStarted, onCreateSeries }) => {
           </div>
         </div>
       )}
+
+      {/* CSS Animations - Optimized timing */}
+      <style>{`
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-12px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-slideDown {
+          animation: slideDown 0.2s ease-out;
+        }
+
+      `}</style>
     </div>
   );
 };

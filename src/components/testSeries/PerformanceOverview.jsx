@@ -259,9 +259,9 @@ const PerformanceOverview = ({ attempt, questionAnalysis, showRecommendations, s
         </div>
       </div>
 
-      {/* Recommendations */}
+      {/* Recommendations - sticky and moved up visually */}
       {showRecommendations && (
-        <div className={`backdrop-blur-xl border rounded-xl sm:rounded-2xl lg:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-2xl ${
+        <div className={`backdrop-blur-xl border rounded-xl sm:rounded-2xl lg:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-2xl lg:sticky lg:top-6 ${
           isDark 
             ? 'bg-gradient-to-br from-purple-800/40 to-blue-800/40 border-purple-500/40' 
             : 'bg-gradient-to-br from-purple-100/60 to-blue-100/60 border-purple-300/40'

@@ -13,7 +13,7 @@ const apiCall = async (url, options = {}) => {
   try {
     const token = await getAuthToken();
     
-    const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}${url}`, {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || ''}${url}`, {
       ...options,
       headers: {
         'Content-Type': 'application/json',

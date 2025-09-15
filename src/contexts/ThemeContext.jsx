@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 
 const ThemeContext = createContext();
 
@@ -62,29 +62,31 @@ export const ThemeProvider = ({ children }) => {
   }, [isDark]);
 
   // Toggle theme
-  const toggleTheme = () => {
+  const toggleTheme = useCallback(() => {
     setIsDark(prev => !prev);
-  };
+  }, []);
 
   // Explicitly set theme
-  const setLightMode = () => setIsDark(false);
-  const setDarkMode = () => setIsDark(true);
+  const setLightMode = useCallback(() => setIsDark(false), []);
+  const setDarkMode = useCallback(() => setIsDark(true), []);
   
   // Reset to system preference
-  const resetTheme = () => {
+  const resetTheme = useCallback(() => {
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     setIsDark(systemPrefersDark);
-  };
+  }, []);
+
+  const value = useMemo(() => ({
+    isDark,
+    toggleTheme,
+    setLightMode,
+    setDarkMode,
+    resetTheme,
+    theme: isDark ? 'dark' : 'light'
+  }), [isDark, toggleTheme, setLightMode, setDarkMode, resetTheme]);
 
   return (
-    <ThemeContext.Provider value={{ 
-      isDark, 
-      toggleTheme, 
-      setLightMode,
-      setDarkMode,
-      resetTheme,
-      theme: isDark ? 'dark' : 'light' 
-    }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );

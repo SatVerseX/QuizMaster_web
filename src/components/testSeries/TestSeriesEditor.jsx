@@ -12,7 +12,9 @@ import {
 } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { examCategories } from '../../utils/constants/examCategories';
+import ImageAdjustment from '../common/ImageAdjustment';
 import { 
   FiEdit, 
   FiTrash2, 
@@ -189,6 +191,9 @@ const SortableTestItem = ({
   onDelete, 
   onDuplicate 
 }) => {
+  const { isDark } = useTheme();
+  const mode = (light, dark) => (isDark ? dark : light);
+  
   const {
     attributes,
     listeners,
@@ -206,9 +211,9 @@ const SortableTestItem = ({
 
   const getDifficultyColor = (difficulty) => {
     switch (difficulty?.toLowerCase()) {
-      case 'easy': return 'bg-green-500/20 text-green-400 border-green-500/30';
-      case 'hard': return 'bg-red-500/20 text-red-400 border-red-500/30';
-      default: return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+      case 'easy': return mode('bg-green-100 text-green-700 border-green-300', 'bg-green-500/20 text-green-400 border-green-500/30');
+      case 'hard': return mode('bg-red-100 text-red-700 border-red-300', 'bg-red-500/20 text-red-400 border-red-500/30');
+      default: return mode('bg-yellow-100 text-yellow-700 border-yellow-300', 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30');
     }
   };
 
@@ -216,23 +221,35 @@ const SortableTestItem = ({
     <div
       ref={setNodeRef}
       style={style}
-      className={`group relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl border border-gray-600/40 rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-500 ${
+      className={`group relative ${mode(
+        "bg-white backdrop-blur-xl border border-slate-200 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-500",
+        "bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl border border-gray-600/40 rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-500"
+      )} ${
         isDragging 
           ? 'border-blue-500/50 shadow-blue-500/25 scale-105 z-50' 
-          : 'hover:scale-[1.02] hover:border-blue-500/30'
+          : mode(
+              'hover:scale-[1.02] hover:border-blue-500/30',
+              'hover:scale-[1.02] hover:border-blue-500/30'
+            )
       }`}
     >
       {/* Background Glow Effect */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      <div className={mode(
+        "absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300",
+        "absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+      )}></div>
       
       <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
         {/* Enhanced Drag Handle */}
         <div
           {...attributes}
           {...listeners}
-          className="cursor-grab active:cursor-grabbing p-2 sm:p-3 bg-gray-700/50 hover:bg-gray-600/50 rounded-xl transition-all duration-300 group-hover:bg-blue-600/30"
+          className={mode(
+            "cursor-grab active:cursor-grabbing p-2 sm:p-3 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all duration-300 group-hover:bg-blue-100",
+            "cursor-grab active:cursor-grabbing p-2 sm:p-3 bg-gray-700/50 hover:bg-gray-600/50 rounded-xl transition-all duration-300 group-hover:bg-blue-600/30"
+          )}
         >
-          <FiMenu className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-hover:text-blue-400" />
+          <FiMenu className={mode("w-4 h-4 sm:w-5 sm:h-5 text-slate-600 group-hover:text-blue-600", "w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-hover:text-blue-400")} />
         </div>
 
         {/* Enhanced Selection Checkbox */}
@@ -241,7 +258,10 @@ const SortableTestItem = ({
             type="checkbox"
             checked={isSelected}
             onChange={(e) => onSelect(e.target.checked)}
-            className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+            className={mode(
+              "w-4 h-4 sm:w-5 sm:h-5 text-blue-600 bg-white border-slate-300 rounded focus:ring-blue-500 focus:ring-2",
+              "w-4 h-4 sm:w-5 sm:h-5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+            )}
           />
           {isSelected && (
             <div className="absolute inset-0 bg-blue-500 rounded opacity-20 animate-pulse"></div>
@@ -251,16 +271,19 @@ const SortableTestItem = ({
         {/* Enhanced Test Info */}
         <div className="flex-1 min-w-0">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-3">
-            <h4 className="text-lg sm:text-xl font-bold text-white group-hover:text-blue-200 transition-colors truncate">
+            <h4 className={mode("text-lg sm:text-xl font-bold text-slate-800 group-hover:text-blue-600 transition-colors truncate", "text-lg sm:text-xl font-bold text-white group-hover:text-blue-200 transition-colors truncate")}>
               {test.title}
             </h4>
             
             {/* Enhanced Badges */}
             <div className="flex items-center gap-2 flex-wrap">
               {test.isAIGenerated && (
-                <div className="px-2 sm:px-3 py-1 sm:py-1.5 bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-sm rounded-full border border-purple-500/30 flex items-center gap-1 sm:gap-2">
-                  <FaRobot className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-purple-400" />
-                  <span className="text-xs font-semibold text-purple-300">AI Generated</span>
+                <div className={mode(
+                  "px-2 sm:px-3 py-1 sm:py-1.5 bg-gradient-to-r from-purple-100 to-pink-100 backdrop-blur-sm rounded-full border border-purple-300 flex items-center gap-1 sm:gap-2",
+                  "px-2 sm:px-3 py-1 sm:py-1.5 bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-sm rounded-full border border-purple-500/30 flex items-center gap-1 sm:gap-2"
+                )}>
+                  <FaRobot className={mode("w-2.5 h-2.5 sm:w-3 sm:h-3 text-purple-600", "w-2.5 h-2.5 sm:w-3 sm:h-3 text-purple-400")} />
+                  <span className={mode("text-xs font-semibold text-purple-700", "text-xs font-semibold text-purple-300")}>AI Generated</span>
                 </div>
               )}
               
@@ -270,18 +293,27 @@ const SortableTestItem = ({
             </div>
           </div>
           
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 lg:gap-8 text-xs sm:text-sm text-gray-400">
-            <div className="flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-blue-500/10 rounded-lg">
-              <FiBookOpen className="w-3 h-3 sm:w-4 sm:h-4 text-blue-400" />
-              <span className="text-blue-300 font-medium">{test.questions?.length || 0} questions</span>
+          <div className={mode("flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 lg:gap-8 text-xs sm:text-sm text-slate-600", "flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 lg:gap-8 text-xs sm:text-sm text-gray-400")}>
+            <div className={mode(
+              "flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-blue-100 rounded-lg",
+              "flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-blue-500/10 rounded-lg"
+            )}>
+              <FiBookOpen className={mode("w-3 h-3 sm:w-4 sm:h-4 text-blue-600", "w-3 h-3 sm:w-4 sm:h-4 text-blue-400")} />
+              <span className={mode("text-blue-700 font-medium", "text-blue-300 font-medium")}>{test.questions?.length || 0} questions</span>
             </div>
-            <div className="flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-emerald-500/10 rounded-lg">
-              <FiClock className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-400" />
-              <span className="text-emerald-300 font-medium">{test.timeLimit || 0} min</span>
+            <div className={mode(
+              "flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-emerald-100 rounded-lg",
+              "flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-emerald-500/10 rounded-lg"
+            )}>
+              <FiClock className={mode("w-3 h-3 sm:w-4 sm:h-4 text-emerald-600", "w-3 h-3 sm:w-4 sm:h-4 text-emerald-400")} />
+              <span className={mode("text-emerald-700 font-medium", "text-emerald-300 font-medium")}>{test.timeLimit || 0} min</span>
             </div>
-            <div className="flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-orange-500/10 rounded-lg">
-              <FiUsers className="w-3 h-3 sm:w-4 sm:h-4 text-orange-400" />
-              <span className="text-orange-300 font-medium">{test.totalAttempts || 0} attempts</span>
+            <div className={mode(
+              "flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-orange-100 rounded-lg",
+              "flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-orange-500/10 rounded-lg"
+            )}>
+              <FiUsers className={mode("w-3 h-3 sm:w-4 sm:h-4 text-orange-600", "w-3 h-3 sm:w-4 sm:h-4 text-orange-400")} />
+              <span className={mode("text-orange-700 font-medium", "text-orange-300 font-medium")}>{test.totalAttempts || 0} attempts</span>
             </div>
           </div>
         </div>
@@ -290,24 +322,33 @@ const SortableTestItem = ({
         <div className="flex items-center gap-1 sm:gap-2">
           <button
             onClick={() => onEdit(test)}
-            className="group/btn p-2 sm:p-3 bg-blue-500/20 hover:bg-blue-500/30 rounded-xl transition-all duration-300 hover:scale-110"
+            className={mode(
+              "group/btn p-2 sm:p-3 bg-blue-100 hover:bg-blue-200 rounded-xl transition-all duration-300 hover:scale-110",
+              "group/btn p-2 sm:p-3 bg-blue-500/20 hover:bg-blue-500/30 rounded-xl transition-all duration-300 hover:scale-110"
+            )}
             title="Edit Test"
           >
-            <FiEdit className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400 group-hover/btn:text-blue-300" />
+            <FiEdit className={mode("w-4 h-4 sm:w-5 sm:h-5 text-blue-600 group-hover/btn:text-blue-700", "w-4 h-4 sm:w-5 sm:h-5 text-blue-400 group-hover/btn:text-blue-300")} />
           </button>
           <button
             onClick={() => onDuplicate(test.id)}
-            className="group/btn p-2 sm:p-3 bg-emerald-500/20 hover:bg-emerald-500/30 rounded-xl transition-all duration-300 hover:scale-110"
+            className={mode(
+              "group/btn p-2 sm:p-3 bg-emerald-100 hover:bg-emerald-200 rounded-xl transition-all duration-300 hover:scale-110",
+              "group/btn p-2 sm:p-3 bg-emerald-500/20 hover:bg-emerald-500/30 rounded-xl transition-all duration-300 hover:scale-110"
+            )}
             title="Duplicate Test"
           >
-            <FiCopy className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400 group-hover/btn:text-emerald-300" />
+            <FiCopy className={mode("w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 group-hover/btn:text-emerald-700", "w-4 h-4 sm:w-5 sm:h-5 text-emerald-400 group-hover/btn:text-emerald-300")} />
           </button>
           <button
             onClick={() => onDelete(test.id)}
-            className="group/btn p-2 sm:p-3 bg-red-500/20 hover:bg-red-500/30 rounded-xl transition-all duration-300 hover:scale-110"
+            className={mode(
+              "group/btn p-2 sm:p-3 bg-red-100 hover:bg-red-200 rounded-xl transition-all duration-300 hover:scale-110",
+              "group/btn p-2 sm:p-3 bg-red-500/20 hover:bg-red-500/30 rounded-xl transition-all duration-300 hover:scale-110"
+            )}
             title="Delete Test"
           >
-            <FiTrash2 className="w-4 h-4 sm:w-5 sm:h-5 text-red-400 group-hover/btn:text-red-300" />
+            <FiTrash2 className={mode("w-4 h-4 sm:w-5 sm:h-5 text-red-600 group-hover/btn:text-red-700", "w-4 h-4 sm:w-5 sm:h-5 text-red-400 group-hover/btn:text-red-300")} />
           </button>
         </div>
       </div>
@@ -325,12 +366,17 @@ const TestSeriesEditor = ({
   onSeriesDeleted 
 }) => {
   const { currentUser } = useAuth();
+  const { isDark } = useTheme();
+  
+  // Theme mode function similar to WelcomePage
+  const mode = (light, dark) => (isDark ? dark : light);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterBy, setFilterBy] = useState('all');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showUnpublishConfirm, setShowUnpublishConfirm] = useState(false);
+  const [showImageAdjustment, setShowImageAdjustment] = useState(false);
   
   // Toast State
   const [toasts, setToasts] = useState([]);
@@ -344,11 +390,16 @@ const TestSeriesEditor = ({
     examCategory: testSeries?.examCategory || '',
     examSubcategory: testSeries?.examSubcategory || '',
     difficulty: testSeries?.difficulty || 'medium',
-    estimatedDuration: testSeries?.estimatedDuration || 60,
+    
     tags: testSeries?.tags || [],
     coverImageUrl: testSeries?.coverImageUrl || '',
-    isPublished: testSeries?.isPublished || true,
-    isActive: testSeries?.isActive || true
+    isPublished: testSeries?.isPublished ?? true,
+    isActive: testSeries?.isActive ?? true,
+    negativeMarking: testSeries?.negativeMarking || {
+      enabled: false,
+      type: 'fractional',
+      value: 0.25
+    }
   });
 
   const [tests, setTests] = useState([]);
@@ -601,147 +652,169 @@ const TestSeriesEditor = ({
   const renderGeneralTab = () => (
     <div className="space-y-10">
       {/* Enhanced Basic Information */}
-      <div className="relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl border border-gray-600/40 rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 rounded-2xl sm:rounded-3xl"></div>
+      <div className={mode(
+        "relative bg-white backdrop-blur-xl border border-slate-200 rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10 shadow-xl",
+        "relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl border border-gray-600/40 rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl"
+      )}>
+        <div className={mode(
+          "absolute inset-0 bg-white rounded-2xl sm:rounded-3xl",
+          "absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 rounded-2xl sm:rounded-3xl"
+        )}></div>
         <div className="relative">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6 sm:mb-8">
-            <div className="p-3 sm:p-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl sm:rounded-2xl shadow-lg">
-              <FiBookOpen className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+            <div className={mode(
+              "p-3 sm:p-4 bg-white rounded-xl sm:rounded-2xl shadow-md",
+              "p-3 sm:p-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl sm:rounded-2xl shadow-lg"
+            )}>
+              <FiBookOpen className={mode("w-6 h-6 sm:w-8 sm:h-8 text-blue-700", "w-6 h-6 sm:w-8 sm:h-8 text-white")} />
             </div>
             <div>
-              <h3 className="text-2xl sm:text-3xl font-bold text-white mb-2">Basic Information</h3>
-              <p className="text-gray-400 text-base sm:text-lg">Configure your test series details</p>
+              <h3 className={mode("text-2xl sm:text-3xl font-bold text-slate-800 mb-2", "text-2xl sm:text-3xl font-bold text-white mb-2")}>Basic Information</h3>
+              <p className={mode("text-slate-600 text-base sm:text-lg", "text-gray-400 text-base sm:text-lg")}>Configure your test series details</p>
             </div>
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
             <div className="space-y-3">
-              <label className="flex items-center gap-2 text-sm font-semibold text-gray-300">
-                <FiTarget className="w-4 h-4 text-blue-400" />
-                Series Title <span className="text-red-400">*</span>
+              <label className={mode("flex items-center gap-2 text-sm font-semibold text-slate-700", "flex items-center gap-2 text-sm font-semibold text-gray-300")}>
+                <FiTarget className={mode("w-4 h-4 text-blue-600", "w-4 h-4 text-blue-400")} />
+                Series Title <span className={mode("text-red-500", "text-red-400")}>*</span>
               </label>
               <input
                 type="text"
                 value={seriesData.title}
                 onChange={(e) => setSeriesData(prev => ({ ...prev, title: e.target.value }))}
-                className="w-full px-4 sm:px-6 py-3 sm:py-4 rounded-xl bg-gray-900/60 backdrop-blur-sm border border-gray-600/40 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 font-medium text-sm sm:text-base"
+                className={mode(
+                  "w-full px-4 sm:px-6 py-3 sm:py-4 rounded-xl bg-slate-50 backdrop-blur-sm border border-slate-300 text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 font-medium text-sm sm:text-base",
+                  "w-full px-4 sm:px-6 py-3 sm:py-4 rounded-xl bg-gray-900/60 backdrop-blur-sm border border-gray-600/40 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 font-medium text-sm sm:text-base"
+                )}
                 placeholder="Enter test series title"
               />
             </div>
 
             <div className="space-y-3">
-              <label className="flex items-center gap-2 text-sm font-semibold text-gray-300">
-                <FiImage className="w-4 h-4 text-green-400" />
-                Cover Image URL
-              </label>
+              <div className="flex items-center justify-between">
+                <label className={mode("flex items-center gap-2 text-sm font-semibold text-slate-700", "flex items-center gap-2 text-sm font-semibold text-gray-300")}>
+                  <FiImage className={mode("w-4 h-4 text-green-600", "w-4 h-4 text-green-400")} />
+                  Cover Image URL
+                </label>
+                <button
+                  onClick={() => setShowImageAdjustment(!showImageAdjustment)}
+                  className={mode(
+                    `flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-300 ${
+                      showImageAdjustment
+                        ? 'bg-green-500 text-white'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`,
+                    `flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-300 ${
+                      showImageAdjustment
+                        ? 'bg-green-500 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`
+                  )}
+                >
+                  <FiSettings className="w-4 h-4" />
+                  {showImageAdjustment ? 'Hide' : 'Adjust'} Image
+                </button>
+              </div>
+              
               <input
                 type="url"
                 placeholder="https://res.cloudinary.com/your-cloud/image/upload/..."
                 value={seriesData.coverImageUrl}
                 onChange={(e) => setSeriesData(prev => ({ ...prev, coverImageUrl: e.target.value }))}
-                className="w-full px-4 sm:px-6 py-3 sm:py-4 rounded-xl bg-gray-900/60 backdrop-blur-sm border border-gray-600/40 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 font-medium text-sm sm:text-base"
+                className={mode(
+                  "w-full px-4 sm:px-6 py-3 sm:py-4 rounded-xl bg-slate-50 backdrop-blur-sm border border-slate-300 text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 font-medium text-sm sm:text-base",
+                  "w-full px-4 sm:px-6 py-3 sm:py-4 rounded-xl bg-gray-900/60 backdrop-blur-sm border border-gray-600/40 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 font-medium text-sm sm:text-base"
+                )}
               />
+              
               {seriesData.coverImageUrl && (
-                <div className="relative">
-                  <img
-                    src={seriesData.coverImageUrl}
-                    alt="Cover preview"
-                    className="w-full h-32 object-cover rounded-lg border border-gray-600"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'block';
-                    }}
-                  />
-                  <div className="hidden w-full h-32 bg-gray-700 rounded-lg border border-gray-600 flex items-center justify-center text-gray-400">
-                    Invalid image URL
+                <div className="space-y-3">
+                  {/* Basic Preview */}
+                  <div className="relative">
+                    <img
+                      src={seriesData.coverImageUrl}
+                      alt="Cover preview"
+                      className={mode(
+                        "w-full h-32 object-cover rounded-lg border border-slate-300",
+                        "w-full h-32 object-cover rounded-lg border border-gray-600"
+                      )}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'block';
+                      }}
+                    />
+                    <div className={mode(
+                      "hidden w-full h-32 bg-slate-200 rounded-lg border border-slate-300 flex items-center justify-center text-slate-500",
+                      "hidden w-full h-32 bg-gray-700 rounded-lg border border-gray-600 flex items-center justify-center text-gray-400"
+                    )}>
+                      Invalid image URL
+                    </div>
                   </div>
+
+                  {/* Image Adjustment Panel */}
+                  {showImageAdjustment && seriesData.coverImageUrl && (
+                    <div className={mode(
+                      "p-4 rounded-lg border-2 border-dashed border-green-300 bg-green-50/50",
+                      "p-4 rounded-lg border-2 border-dashed border-green-500/50 bg-gray-800/50"
+                    )}>
+                      <ImageAdjustment
+                        imageUrl={seriesData.coverImageUrl}
+                        onUrlChange={(newUrl) => setSeriesData(prev => ({ ...prev, coverImageUrl: newUrl }))}
+                        showPreview={false}
+                        showDownload={true}
+                        showCopy={true}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
-              <p className="text-xs text-gray-400">
+              
+              <p className={mode("text-xs text-slate-500", "text-xs text-gray-400")}>
                 Upload your image to Cloudinary and paste the URL here. Recommended size: 400x300px
               </p>
             </div>
 
-            <div className="space-y-3">
-              <label className="flex items-center gap-2 text-sm font-semibold text-gray-300">
-                <FiLayers className="w-4 h-4 text-purple-400" />
-                General Category
-              </label>
-              <select
-                value={seriesData.category}
-                onChange={(e) => setSeriesData(prev => ({ ...prev, category: e.target.value }))}
-                className="w-full px-4 sm:px-6 py-3 sm:py-4 rounded-xl bg-gray-900/60 backdrop-blur-sm border border-gray-600/40 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none transition-all duration-300 font-medium text-sm sm:text-base"
-              >
-                <option value="education">📚 Education</option>
-                <option value="competitive">🏆 Competitive Exams</option>
-                <option value="programming">💻 Programming</option>
-                <option value="business">💼 Business</option>
-                <option value="science">🔬 Science</option>
-                <option value="language">🗣️ Language</option>
-              </select>
-            </div>
+            {/* Removed General Category and Exam Category; keeping only Specific Exam selection */}
 
             <div className="space-y-3">
-              <label className="flex items-center gap-2 text-sm font-semibold text-gray-300">
-                <FiFilter className="w-4 h-4 text-blue-400" />
-                Exam Category
-              </label>
-              <select
-                value={seriesData.examCategory}
-                onChange={(e) => {
-                  setSeriesData(prev => ({ 
-                    ...prev, 
-                    examCategory: e.target.value,
-                    examSubcategory: '' // Reset subcategory when main category changes
-                  }));
-                }}
-                className="w-full px-4 sm:px-6 py-3 sm:py-4 rounded-xl bg-gray-900/60 backdrop-blur-sm border border-gray-600/40 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none transition-all duration-300 font-medium text-sm sm:text-base"
-              >
-                <option value="">Select Exam Category</option>
-                {examCategories.map(cat => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.icon} {cat.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-3">
-              <label className="flex items-center gap-2 text-sm font-semibold text-gray-300">
-                <FiTarget className="w-4 h-4 text-green-400" />
+              <label className={mode("flex items-center gap-2 text-sm font-semibold text-slate-700", "flex items-center gap-2 text-sm font-semibold text-gray-300")}>
+                <FiTarget className={mode("w-4 h-4 text-green-600", "w-4 h-4 text-green-400")} />
                 Specific Exam
               </label>
               <select
                 value={seriesData.examSubcategory}
                 onChange={(e) => setSeriesData(prev => ({ ...prev, examSubcategory: e.target.value }))}
-                disabled={!seriesData.examCategory}
                 className={`w-full px-4 sm:px-6 py-3 sm:py-4 rounded-xl backdrop-blur-sm border appearance-none transition-all duration-300 font-medium text-sm sm:text-base ${
-                  seriesData.examCategory
-                    ? 'bg-gray-900/60 border-gray-600/40 text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent'
-                    : 'bg-gray-800/40 border-gray-700/40 text-gray-500 cursor-not-allowed'
+                  mode(
+                    'bg-slate-50 border-slate-300 text-slate-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent',
+                    'bg-gray-900/60 border-gray-600/40 text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent'
+                  )
                 }`}
               >
                 <option value="">Select Specific Exam</option>
-                {seriesData.examCategory && examCategories
-                  .find(cat => cat.id === seriesData.examCategory)
-                  ?.subcategories.map(sub => (
-                    <option key={sub.id} value={sub.id}>
-                      {sub.icon} {sub.name}
-                    </option>
-                  ))}
+                {examCategories.flatMap(cat => cat.subcategories).map(sub => (
+                  <option key={sub.id} value={sub.id}>
+                    {sub.icon} {sub.name}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
 
           <div className="mt-6 sm:mt-8 space-y-3">
-            <label className="flex items-center gap-2 text-sm font-semibold text-gray-300">
-              <FiEdit className="w-4 h-4 text-emerald-400" />
+            <label className={mode("flex items-center gap-2 text-sm font-semibold text-slate-700", "flex items-center gap-2 text-sm font-semibold text-gray-300")}>
+              <FiEdit className={mode("w-4 h-4 text-emerald-600", "w-4 h-4 text-emerald-400")} />
               Description
             </label>
             <textarea
               value={seriesData.description}
               onChange={(e) => setSeriesData(prev => ({ ...prev, description: e.target.value }))}
-              className="w-full px-4 sm:px-6 py-3 sm:py-4 rounded-xl bg-gray-900/60 backdrop-blur-sm border border-gray-600/40 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-300 font-medium h-24 sm:h-32 resize-none text-sm sm:text-base"
+              className={mode(
+                "w-full px-4 sm:px-6 py-3 sm:py-4 rounded-xl bg-slate-50 backdrop-blur-sm border border-slate-300 text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-300 font-medium h-24 sm:h-32 resize-none text-sm sm:text-base",
+                "w-full px-4 sm:px-6 py-3 sm:py-4 rounded-xl bg-gray-900/60 backdrop-blur-sm border border-gray-600/40 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-300 font-medium h-24 sm:h-32 resize-none text-sm sm:text-base"
+              )}
               rows="4"
               placeholder="Describe your test series..."
             />
@@ -749,8 +822,8 @@ const TestSeriesEditor = ({
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mt-6 sm:mt-8">
             <div className="space-y-3">
-              <label className="flex items-center gap-2 text-sm font-semibold text-gray-300">
-                <FiTrendingUp className="w-4 h-4 text-orange-400" />
+              <label className={mode("flex items-center gap-2 text-sm font-semibold text-slate-700", "flex items-center gap-2 text-sm font-semibold text-gray-300")}>
+                <FiTrendingUp className={mode("w-4 h-4 text-orange-600", "w-4 h-4 text-orange-400")} />
                 Difficulty Level
               </label>
               <div className="grid grid-cols-3 gap-2 sm:gap-3">
@@ -766,7 +839,10 @@ const TestSeriesEditor = ({
                     className={`p-3 sm:p-4 rounded-xl text-center font-semibold transition-all duration-300 text-sm sm:text-base ${
                       seriesData.difficulty === diff.value
                         ? `bg-gradient-to-r from-${diff.color}-500 to-${diff.color}-600 text-white shadow-lg scale-105`
-                        : 'bg-gray-700/50 text-gray-300 hover:bg-gray-600/50 hover:scale-102'
+                        : mode(
+                            'bg-slate-100 text-slate-700 hover:bg-slate-200 hover:scale-102',
+                            'bg-gray-700/50 text-gray-300 hover:bg-gray-600/50 hover:scale-102'
+                          )
                     }`}
                   >
                     <div className="text-xl sm:text-2xl mb-1">{diff.emoji}</div>
@@ -776,40 +852,200 @@ const TestSeriesEditor = ({
               </div>
             </div>
 
-            <div className="space-y-3">
-              <label className="flex items-center gap-2 text-sm font-semibold text-gray-300">
-                <FiClock className="w-4 h-4 text-blue-400" />
-                Estimated Duration (minutes)
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  min="30"
-                  max="600"
-                  value={seriesData.estimatedDuration}
-                  onChange={(e) => setSeriesData(prev => ({ ...prev, estimatedDuration: parseInt(e.target.value) || 60 }))}
-                  className="w-full px-4 sm:px-6 py-3 sm:py-4 rounded-xl bg-gray-900/60 backdrop-blur-sm border border-gray-600/40 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 font-medium text-sm sm:text-base"
-                />
-                <div className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 text-gray-500">
-                  <FiClock className="w-4 h-4 sm:w-5 sm:h-5" />
+            
+          </div>
+        </div>
+      </div>
+
+      {/* Negative Marking Settings */}
+      <div className={mode(
+        "relative bg-white backdrop-blur-xl border border-slate-200 rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10 shadow-xl",
+        "relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl border border-gray-600/40 rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl"
+      )}>
+        <div className={mode(
+          "absolute inset-0 bg-white rounded-2xl sm:rounded-3xl",
+          "absolute inset-0 bg-gradient-to-br from-red-500/5 to-pink-500/5 rounded-2xl sm:rounded-3xl"
+        )}></div>
+        <div className="relative">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6 sm:mb-8">
+            <div className={mode(
+              "p-3 sm:p-4 bg-gradient-to-br from-red-100 to-pink-100 rounded-xl sm:rounded-2xl shadow-lg",
+              "p-3 sm:p-4 bg-gradient-to-br from-red-500 to-pink-600 rounded-xl sm:rounded-2xl shadow-lg"
+            )}>
+              <FiAlertCircle className={mode("w-6 h-6 sm:w-8 sm:h-8 text-red-700", "w-6 h-6 sm:w-8 sm:h-8 text-white")} />
+            </div>
+            <div>
+              <h3 className={mode("text-2xl sm:text-3xl font-bold text-slate-800 mb-2", "text-2xl sm:text-3xl font-bold text-white mb-2")}>Negative Marking</h3>
+              <p className={mode("text-slate-600 text-base sm:text-lg", "text-gray-400 text-base sm:text-lg")}>Configure negative marking for wrong answers</p>
+            </div>
+          </div>
+          
+          <div className="space-y-6">
+            {/* Enable/Disable Toggle */}
+            <div className={`flex items-center justify-between p-4 sm:p-6 rounded-xl sm:rounded-2xl border transition-all duration-300 ${
+              mode(
+                "bg-slate-50 border-slate-200",
+                "bg-gray-700/40 border-gray-600/40"
+              )
+            }`}>
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center ${
+                  mode(
+                    "bg-gradient-to-br from-red-100 to-pink-100",
+                    "bg-gradient-to-br from-red-500/20 to-pink-500/20"
+                  )
+                }`}>
+                  <FiAlertCircle className={`w-5 h-5 sm:w-6 sm:h-6 ${mode("text-red-600", "text-red-400")}`} />
+                </div>
+                <div>
+                  <div className={`font-semibold text-sm sm:text-base transition-all duration-300 ${
+                    mode("text-slate-800", "text-gray-200")
+                  }`}>
+                    Enable Negative Marking
+                  </div>
+                  <div className={`text-sm transition-all duration-300 ${
+                    mode("text-slate-600", "text-gray-400")
+                  }`}>
+                    Deduct marks for wrong answers
+                  </div>
                 </div>
               </div>
+              <button
+                type="button"
+                onClick={() => setSeriesData(prev => ({
+                  ...prev,
+                  negativeMarking: {
+                    ...prev.negativeMarking,
+                    enabled: !prev.negativeMarking.enabled
+                  }
+                }))}
+                className={`relative inline-flex h-6 w-11 sm:h-7 sm:w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
+                  seriesData.negativeMarking.enabled
+                    ? 'bg-red-500'
+                    : mode('bg-slate-200', 'bg-gray-600')
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 sm:h-5 sm:w-5 transform rounded-full bg-white transition-transform ${
+                    seriesData.negativeMarking.enabled ? 'translate-x-6 sm:translate-x-8' : 'translate-x-1'
+                  }`}
+                />
+              </button>
             </div>
+
+            {/* Negative Marking Settings */}
+            {seriesData.negativeMarking.enabled && (
+              <div className={`space-y-6 p-4 sm:p-6 rounded-xl sm:rounded-2xl border transition-all duration-300 ${
+                mode(
+                  "bg-slate-50 border-slate-200",
+                  "bg-gray-700/40 border-gray-600/40"
+                )
+              }`}>
+                {/* Type Selection */}
+                <div>
+                  <label className={`block text-sm font-medium mb-3 transition-all duration-300 ${
+                    mode("text-slate-700", "text-gray-300")
+                  }`}>
+                    Marking Type
+                  </label>
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                    {[
+                      { value: 'fractional', label: 'Fractional', description: '1/4th mark deduction' },
+                      { value: 'fixed', label: 'Fixed', description: 'Fixed mark deduction' }
+                    ].map(type => (
+                      <button
+                        key={type.value}
+                        type="button"
+                        onClick={() => setSeriesData(prev => ({
+                          ...prev,
+                          negativeMarking: {
+                            ...prev.negativeMarking,
+                            type: type.value
+                          }
+                        }))}
+                        className={`p-3 sm:p-4 rounded-lg sm:rounded-xl border transition-all duration-300 text-left ${
+                          seriesData.negativeMarking.type === type.value
+                            ? mode('bg-red-50 border-red-300 text-red-700', 'bg-red-500/20 border-red-400 text-red-300')
+                            : mode('bg-white border-slate-200 text-slate-700 hover:bg-slate-50', 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700')
+                        }`}
+                      >
+                        <div className="font-semibold text-sm sm:text-base">{type.label}</div>
+                        <div className="text-xs opacity-75">{type.description}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Value Input */}
+                <div>
+                  <label className={`block text-sm font-medium mb-3 transition-all duration-300 ${
+                    mode("text-slate-700", "text-gray-300")
+                  }`}>
+                    {seriesData.negativeMarking.type === 'fractional' ? 'Fraction Value' : 'Mark Deduction'}
+                  </label>
+                  <div className="relative max-w-md">
+                    <input
+                      type="number"
+                      min="0.1"
+                      max="1"
+                      step="0.05"
+                      value={seriesData.negativeMarking.value}
+                      onChange={(e) => setSeriesData(prev => ({
+                        ...prev,
+                        negativeMarking: {
+                          ...prev.negativeMarking,
+                          value: parseFloat(e.target.value) || 0.25
+                        }
+                      }))}
+                      className={`w-full px-4 sm:px-6 py-3 sm:py-4 rounded-xl border transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent font-medium text-sm sm:text-base ${
+                        mode(
+                          "bg-slate-50 border-slate-300 text-slate-800",
+                          "bg-gray-900/60 border-gray-600/40 text-white"
+                        )
+                      }`}
+                      placeholder={seriesData.negativeMarking.type === 'fractional' ? "0.25" : "0.25"}
+                    />
+                    <div className={`absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 text-sm transition-all duration-300 ${
+                      mode("text-slate-500", "text-gray-500")
+                    }`}>
+                      {seriesData.negativeMarking.type === 'fractional' ? 'fraction' : 'marks'}
+                    </div>
+                  </div>
+                  <div className={`mt-2 text-xs transition-all duration-300 ${
+                    mode("text-slate-500", "text-gray-500")
+                  }`}>
+                    {seriesData.negativeMarking.type === 'fractional' 
+                      ? `For each wrong answer, ${seriesData.negativeMarking.value} marks will be deducted`
+                      : `For each wrong answer, ${seriesData.negativeMarking.value} marks will be deducted`
+                    }
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Enhanced Pricing Settings */}
-      <div className="relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl border border-gray-600/40 rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl">
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-green-500/5 rounded-2xl sm:rounded-3xl"></div>
+      <div className={mode(
+        "relative bg-white backdrop-blur-xl border border-slate-200 rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10 shadow-xl",
+        "relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl border border-gray-600/40 rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl"
+      )}>
+        <div className={mode(
+          "absolute inset-0 bg-white rounded-2xl sm:rounded-3xl",
+          "absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-green-500/5 rounded-2xl sm:rounded-3xl"
+        )}></div>
         <div className="relative">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6 sm:mb-8">
-            <div className="p-3 sm:p-4 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl sm:rounded-2xl shadow-lg">
-              <FaGem className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+            <div className={mode(
+              "p-3 sm:p-4 bg-gradient-to-br from-emerald-100 to-green-100 rounded-xl sm:rounded-2xl shadow-lg",
+              "p-3 sm:p-4 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl sm:rounded-2xl shadow-lg"
+            )}>
+              <FaGem className={mode("w-6 h-6 sm:w-8 sm:h-8 text-emerald-700", "w-6 h-6 sm:w-8 sm:h-8 text-white")} />
             </div>
             <div>
-              <h3 className="text-2xl sm:text-3xl font-bold text-white mb-2">Pricing Settings</h3>
-              <p className="text-gray-400 text-base sm:text-lg">Configure monetization options</p>
+              <h3 className={mode("text-2xl sm:text-3xl font-bold text-slate-800 mb-2", "text-2xl sm:text-3xl font-bold text-white mb-2")}>Pricing Settings</h3>
+              <p className={mode("text-slate-600 text-base sm:text-lg", "text-gray-400 text-base sm:text-lg")}>Configure monetization options</p>
             </div>
           </div>
           
@@ -819,7 +1055,10 @@ const TestSeriesEditor = ({
               className={`group relative flex items-center gap-3 sm:gap-4 px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold transition-all duration-500 text-sm sm:text-base ${
                 seriesData.isPaid
                   ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-2xl shadow-emerald-500/25'
-                  : 'bg-gray-700/50 text-gray-300 hover:bg-gray-600/50'
+                  : mode(
+                      'bg-slate-100 text-slate-700 hover:bg-slate-200',
+                      'bg-gray-700/50 text-gray-300 hover:bg-gray-600/50'
+                    )
               }`}
             >
               <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 to-green-400/20 rounded-xl sm:rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -842,8 +1081,8 @@ const TestSeriesEditor = ({
           {seriesData.isPaid && (
             <div className="space-y-6">
               <div className="space-y-3">
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-300">
-                  <FiDollarSign className="w-4 h-4 text-emerald-400" />
+                <label className={mode("flex items-center gap-2 text-sm font-semibold text-slate-700", "flex items-center gap-2 text-sm font-semibold text-gray-300")}>
+                  <FiDollarSign className={mode("w-4 h-4 text-emerald-600", "w-4 h-4 text-emerald-400")} />
                   Series Price (₹)
                 </label>
                 <div className="relative max-w-md">
@@ -853,23 +1092,29 @@ const TestSeriesEditor = ({
                     max="9999"
                     value={seriesData.price}
                     onChange={(e) => setSeriesData(prev => ({ ...prev, price: parseInt(e.target.value) || 0 }))}
-                    className="w-full px-4 sm:px-6 py-3 sm:py-4 rounded-xl bg-gray-900/60 backdrop-blur-sm border border-gray-600/40 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-300 font-bold text-lg sm:text-2xl"
+                    className={mode(
+                      "w-full px-4 sm:px-6 py-3 sm:py-4 rounded-xl bg-slate-50 backdrop-blur-sm border border-slate-300 text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-300 font-bold text-lg sm:text-2xl",
+                      "w-full px-4 sm:px-6 py-3 sm:py-4 rounded-xl bg-gray-900/60 backdrop-blur-sm border border-gray-600/40 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-300 font-bold text-lg sm:text-2xl"
+                    )}
                   />
-                  <div className="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 text-lg sm:text-2xl text-emerald-400">₹</div>
+                  <div className={mode("absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 text-lg sm:text-2xl text-emerald-600", "absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 text-lg sm:text-2xl text-emerald-400")}>₹</div>
                 </div>
               </div>
               
-              <div className="relative bg-gradient-to-r from-emerald-500/10 to-green-500/10 backdrop-blur-sm border border-emerald-500/20 rounded-xl sm:rounded-2xl p-4 sm:p-6">
+              <div className={mode(
+                "relative bg-gradient-to-r from-emerald-500/10 to-green-500/10 backdrop-blur-sm border border-emerald-500/20 rounded-xl sm:rounded-2xl p-4 sm:p-6 bg-white",
+                "relative bg-gradient-to-r from-emerald-500/10 to-green-500/10 backdrop-blur-sm border border-emerald-500/20 rounded-xl sm:rounded-2xl p-4 sm:p-6"
+              )}>
                 <div className="absolute top-3 sm:top-4 right-3 sm:right-4">
                   <FaMagic className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400" />
                 </div>
-                <h5 className="font-bold text-emerald-300 text-lg sm:text-xl mb-3">
+                <h5 className={mode("font-bold text-emerald-700 text-lg sm:text-xl mb-3", "font-bold text-emerald-300 text-lg sm:text-xl mb-3")}>
                   Platform Receives Per Sale:
                 </h5>
                 <div className="text-3xl sm:text-4xl font-black text-emerald-400 mb-2">
                   ₹{Math.floor(seriesData.price)}
                 </div>
-                <div className="text-emerald-200 text-xs sm:text-sm">
+                <div className={mode("text-emerald-600 text-xs sm:text-sm", "text-emerald-200 text-xs sm:text-sm")}>
                   Revenue share removed. 100% goes to platform.
                 </div>
               </div>
@@ -879,28 +1124,40 @@ const TestSeriesEditor = ({
       </div>
 
       {/* Enhanced Publishing Controls */}
-      <div className="relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl border border-gray-600/40 rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl">
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-indigo-500/5 rounded-2xl sm:rounded-3xl"></div>
+      <div className={mode(
+        "relative bg-white backdrop-blur-xl border border-slate-200 rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10 shadow-xl",
+        "relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl border border-gray-600/40 rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl"
+      )}>
+        <div className={mode(
+          "absolute inset-0 bg-white rounded-2xl sm:rounded-3xl",
+          "absolute inset-0 bg-gradient-to-br from-purple-500/5 to-indigo-500/5 rounded-2xl sm:rounded-3xl"
+        )}></div>
         <div className="relative">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6 sm:mb-8">
-            <div className="p-3 sm:p-4 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl sm:rounded-2xl shadow-lg">
-              <FiSettings className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+            <div className={mode(
+              "p-3 sm:p-4 bg-gradient-to-br from-purple-100 to-indigo-100 rounded-xl sm:rounded-2xl shadow-lg",
+              "p-3 sm:p-4 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl sm:rounded-2xl shadow-lg"
+            )}>
+                <FiSettings className={mode("w-6 h-6 sm:w-8 sm:h-8 text-purple-700", "w-6 h-6 sm:w-8 sm:h-8 text-white")} />
             </div>
             <div>
-              <h3 className="text-2xl sm:text-3xl font-bold text-white mb-2">Publishing Controls</h3>
-              <p className="text-gray-400 text-base sm:text-lg">Manage visibility and access</p>
+              <h3 className={mode("text-2xl sm:text-3xl font-bold text-slate-800 mb-2", "text-2xl sm:text-3xl font-bold text-white mb-2")}>Publishing Controls</h3>
+              <p className={mode("text-slate-600 text-base sm:text-lg", "text-gray-400 text-base sm:text-lg")}>Manage visibility and access</p>
             </div>
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
-            <div className="relative bg-gradient-to-br from-blue-500/10 to-blue-600/10 backdrop-blur-sm border border-blue-500/20 rounded-xl sm:rounded-2xl p-4 sm:p-6">
+            <div className={mode(
+              "relative bg-gradient-to-br from-blue-500/10 to-blue-600/10 backdrop-blur-sm border border-blue-500/20 rounded-xl sm:rounded-2xl p-4 sm:p-6 bg-white",
+              "relative bg-gradient-to-br from-blue-500/10 to-blue-600/10 backdrop-blur-sm border border-blue-500/20 rounded-xl sm:rounded-2xl p-4 sm:p-6"
+            )}>
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 sm:gap-3 mb-2">
                     <FiEye className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
-                    <div className="font-bold text-white text-lg sm:text-xl">Published Status</div>
+                    <div className={mode("font-bold text-slate-800 text-lg sm:text-xl", "font-bold text-white text-lg sm:text-xl")}>Published Status</div>
                   </div>
-                  <div className="text-gray-300 text-sm sm:text-base">
+                  <div className={mode("text-slate-600 text-sm sm:text-base", "text-gray-300 text-sm sm:text-base")}>
                     {seriesData.isPublished ? 'Visible to all users' : 'Hidden from public view'}
                   </div>
                 </div>
@@ -909,7 +1166,10 @@ const TestSeriesEditor = ({
                   className={`p-3 sm:p-4 rounded-xl transition-all duration-300 hover:scale-110 ${
                     seriesData.isPublished
                       ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
-                      : 'bg-gray-600/50 text-gray-400 hover:bg-gray-500/50'
+                      : mode(
+                          'bg-slate-200 text-slate-600 hover:bg-slate-300',
+                          'bg-gray-600/50 text-gray-400 hover:bg-gray-500/50'
+                        )
                   }`}
                 >
                   {seriesData.isPublished ? <FiEye className="w-6 h-6 sm:w-8 sm:h-8" /> : <FiEyeOff className="w-6 h-6 sm:w-8 sm:h-8" />}
@@ -917,14 +1177,17 @@ const TestSeriesEditor = ({
               </div>
             </div>
 
-            <div className="relative bg-gradient-to-br from-emerald-500/10 to-emerald-600/10 backdrop-blur-sm border border-emerald-500/20 rounded-xl sm:rounded-2xl p-4 sm:p-6">
+            <div className={mode(
+              "relative bg-gradient-to-br from-emerald-500/10 to-emerald-600/10 backdrop-blur-sm border border-emerald-500/20 rounded-xl sm:rounded-2xl p-4 sm:p-6 bg-white",
+              "relative bg-gradient-to-br from-emerald-500/10 to-emerald-600/10 backdrop-blur-sm border border-emerald-500/20 rounded-xl sm:rounded-2xl p-4 sm:p-6"
+            )}>
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 sm:gap-3 mb-2">
                     <FiShield className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400" />
-                    <div className="font-bold text-white text-lg sm:text-xl">Active Status</div>
+                    <div className={mode("font-bold text-slate-800 text-lg sm:text-xl", "font-bold text-white text-lg sm:text-xl")}>Active Status</div>
                   </div>
-                  <div className="text-gray-300 text-sm sm:text-base">
+                  <div className={mode("text-slate-600 text-sm sm:text-base", "text-gray-300 text-sm sm:text-base")}>
                     {seriesData.isActive ? 'Accepting new subscribers' : 'Closed for subscriptions'}
                   </div>
                 </div>
@@ -933,7 +1196,10 @@ const TestSeriesEditor = ({
                   className={`p-3 sm:p-4 rounded-xl transition-all duration-300 hover:scale-110 ${
                     seriesData.isActive
                       ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
-                      : 'bg-gray-600/50 text-gray-400 hover:bg-gray-500/50'
+                      : mode(
+                          'bg-slate-200 text-slate-600 hover:bg-slate-300',
+                          'bg-gray-600/50 text-gray-400 hover:bg-gray-500/50'
+                        )
                   }`}
                 >
                   {seriesData.isActive ? <FiCheck className="w-6 h-6 sm:w-8 sm:h-8" /> : <FiX className="w-6 h-6 sm:w-8 sm:h-8" />}
@@ -971,51 +1237,43 @@ const TestSeriesEditor = ({
     </div>
   );
 
-  const renderTestsTab = () => (
+    const renderTestsTab = () => (
     <div className="space-y-8">
       {/* Enhanced Test Management Header */}
-      <div className="relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl border border-gray-600/40 rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-2xl">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 rounded-xl sm:rounded-2xl"></div>
+      <div className={mode(
+        "relative bg-white backdrop-blur-xl border border-slate-200 rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-xl",
+        "relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl border border-gray-600/40 rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-2xl"
+      )}>
+        <div className={mode(
+          "absolute inset-0 bg-white rounded-xl sm:rounded-2xl",
+          "absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 rounded-xl sm:rounded-2xl"
+        )}></div>
         <div className="relative flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 sm:gap-6">
           <div className="flex items-center gap-4 sm:gap-6">
-            <div className="p-3 sm:p-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl sm:rounded-2xl shadow-lg">
-              <FiBookOpen className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+            <div className={mode(
+              "p-3 sm:p-4 bg-gradient-to-br from-blue-100 to-purple-100 rounded-xl sm:rounded-2xl shadow-lg",
+              "p-3 sm:p-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl sm:rounded-2xl shadow-lg"
+            )}>
+              <FiBookOpen className={mode("w-6 h-6 sm:w-8 sm:h-8 text-blue-700", "w-6 h-6 sm:w-8 sm:h-8 text-white")} />
             </div>
             <div>
-              <h3 className="text-2xl sm:text-3xl font-bold text-white mb-2">
-                Tests Management ({tests.length})
+              <h3 className={mode("text-2xl sm:text-3xl font-bold text-slate-800 mb-2", "text-2xl sm:text-3xl font-bold text-white mb-2")}>
+                Tests in Series ({tests.length})
               </h3>
-              <p className="text-gray-400 text-base sm:text-lg">
+              <p className={mode("text-slate-600 text-base sm:text-lg", "text-gray-400 text-base sm:text-lg")}>
                 Create, edit, and organize tests in your series
               </p>
             </div>
-          </div>
-          
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
-            <button
-              onClick={onCreateManualTest}
-              className="group bg-gradient-to-r from-gray-700/80 to-gray-600/80 backdrop-blur-xl border border-gray-600/40 text-gray-300 rounded-xl px-4 sm:px-6 py-3 font-medium hover:from-gray-600/80 hover:to-gray-500/80 transition-all duration-300 flex items-center justify-center gap-2 sm:gap-3 shadow-lg hover:shadow-xl hover:scale-105 text-sm sm:text-base"
-            >
-              <FiEdit className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span>Manual Test</span>
-            </button>
-            <button
-              onClick={onCreateAITest}
-              className="group relative bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-purple-500/25 text-sm sm:text-base"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-pink-400/20 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="relative flex items-center justify-center gap-2 sm:gap-3">
-                <FaRobot className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span>AI Generate</span>
-              </div>
-            </button>
           </div>
         </div>
       </div>
 
       {/* Enhanced Bulk Actions */}
       {selectedTests.length > 0 && (
-        <div className="relative bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-xl border border-blue-500/30 rounded-2xl p-6 shadow-xl">
+        <div className={mode(
+          "relative bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-xl border border-blue-500/30 rounded-2xl p-6 shadow-xl bg-white",
+          "relative bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-xl border border-blue-500/30 rounded-2xl p-6 shadow-xl"
+        )}>
           <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5 rounded-2xl"></div>
           <div className="relative flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -1023,10 +1281,10 @@ const TestSeriesEditor = ({
                 <FiCheck className="w-6 h-6 text-blue-400" />
               </div>
               <div>
-                <span className="font-bold text-blue-300 text-lg">
+                <span className={mode("font-bold text-blue-700 text-lg", "font-bold text-blue-300 text-lg")}>
                   {selectedTests.length} test{selectedTests.length !== 1 ? 's' : ''} selected
                 </span>
-                <p className="text-blue-200/70 text-sm">Bulk actions available</p>
+                <p className={mode("text-blue-600 text-sm", "text-blue-200/70 text-sm")}>Bulk actions available</p>
               </div>
             </div>
             <div className="flex gap-3">
@@ -1039,7 +1297,10 @@ const TestSeriesEditor = ({
               </button>
               <button
                 onClick={() => setSelectedTests([])}
-                className="px-6 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-all duration-300 font-semibold"
+                className={mode(
+                  "px-6 py-3 bg-slate-200 text-slate-700 rounded-xl hover:bg-slate-300 transition-all duration-300 font-semibold",
+                  "px-6 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-all duration-300 font-semibold"
+                )}
               >
                 Cancel
               </button>
@@ -1048,18 +1309,27 @@ const TestSeriesEditor = ({
         </div>
       )}
 
-      {/* Enhanced Search and Filter */}
-      <div className="relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl border border-gray-600/40 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-2xl">
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-blue-500/5 rounded-xl sm:rounded-2xl"></div>
+        {/* Enhanced Search and Filter */}
+      <div className={mode(
+        "relative bg-white backdrop-blur-xl border border-slate-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-xl",
+        "relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl border border-gray-600/40 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-2xl"
+      )}>
+        <div className={mode(
+          "absolute inset-0 bg-white rounded-xl sm:rounded-2xl",
+          "absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-blue-500/5 rounded-xl sm:rounded-2xl"
+        )}></div>
         <div className="relative flex flex-col sm:flex-row gap-4 sm:gap-6">
           <div className="relative flex-1">
-            <FiSearch className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-5 h-5 sm:w-6 sm:h-6 text-gray-400" />
+            <FiSearch className={mode("absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-5 h-5 sm:w-6 sm:h-6 text-slate-500", "absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-5 h-5 sm:w-6 sm:h-6 text-gray-400")} />
             <input
               type="text"
               placeholder="Search tests by name..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 sm:pl-14 pr-4 sm:pr-6 py-3 sm:py-4 rounded-xl bg-gray-900/60 backdrop-blur-sm border border-gray-600/40 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 font-medium text-sm sm:text-base"
+              className={mode(
+                "w-full pl-10 sm:pl-14 pr-4 sm:pr-6 py-3 sm:py-4 rounded-xl bg-slate-50 backdrop-blur-sm border border-slate-300 text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 font-medium text-sm sm:text-base",
+                "w-full pl-10 sm:pl-14 pr-4 sm:pr-6 py-3 sm:py-4 rounded-xl bg-gray-900/60 backdrop-blur-sm border border-gray-600/40 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 font-medium text-sm sm:text-base"
+              )}
             />
           </div>
           
@@ -1067,21 +1337,30 @@ const TestSeriesEditor = ({
             <select
               value={filterBy}
               onChange={(e) => setFilterBy(e.target.value)}
-              className="px-4 sm:px-6 py-3 sm:py-4 rounded-xl bg-gray-900/60 backdrop-blur-sm border border-gray-600/40 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none transition-all duration-300 font-medium min-w-[140px] sm:min-w-[160px] text-sm sm:text-base"
+              className={mode(
+                "px-4 sm:px-6 py-3 sm:py-4 rounded-xl bg-slate-50 backdrop-blur-sm border border-slate-300 text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none transition-all duration-300 font-medium min-w-[140px] sm:min-w-[160px] text-sm sm:text-base",
+                "px-4 sm:px-6 py-3 sm:py-4 rounded-xl bg-gray-900/60 backdrop-blur-sm border border-gray-600/40 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none transition-all duration-300 font-medium min-w-[140px] sm:min-w-[160px] text-sm sm:text-base"
+              )}
             >
               <option value="all">All Tests</option>
               <option value="manual">Manual Tests</option>
               <option value="ai">AI Generated</option>
               <option value="draft">Draft Tests</option>
             </select>
-            <FiFilter className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
+            <FiFilter className={mode("absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-slate-500", "absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400")} />
           </div>
         </div>
       </div>
 
       {/* Enhanced Tests List */}
-      <div className="relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl border border-gray-600/40 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-2xl">
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 rounded-2xl sm:rounded-3xl"></div>
+      <div className={mode(
+        "relative bg-white backdrop-blur-xl border border-slate-200 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-xl",
+        "relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl border border-gray-600/40 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-2xl"
+      )}>
+        <div className={mode(
+          "absolute inset-0 bg-white rounded-2xl sm:rounded-3xl",
+          "absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 rounded-2xl sm:rounded-3xl"
+        )}></div>
         <div className="relative">
           {filteredTests.length > 0 ? (
             <DndContext
@@ -1114,14 +1393,17 @@ const TestSeriesEditor = ({
           ) : (
             <div className="text-center py-12 sm:py-20">
               <div className="mb-6 sm:mb-8">
-                <div className="w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
-                  <FiBookOpen className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400" />
+                <div className={mode(
+                  "w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-slate-200 to-slate-300 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6",
+                  "w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-gray-600 to-gray-700 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6"
+                )}>
+                  <FiBookOpen className={mode("w-8 h-8 sm:w-12 sm:h-12 text-slate-500", "w-8 h-8 sm:w-12 sm:h-12 text-gray-400")} />
                 </div>
               </div>
-              <h3 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">
+              <h3 className={mode("text-xl sm:text-2xl font-bold text-slate-800 mb-3 sm:mb-4", "text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4")}>
                 {searchTerm || filterBy !== 'all' ? 'No matching tests found' : 'No tests created yet'}
               </h3>
-              <p className="text-gray-400 text-sm sm:text-lg mb-6 sm:mb-8 max-w-md mx-auto">
+              <p className={mode("text-slate-600 text-sm sm:text-lg mb-6 sm:mb-8 max-w-md mx-auto", "text-gray-400 text-sm sm:text-lg mb-6 sm:mb-8 max-w-md mx-auto")}>
                 {searchTerm || filterBy !== 'all' 
                   ? 'Try adjusting your search or filter criteria to find tests'
                   : 'Get started by creating your first test for this series'
@@ -1131,7 +1413,10 @@ const TestSeriesEditor = ({
                 <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
                   <button 
                     onClick={onCreateManualTest} 
-                    className="group bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white font-semibold rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 shadow-lg text-sm sm:text-base"
+                    className={mode(
+                      "group bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 shadow-lg text-sm sm:text-base",
+                      "group bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white font-semibold rounded-xl px-4 sm:px-6 py-3 transition-all duration-300 hover:scale-105 shadow-lg text-sm sm:text-base"
+                    )}
                   >
                     <div className="flex items-center justify-center gap-2">
                       <FiEdit className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -1158,30 +1443,42 @@ const TestSeriesEditor = ({
 
   const renderDangerZone = () => (
     <div className="space-y-8">
-      <div className="relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl border border-red-600/40 rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl">
-        <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 to-orange-500/5 rounded-2xl sm:rounded-3xl"></div>
+      <div className={mode(
+        "relative bg-white backdrop-blur-xl border border-red-200 rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10 shadow-xl",
+        "relative bg-gradient-to-br from-gray-800/60 to-gray-900/60 backdrop-blur-xl border border-red-600/40 rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl"
+      )}>
+        <div className={mode(
+          "absolute inset-0 bg-gradient-to-br from-red-500/10 to-orange-500/10 rounded-2xl sm:rounded-3xl",
+          "absolute inset-0 bg-gradient-to-br from-red-500/5 to-orange-500/5 rounded-2xl sm:rounded-3xl"
+        )}></div>
         <div className="relative">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-8 sm:mb-10">
-            <div className="p-3 sm:p-4 bg-gradient-to-br from-red-500 to-red-600 rounded-xl sm:rounded-2xl shadow-lg">
-              <FiAlertTriangle className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+            <div className={mode(
+              "p-3 sm:p-4 bg-gradient-to-br from-red-100 to-red-200 rounded-xl sm:rounded-2xl shadow-lg",
+              "p-3 sm:p-4 bg-gradient-to-br from-red-500 to-red-600 rounded-xl sm:rounded-2xl shadow-lg"
+            )}>
+              <FiAlertTriangle className={mode("w-6 h-6 sm:w-8 sm:h-8 text-red-700", "w-6 h-6 sm:w-8 sm:h-8 text-white")} />
             </div>
             <div>
-              <h3 className="text-2xl sm:text-3xl font-bold text-red-400 mb-2">Danger Zone</h3>
-              <p className="text-gray-400 text-base sm:text-lg">Irreversible actions for series management</p>
+              <h3 className={mode("text-2xl sm:text-3xl font-bold text-red-600 mb-2", "text-2xl sm:text-3xl font-bold text-red-400 mb-2")}>Danger Zone</h3>
+              <p className={mode("text-slate-600 text-base sm:text-lg", "text-gray-400 text-base sm:text-lg")}>Irreversible actions for series management</p>
             </div>
           </div>
           
           <div className="space-y-8">
             {/* Export Data */}
-            <div className="relative bg-gradient-to-r from-blue-500/10 to-cyan-500/10 backdrop-blur-sm border border-blue-500/30 rounded-2xl p-8">
+            <div className={mode(
+              "relative bg-gradient-to-r from-blue-500/10 to-cyan-500/10 backdrop-blur-sm border border-blue-500/30 rounded-2xl p-8 bg-white",
+              "relative bg-gradient-to-r from-blue-500/10 to-cyan-500/10 backdrop-blur-sm border border-blue-500/30 rounded-2xl p-8"
+            )}>
               <div className="absolute top-6 right-6">
                 <FiDownload className="w-8 h-8 text-blue-400" />
               </div>
               <div className="pr-16">
-                <h4 className="font-bold text-white text-xl mb-3">
+                <h4 className={mode("font-bold text-slate-800 text-xl mb-3", "font-bold text-white text-xl mb-3")}>
                   Export Series Data
                 </h4>
-                <p className="text-gray-300 mb-6 leading-relaxed">
+                <p className={mode("text-slate-600 mb-6 leading-relaxed", "text-gray-300 mb-6 leading-relaxed")}>
                   Download a complete backup of your series including all tests, settings, and configurations in JSON format.
                 </p>
                 <button
@@ -1197,15 +1494,18 @@ const TestSeriesEditor = ({
             </div>
 
             {/* Unpublish Series */}
-            <div className="relative bg-gradient-to-r from-yellow-500/10 to-orange-500/10 backdrop-blur-sm border border-yellow-500/30 rounded-2xl p-8">
+            <div className={mode(
+              "relative bg-gradient-to-r from-yellow-500/10 to-orange-500/10 backdrop-blur-sm border border-yellow-500/30 rounded-2xl p-8 bg-white",
+              "relative bg-gradient-to-r from-yellow-500/10 to-orange-500/10 backdrop-blur-sm border border-yellow-500/30 rounded-2xl p-8"
+            )}>
               <div className="absolute top-6 right-6">
                 <FiEyeOff className="w-8 h-8 text-yellow-400" />
               </div>
               <div className="pr-16">
-                <h4 className="font-bold text-white text-xl mb-3">
+                <h4 className={mode("font-bold text-slate-800 text-xl mb-3", "font-bold text-white text-xl mb-3")}>
                   Unpublish Series
                 </h4>
-                <p className="text-gray-300 mb-6 leading-relaxed">
+                <p className={mode("text-slate-600 mb-6 leading-relaxed", "text-gray-300 mb-6 leading-relaxed")}>
                   Hide this series from public view while preserving all data. You can republish it anytime later.
                 </p>
                 <button
@@ -1222,15 +1522,18 @@ const TestSeriesEditor = ({
             </div>
 
             {/* Delete Series */}
-            <div className="relative bg-gradient-to-r from-red-500/10 to-pink-500/10 backdrop-blur-sm border border-red-500/30 rounded-2xl p-8">
+            <div className={mode(
+              "relative bg-gradient-to-r from-red-500/10 to-pink-500/10 backdrop-blur-sm border border-red-500/30 rounded-2xl p-8 bg-white",
+              "relative bg-gradient-to-r from-red-500/10 to-pink-500/10 backdrop-blur-sm border border-red-500/30 rounded-2xl p-8"
+            )}>
               <div className="absolute top-6 right-6">
                 <FiTrash2 className="w-8 h-8 text-red-400" />
               </div>
               <div className="pr-16">
-                <h4 className="font-bold text-red-400 text-xl mb-3">
+                <h4 className={mode("font-bold text-red-600 text-xl mb-3", "font-bold text-red-400 text-xl mb-3")}>
                   Delete Test Series
                 </h4>
-                <p className="text-gray-300 mb-6 leading-relaxed">
+                <p className={mode("text-slate-600 mb-6 leading-relaxed", "text-gray-300 mb-6 leading-relaxed")}>
                   Permanently delete this entire series including all {tests.length} tests, user progress, and analytics. This action cannot be undone.
                 </p>
                 <button
@@ -1251,35 +1554,36 @@ const TestSeriesEditor = ({
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900/10 to-purple-900/10">
+    <div className={mode("min-h-screen bg-white", "min-h-screen bg-gradient-to-br from-gray-900 via-blue-900/10 to-purple-900/10")}>
       <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         {/* Toast Container */}
         <ToastContainer toasts={toasts} onClose={removeToast} />
 
-        {/* Animated Background Elements */}
-        <div className="fixed inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-blue-500/5 to-purple-500/5 rounded-full blur-3xl"></div>
-        </div>
+        {/* Background elements removed for cleaner look */}
 
         {/* Enhanced Header */}
         <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 mb-8 sm:mb-12">
           <button
             onClick={onBack}
-            className="group bg-gradient-to-r from-gray-800/80 to-gray-700/80 backdrop-blur-xl border border-gray-600/40 text-gray-300 rounded-xl px-4 sm:px-6 py-3 text-sm font-medium hover:from-gray-700/80 hover:to-gray-600/80 transition-all duration-300 flex items-center gap-2 sm:gap-3 shadow-lg hover:shadow-xl hover:scale-105"
+            className={mode(
+              "group bg-white hidden  backdrop-blur-xl border border-slate-200 text-slate-600 rounded-xl px-4 sm:px-6 py-3 text-sm font-medium hover:bg-slate-50 transition-all duration-300 flex items-center gap-2 sm:gap-3 shadow-lg hover:shadow-xl hover:scale-105",
+              "group bg-gradient-to-r from-gray-800/80 to-gray-700/80 backdrop-blur-xl hidden sm:flex border border-gray-600/40 text-gray-300 rounded-xl px-4 sm:px-6 py-3 text-sm font-medium hover:from-gray-700/80 hover:to-gray-600/80 transition-all duration-300 flex items-center gap-2 sm:gap-3 shadow-lg hover:shadow-xl hover:scale-105"
+            )}
           >
             <FiArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:-translate-x-1" />
             <span>Back to Dashboard</span>
           </button>
           
           <div className="flex-1">
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-200 to-purple-200 mb-2 sm:mb-3 leading-tight">
+            <h1 className={mode(
+              "text-3xl sm:text-4xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-slate-800 via-blue-600 to-indigo-600 mb-2 sm:mb-3 leading-tight",
+              "text-3xl sm:text-4xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-200 to-purple-200 mb-2 sm:mb-3 leading-tight"
+            )}>
               Edit Test Series
             </h1>
-            <p className="text-base sm:text-xl text-gray-400 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-              <FiTarget className="w-4 h-4 sm:w-6 sm:h-6 text-blue-400" />
-              <span className="text-blue-400 font-semibold px-2 sm:px-3 py-1 bg-blue-500/20 rounded-lg text-sm sm:text-base">
+            <p className={mode("text-base sm:text-xl text-slate-600 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3", "text-base sm:text-xl text-gray-400 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3")}>
+              <FiTarget className={mode("w-4 h-4 sm:w-6 sm:h-6 text-blue-600", "w-4 h-4 sm:w-6 sm:h-6 text-blue-400")} />
+              <span className={mode("text-blue-600 font-semibold px-2 sm:px-3 py-1 bg-blue-100 rounded-lg text-sm sm:text-base", "text-blue-400 font-semibold px-2 sm:px-3 py-1 bg-blue-500/20 rounded-lg text-sm sm:text-base")}>
                 {testSeries.title}
               </span>
             </p>
@@ -1299,7 +1603,10 @@ const TestSeriesEditor = ({
               className={`group relative flex items-center gap-2 sm:gap-3 px-4 sm:px-6 lg:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold transition-all duration-300 whitespace-nowrap text-sm sm:text-base ${
                 activeTab === tab.id
                   ? `bg-gradient-to-r from-${tab.color}-500 to-${tab.color}-600 text-white shadow-2xl shadow-${tab.color}-500/25 scale-105`
-                  : 'bg-gray-800/60 backdrop-blur-xl border border-gray-600/40 text-gray-300 hover:bg-gray-700/60 hover:scale-102 shadow-lg'
+                  : mode(
+                      'bg-white backdrop-blur-xl border border-slate-200 text-slate-600 hover:bg-slate-50 hover:scale-102 shadow-lg',
+                      'bg-gray-800/60 backdrop-blur-xl border border-gray-600/40 text-gray-300 hover:bg-gray-700/60 hover:scale-102 shadow-lg'
+                    )
               }`}
             >
               <div className={`absolute inset-0 bg-gradient-to-r from-${tab.color}-400/20 to-${tab.color}-500/20 rounded-xl sm:rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
@@ -1408,7 +1715,7 @@ const TestSeriesEditor = ({
       </div>
 
       {/* Enhanced CSS Animations */}
-        <style jsx>{`
+        <style>{`
         @keyframes slideIn {
           from {
             opacity: 0;

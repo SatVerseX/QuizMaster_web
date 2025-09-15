@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { collection, query, orderBy, onSnapshot, where } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -99,35 +99,37 @@ const QuizList = ({ onTakeQuiz, onCreateQuiz, onViewAttempts, onViewLeaderboard,
     return () => unsubscribe();
   }, [currentUser]);
 
-  const formatDate = (timestamp) => {
+  const formatDate = useCallback((timestamp) => {
     if (!timestamp) return 'Unknown date';
     return timestamp.toDate().toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
     });
-  };
+  }, []);
   
   // Filter and sort quizzes
-  const filteredAndSortedQuizzes = quizzes
-    .filter(quiz => 
-      quiz.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      quiz.description?.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .sort((a, b) => {
+  const filteredAndSortedQuizzes = useMemo(() => {
+    const term = searchTerm.toLowerCase();
+    const filtered = quizzes.filter(quiz =>
+      (quiz.title || '').toLowerCase().includes(term) ||
+      (quiz.description || '').toLowerCase().includes(term)
+    );
+    return filtered.sort((a, b) => {
       switch (sortBy) {
         case 'newest':
-          return b.createdAt?.toDate() - a.createdAt?.toDate();
+          return (b.createdAt?.toDate?.() || 0) - (a.createdAt?.toDate?.() || 0);
         case 'oldest':
-          return a.createdAt?.toDate() - b.createdAt?.toDate();
+          return (a.createdAt?.toDate?.() || 0) - (b.createdAt?.toDate?.() || 0);
         case 'title':
-          return a.title?.localeCompare(b.title);
+          return (a.title || '').localeCompare(b.title || '');
         case 'questions':
           return (b.totalQuestions || 0) - (a.totalQuestions || 0);
         default:
           return 0;
       }
     });
+  }, [quizzes, searchTerm, sortBy]);
 
   const refreshQuizzes = () => {
     setLoading(true);

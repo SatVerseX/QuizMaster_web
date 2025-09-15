@@ -6,8 +6,20 @@ import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import AuthForm from './components/auth/AuthForm';
 import LoginPopup from './components/auth/LoginPopup';
-// import CreatorRoutes from './routes/CreatorRoutes'; // disabled: creator feature removed
 import WelcomePage from './components/layout/WelcomePage';
+
+// Homepage components - Remove unused direct imports since they're used within EnhancedHomepage
+import EnhancedHomepage from './components/homepage/EnhancedHomepage';  
+import HomepageDemo from './components/homepage/HomepageDemo';
+// Remove these unused direct imports:
+// import HeroSection from './components/homepage/HeroSection';
+// import FeaturedOffers from './components/homepage/FeaturedOffers';
+// import TrendingSection from './components/homepage/TrendingSection';
+// import MostPopularSection from './components/homepage/MostPopularSection';
+// import CategoriesSection from './components/homepage/CategoriesSection';
+// import RecentActivitySection from './components/homepage/RecentActivitySection';
+// import SuccessStoriesSection from './components/homepage/SuccessStoriesSection';
+// import QuickStatsSection from './components/homepage/QuickStatsSection';
 
 // Test Series Components
 import TestSeriesList from './components/testSeries/TestSeriesList';
@@ -19,13 +31,14 @@ import TestSeriesAIGenerator from './components/testSeries/TestSeriesAIGenerator
 import TestAttemptViewer from './components/testSeries/TestAttemptViewer';
 import TestAttemptHistory from './components/testSeries/TestAttemptHistory';
 import TestSeriesTestsList from './components/testSeries/TestSeriesTestsList';
-import TestAttemptDetails from './components/testSeries/TestAttemptDetails'; // FIXED: Added proper import
+import TestAttemptDetails from './components/testSeries/TestAttemptDetails';
 
-// Quiz Components (simplified)
+// Quiz Components
 import QuizTaker from './components/quiz/QuizTaker';
 import AIQuizGenerator from './components/quiz/AIQuizGenerator';
+import SectionWiseQuizCreator from './components/quiz/SectionWiseQuizCreator';
 import UserAttempts from './components/quiz/UserAttempts';
-import LeaderBoard from './components/quiz/LeaderBoard';    // FIXED: Correct import
+import LeaderBoard from './components/quiz/LeaderBoard';
 import AdminDashboard from './components/admin/AdminDashboard';
 import PrivacyPolicy from './components/legal/PrivacyPolicy';
 import TermsAndConditions from './components/legal/TermsAndConditions';
@@ -34,6 +47,30 @@ import ContactUs from './components/legal/ContactUs';
 import { db } from './lib/firebase';
 import { doc, updateDoc, increment, getDoc } from 'firebase/firestore';
 import { logger } from './utils/logger';
+
+// Normalize quiz structure for attempt viewer, including section-wise quizzes
+const normalizeTestForAttempt = (raw) => {
+  if (!raw) return raw;
+  // If it already has flat questions, keep as is
+  if (Array.isArray(raw.questions) && raw.questions.length > 0) {
+    return raw;
+  }
+  // If it's a section-wise quiz, flatten sections -> questions
+  if (Array.isArray(raw.sections)) {
+    const flatQuestions = raw.sections.flatMap((section) =>
+      (section?.questions || []).map((q) => ({
+        ...q
+      }))
+    );
+    const totalTime = raw.sections.reduce((sum, s) => sum + (s?.timeLimit || 0), 0);
+    return {
+      ...raw,
+      questions: flatQuestions,
+      timeLimit: raw.timeLimit || totalTime || 30,
+    };
+  }
+  return raw;
+};
 
 const AppContent = () => {
   const { currentUser, isAdmin } = useAuth();
@@ -72,7 +109,7 @@ const AppContent = () => {
       return;
     }
     
-    // Map URL paths to currentView states
+    // Map URL paths to currentView states      
     if (path === '/welcome' || path === '/') {
       setCurrentView('welcome');
     } else if (path === '/test-series') {
@@ -83,53 +120,64 @@ const AppContent = () => {
       setCurrentView('ai-generator');
     } else if (path === '/test-history') {
       setCurrentView('test-history');
+    } else if (path === '/homepage') {
+      setCurrentView('homepage');
     } else if (path.startsWith('/series/')) {
       // Handle series-specific routes
       const seriesId = path.split('/')[2];
       if (path.includes('/dashboard')) {
         setCurrentView('series-dashboard');
-        // You might want to load the series data here
       } else if (path.includes('/tests')) {
         setCurrentView('view-tests');
       } else if (path.includes('/subscribe')) {
         setCurrentView('subscribe-series');
       } else if (path.includes('/create-manual-test')) {
         setCurrentView('create-manual-test');
+      } else if (path.includes('/create-section-quiz')) {
+        setCurrentView('create-manual-test');
       } else if (path.includes('/create-ai-test')) {
         setCurrentView('create-ai-test');
       } else {
-        // Default to dashboard for series routes
         setCurrentView('series-dashboard');
       }
     } else if (path.startsWith('/test/')) {
       // Handle test-specific routes
       if (path.includes('/take')) {
         setCurrentView('take-test');
-        // Load test data from URL
         const testId = path.split('/')[2];
         if (testId && (!selectedItem || selectedItem.test?.id !== testId)) {
           setIsLoadingSeries(true);
           getDoc(doc(db, 'quizzes', testId))
             .then((snap) => {
               if (snap.exists()) {
-                const testData = { id: snap.id, ...snap.data() };
-                // Also try to load the test series if available
-                if (testData.testSeriesId) {
-                  return getDoc(doc(db, 'test-series', testData.testSeriesId))
-                    .then((seriesSnap) => {
-                      if (seriesSnap.exists()) {
-                        const seriesData = { id: seriesSnap.id, ...seriesSnap.data() };
-                        setSelectedItem({ test: testData, testSeries: seriesData });
-                      } else {
-                        setSelectedItem({ test: testData });
-                      }
-                    });
-                } else {
-                  setSelectedItem({ test: testData });
+                return { id: snap.id, ...snap.data() };
+              }
+              return getDoc(doc(db, 'section-quizzes', testId)).then((secSnap) => {
+                if (secSnap.exists()) {
+                  return { id: secSnap.id, ...secSnap.data(), type: 'section-wise' };
                 }
-              } else {
-                logger.error('Test not found:', testId);
+                return null;
+              });
+            })
+            .then((testData) => {
+              if (!testData) {
+                logger.error('Test not found in either collection:', testId);
                 navigate('/test-series');
+                return;
+              }
+              const normalized = normalizeTestForAttempt(testData);
+              if (testData.testSeriesId) {
+                return getDoc(doc(db, 'test-series', testData.testSeriesId))
+                  .then((seriesSnap) => {
+                    if (seriesSnap.exists()) {
+                      const seriesData = { id: seriesSnap.id, ...seriesSnap.data() };
+                      setSelectedItem({ test: normalized, testSeries: seriesData });
+                    } else {
+                      setSelectedItem({ test: normalized });
+                    }
+                  });
+              } else {
+                setSelectedItem({ test: normalized });
               }
             })
             .catch((err) => {
@@ -141,7 +189,6 @@ const AppContent = () => {
       } else if (path.includes('/leaderboard')) {
         logger.log('App: Loading test leaderboard for path:', path);
         setCurrentView('test-leaderboard');
-        // Load test data from URL for leaderboard
         const testId = path.split('/')[2];
         logger.log('App: Extracted testId:', testId);
         if (testId && (!selectedItem || selectedItem.id !== testId)) {
@@ -152,7 +199,6 @@ const AppContent = () => {
               if (snap.exists()) {
                 const testData = { id: snap.id, ...snap.data() };
                 logger.log('App: Test data loaded:', testData);
-                // Also try to load the test series if available
                 if (testData.testSeriesId) {
                   return getDoc(doc(db, 'test-series', testData.testSeriesId))
                     .then((seriesSnap) => {
@@ -181,12 +227,10 @@ const AppContent = () => {
           logger.log('App: Test data already loaded or no testId:', { testId, selectedItemId: selectedItem?.id });
         }
       } else {
-        // Default to take-test for test routes
         setCurrentView('take-test');
       }
     } else if (path.startsWith('/attempt/')) {
       setCurrentView('attempt-details');
-      // Load attempt data from URL
       const attemptId = path.split('/')[2];
       if (attemptId && (!selectedItem || selectedItem.id !== attemptId)) {
         setIsLoadingSeries(true);
@@ -196,13 +240,11 @@ const AppContent = () => {
               setSelectedItem({ id: snap.id, ...snap.data() });
             } else {
               logger.error('Attempt not found:', attemptId);
-              // Redirect to test history if attempt not found
               navigate('/test-history');
             }
           })
           .catch((err) => {
             logger.error('Failed to load attempt:', err);
-            // Redirect to test history on error
             navigate('/test-history');
           })
           .finally(() => setIsLoadingSeries(false));
@@ -210,22 +252,31 @@ const AppContent = () => {
     } else if (path.startsWith('/quiz/')) {
       if (path.includes('/take')) {
         setCurrentView('take-quiz');
-        // Load quiz data from URL
         const quizId = path.split('/')[2];
         if (quizId && (!selectedItem || selectedItem.id !== quizId)) {
           setIsLoadingSeries(true);
+          
           getDoc(doc(db, 'quizzes', quizId))
             .then((snap) => {
               if (snap.exists()) {
                 const quizData = { id: snap.id, ...snap.data() };
                 setSelectedItem(quizData);
+                setIsLoadingSeries(false);
               } else {
-                console.error('Quiz not found:', quizId);
+                return getDoc(doc(db, 'section-quizzes', quizId));
+              }
+            })
+            .then((snap) => {
+              if (snap && snap.exists()) {
+                const quizData = { id: snap.id, ...snap.data() };
+                setSelectedItem(quizData);
+              } else {
+                logger.error('Quiz not found in either collection:', quizId);
                 navigate('/test-series');
               }
             })
             .catch((err) => {
-              console.error('Failed to load quiz:', err);
+              logger.error('Failed to load quiz:', err);
               navigate('/test-series');
             })
             .finally(() => setIsLoadingSeries(false));
@@ -233,22 +284,32 @@ const AppContent = () => {
       } else if (path.includes('/leaderboard')) {
         logger.log('App: Loading quiz leaderboard for path:', path);
         setCurrentView('leaderboard');
-        // Load quiz data from URL for leaderboard
         const quizId = path.split('/')[2];
         logger.log('App: Extracted quizId:', quizId);
         if (quizId && (!selectedItem || selectedItem.id !== quizId)) {
           logger.log('App: Loading quiz data from Firestore for quizId:', quizId);
           setIsLoadingSeries(true);
+          
           getDoc(doc(db, 'quizzes', quizId))
             .then((snap) => {
               if (snap.exists()) {
                 const quizData = { id: snap.id, ...snap.data() };
-                logger.log('App: Quiz data loaded:', quizData);
+                logger.log('App: Quiz data loaded from quizzes:', quizData);
+                setSelectedItem(quizData);
+                setIsLoadingSeries(false);
+              } else {
+                return getDoc(doc(db, 'section-quizzes', quizId));
+              }
+            })
+            .then((snap) => {
+              if (snap && snap.exists()) {
+                const quizData = { id: snap.id, ...snap.data() };
+                logger.log('App: Quiz data loaded from section-quizzes:', quizData);
                 setSelectedItem(quizData);
               } else {
-                logger.error('Quiz not found:', quizId);
+                logger.error('Quiz not found in either collection:', quizId);
                 navigate('/test-series');
-            }
+              }
             })
             .catch((err) => {
               logger.error('Failed to load quiz:', err);
@@ -259,14 +320,12 @@ const AppContent = () => {
           logger.log('App: Quiz data already loaded or no quizId:', { quizId, selectedItemId: selectedItem?.id });
         }
       } else {
-        // Default to take-quiz for quiz routes
         setCurrentView('take-quiz');
       }
     } else {
-      // Fallback: if URL doesn't match any known route, go to welcome page
       setCurrentView('welcome');
     }
-  }, [location.pathname]);
+  }, [location.pathname, selectedItem, navigate]); // Added missing dependencies
 
   // Ensure selected test series is loaded when deep-linking to series routes
   useEffect(() => {
@@ -281,7 +340,27 @@ const AppContent = () => {
       getDoc(doc(db, 'test-series', seriesId))
         .then((snap) => {
           if (snap.exists()) {
-            setSelectedItem({ id: snap.id, ...snap.data() });
+            const base = { id: snap.id, ...snap.data() };
+            // Merge any persisted offer override from sessionStorage
+            try {
+              const raw = sessionStorage.getItem(`offer-${seriesId}`);
+              if (raw) {
+                const offer = JSON.parse(raw);
+                if (offer && typeof offer === 'object') {
+                  const effective = offer.discountedPrice ?? base.discountedPrice ?? base.price;
+                  const orig = offer.originalPrice ?? base.originalPrice ?? base.price ?? effective;
+                  base.price = effective;
+                  base.discountedPrice = effective;
+                  base.originalPrice = orig;
+                  base.discountPercentage = offer.discountPercentage ?? (
+                    orig ? Math.max(0, Math.round(((orig - effective) / orig) * 100)) : base.discountPercentage
+                  );
+                  base.appliedOfferId = offer.appliedOfferId ?? base.appliedOfferId;
+                  base.isFromOffer = true;
+                }
+              }
+            } catch (_) {}
+            setSelectedItem(base);
           }
         })
         .catch((err) => {
@@ -289,11 +368,30 @@ const AppContent = () => {
         })
         .finally(() => setIsLoadingSeries(false));
     }
-  }, [location.pathname]);
+  }, [location.pathname, selectedItem]);
 
   useEffect(() => {
     setPageLoaded(true);
   }, []);
+
+  // Helper functions to check if user needs to be logged in for an action
+  const requireLogin = (action) => {
+    if (!currentUser) {
+      setPendingAction(action);
+      setShowLoginPopup(true);
+      return false;
+    }
+    return true;
+  };
+
+  const requireLoginForTestSeries = (action) => {
+    if (!currentUser) {
+      setPendingAction(action);
+      setShowLoginPopup(true);
+      return false;
+    }
+    return true;
+  };
 
   // Navigation handlers with URL updates
   const handleCreateSeries = () => {
@@ -314,7 +412,70 @@ const AppContent = () => {
 
   const handleSubscribeSeries = (series) => {
     if (!requireLoginForTestSeries('subscribe-series')) return;
-    setSelectedItem(series);
+
+    // If we only have a minimal object (e.g., from FeaturedOffers) fetch full data first
+    const hasEssentialFields = series && typeof series === 'object' && (
+      Boolean(series.title) && (series.price !== undefined && series.price !== null)
+    );
+
+    if (!hasEssentialFields) {
+      setIsLoadingSeries(true);
+      const seriesId = series?.id;
+      if (!seriesId) {
+        // Fallback: go to listing
+        navigate('/test-series');
+        return;
+      }
+
+      getDoc(doc(db, 'test-series', seriesId))
+        .then((snap) => {
+          if (snap.exists()) {
+            const full = { id: snap.id, ...snap.data() };
+            // If price override comes from an offer, merge it in without mutating source
+            if (series && (series.priceOverride !== undefined || series.discountedPrice !== undefined)) {
+              const effectiveDiscounted = series.priceOverride ?? series.discountedPrice;
+              const original = series.originalPrice ?? full.price ?? full.originalPrice ?? effectiveDiscounted;
+              full.price = effectiveDiscounted; // display and charge this price
+              full.originalPrice = original;
+              full.discountedPrice = effectiveDiscounted;
+              full.discountPercentage = series.discountPercentage ?? (
+                original ? Math.max(0, Math.round(((original - effectiveDiscounted) / original) * 100)) : undefined
+              );
+              full.appliedOfferId = series.appliedOfferId ?? full.appliedOfferId;
+              full.isFromOffer = true;
+            }
+            setSelectedItem(full);
+          } else {
+            // If not found, keep minimal to avoid breaking UI
+            setSelectedItem(series);
+          }
+        })
+        .catch(() => {
+          setSelectedItem(series);
+        })
+        .finally(() => {
+          setIsLoadingSeries(false);
+          setCurrentView('subscribe-series');
+          navigate(`/series/${seriesId}/subscribe`);
+        });
+      return;
+    }
+
+    // If we already have a rich object but an offer override is present, apply it here too
+    const selected = { ...series };
+    if (series && (series.priceOverride !== undefined || series.discountedPrice !== undefined)) {
+      const effectiveDiscounted = series.priceOverride ?? series.discountedPrice;
+      const original = series.originalPrice ?? series.price ?? effectiveDiscounted;
+      selected.price = effectiveDiscounted;
+      selected.originalPrice = original;
+      selected.discountedPrice = effectiveDiscounted;
+      selected.discountPercentage = series.discountPercentage ?? (
+        original ? Math.max(0, Math.round(((original - effectiveDiscounted) / original) * 100)) : undefined
+      );
+      selected.appliedOfferId = series.appliedOfferId ?? selected.appliedOfferId;
+      selected.isFromOffer = true;
+    }
+    setSelectedItem(selected);
     setCurrentView('subscribe-series');
     navigate(`/series/${series.id}/subscribe`);
   };
@@ -326,7 +487,6 @@ const AppContent = () => {
     navigate(`/quiz/${quiz.id}/take`);
   };
 
-  // View Tests handler
   const handleViewTests = (testSeries) => {
     if (!requireLoginForTestSeries('view-tests')) return;
     countFreeSeriesView(testSeries);
@@ -335,7 +495,6 @@ const AppContent = () => {
     navigate(`/series/${testSeries.id}/tests`);
   };
 
-  // Individual test leaderboard handler
   const handleViewLeaderboard = (test) => {
     if (!requireLogin('view-leaderboard')) return;
     setSelectedItem(test);
@@ -343,10 +502,10 @@ const AppContent = () => {
     navigate(`/test/${test.id}/leaderboard`);
   };
 
-  // Test attempt handlers
   const handleTakeTest = (test, testSeries) => {
     if (!requireLogin('take-test')) return;
-    setSelectedItem({ test, testSeries });
+    const normalized = normalizeTestForAttempt(test);
+    setSelectedItem({ test: normalized, testSeries });
     setCurrentView('take-test');
     navigate(`/test/${test.id}/take`);
   };
@@ -358,10 +517,8 @@ const AppContent = () => {
     navigate('/test-history');
   };
 
-  // ENHANCED: Better test completion handling
   const handleTestCompleted = (attemptData) => {
     logger.log('Test completed successfully:', attemptData);
-    // Navigate to attempt details immediately after test completion
     setSelectedItem(attemptData);
     setCurrentView('attempt-details');
     navigate(`/attempt/${attemptData.id}`);
@@ -381,23 +538,19 @@ const AppContent = () => {
 
   const handleBackToDashboard = () => {
     setCurrentView('series-dashboard');
-    // Keep selectedItem as it contains the test series data
     if (selectedItem && selectedItem.id) {
       navigate(`/series/${selectedItem.id}/dashboard`);
     }
   };
 
-  // FIXED: Better back navigation for attempt details
   const handleBackToHistory = () => {
     setCurrentView('test-history');
     setSelectedItem(null);
     navigate('/test-history');
   };
 
-  // Back to tests list handler
   const handleBackToTestsList = () => {
     setCurrentView('view-tests');
-    // Keep selectedItem as it contains the test series data
     if (selectedItem && selectedItem.id) {
       navigate(`/series/${selectedItem.id}/tests`);
     }
@@ -415,12 +568,11 @@ const AppContent = () => {
     navigate('/test-series');
   };
 
-  // Test creation handlers
   const handleCreateManualTest = () => {
     if (!isAdmin) return;
     setCurrentView('create-manual-test');
     if (selectedItem && selectedItem.id) {
-      navigate(`/series/${selectedItem.id}/create-manual-test`);
+      navigate(`/series/${selectedItem.id}/create-section-quiz`);
     }
   };
 
@@ -433,49 +585,45 @@ const AppContent = () => {
   };
 
   const handleTestCreated = (newTest) => {
-    // Go back to dashboard after creating test
     setCurrentView('series-dashboard');
-    console.log('Test created successfully:', newTest);
+    logger.log('Test created successfully:', newTest);
     if (selectedItem && selectedItem.id) {
       navigate(`/series/${selectedItem.id}/dashboard`);
     }
   };
 
-  // Header navigation handlers
   const handleViewAttempts = () => {
     if (!requireLogin('view-attempts')) return;
     setCurrentView('test-history');
-    setSelectedItem(null); // Clear selected item when going to history
+    setSelectedItem(null);
     navigate('/test-history');
   };
 
   const handleViewHome = () => {
-    setCurrentView('test-series');
+    setCurrentView('homepage');
     setSelectedItem(null);
-    navigate('/test-series');
+    navigate('/homepage');
   };
 
   const handleViewTestSeries = () => {
-    setCurrentView('test-series');
+    setCurrentView('test-series'); 
     setSelectedItem(null);
     navigate('/test-series');
   };
 
   const handleGetStarted = () => {
-    setCurrentView('test-series');
+    setCurrentView('homepage');
     setSelectedItem(null);
-    navigate('/test-series');
+    navigate('/homepage');
   };
 
   const handleAIGenerator = () => {
     if (!requireLogin('ai-generator')) return;
     if (!isAdmin) return;
     if (selectedItem && selectedItem.id) {
-      // If we have a selected test series, create AI test for it
       setCurrentView('create-ai-test');
       navigate(`/series/${selectedItem.id}/create-ai-test`);
     } else {
-      // Otherwise, go to standalone AI generator
       setCurrentView('ai-generator');
       navigate('/ai-generator');
     }
@@ -485,6 +633,17 @@ const AppContent = () => {
     setCurrentView('welcome');
     setSelectedItem(null);
     navigate('/welcome');
+  };
+
+  // Handle login popup actions
+  const handleLoginClick = () => {
+    setShowLoginPopup(false);
+    navigate('/login');
+  };
+
+  const handleCloseLoginPopup = () => {
+    setShowLoginPopup(false);
+    setPendingAction(null);
   };
 
   if (currentUser === undefined) {
@@ -507,38 +666,6 @@ const AppContent = () => {
     );
   }
 
-  // Helper function to check if user needs to be logged in for an action
-  const requireLogin = (action) => {
-    if (!currentUser) {
-      setPendingAction(action);
-      setShowLoginPopup(true);
-      return false;
-    }
-    return true;
-  };
-
-  // Helper function to check if user needs to be logged in for test series actions
-  const requireLoginForTestSeries = (action) => {
-    if (!currentUser) {
-      setPendingAction(action);
-      setShowLoginPopup(true);
-      return false;
-    }
-    return true;
-  };
-
-  // Handle login popup actions
-  const handleLoginClick = () => {
-    setShowLoginPopup(false);
-    // Navigate to login page
-    navigate('/login');
-  };
-
-  const handleCloseLoginPopup = () => {
-    setShowLoginPopup(false);
-    setPendingAction(null);
-  };
-
   const renderContent = () => {
     switch (currentView) {
       case 'welcome':
@@ -548,6 +675,17 @@ const AppContent = () => {
               onGetStarted={handleGetStarted}
               onCreateSeries={handleCreateSeries}
               onViewExistingSeries={handleViewTestSeries}
+            />
+          </div>
+        );
+      case 'homepage':
+        return (
+          <div className="animate-fade-in">
+            <EnhancedHomepage
+              onCreateSeries={handleCreateSeries}
+              onViewSeries={handleViewSeries}
+              onSubscribeSeries={handleSubscribeSeries}
+              onViewTests={handleViewTests}
             />
           </div>
         );
@@ -601,19 +739,26 @@ const AppContent = () => {
               onCreateAITest={isAdmin ? handleCreateAITest : undefined}
               onTakeTest={handleTakeTest}
               onViewLeaderboard={handleViewLeaderboard}
-              onEditSeries={() => console.log('Edit series:', selectedItem?.id)}
+              onEditSeries={() => logger.log('Edit series:', selectedItem?.id)}
             />
           </div>
         );
 
       case 'create-manual-test':
+        if (isLoadingSeries || !selectedItem) {
+          return (
+            <div className="flex items-center justify-center min-h-[400px]">
+              <div className="text-center text-gray-400">Loading series...</div>
+            </div>
+          );
+        }
         return (
           <div className="animate-fade-in">
             {isAdmin ? (
-              <TestSeriesQuizCreator
-                testSeries={selectedItem}
+              <SectionWiseQuizCreator
                 onBack={handleBackToDashboard}
                 onQuizCreated={handleTestCreated}
+                testSeriesId={selectedItem.id}
               />
             ) : (
               <div className="text-center text-red-400 font-semibold p-6">Access denied: Admins only</div>
@@ -622,6 +767,13 @@ const AppContent = () => {
         );
 
       case 'create-ai-test':
+        if (isLoadingSeries || !selectedItem) {
+          return (
+            <div className="flex items-center justify-center min-h-[400px]">
+              <div className="text-center text-gray-400">Loading series...</div>
+            </div>
+          );
+        }
         return (
           <div className="animate-fade-in">
             {isAdmin ? (
@@ -636,7 +788,6 @@ const AppContent = () => {
           </div>
         );
 
-      // View Tests Page
       case 'view-tests':
         if (isLoadingSeries || !selectedItem) {
           return (
@@ -656,7 +807,6 @@ const AppContent = () => {
           </div>
         );
 
-      // Test attempt views
       case 'take-test':
         if (isLoadingSeries || !selectedItem?.test) {
           return (
@@ -676,7 +826,6 @@ const AppContent = () => {
               test={selectedItem.test}
               testSeries={selectedItem.testSeries}
               onBack={() => {
-                // Smart back navigation
                 if (selectedItem.testSeries) {
                   setSelectedItem(selectedItem.testSeries);
                   setCurrentView('view-tests');
@@ -684,7 +833,7 @@ const AppContent = () => {
                   handleBackToDashboard();
                 }
               }}
-              onComplete={handleTestCompleted} // Direct navigation to attempt details
+              onComplete={handleTestCompleted}
             />
           </div>
         );
@@ -699,19 +848,17 @@ const AppContent = () => {
           </div>
         );
 
-      // ENHANCED: Test Attempt Details with proper component
       case 'attempt-details':
         return (
           <div className="animate-fade-in">
             <TestAttemptDetails
               attempt={selectedItem}
-              onBack={handleBackToHistory} // Better back navigation
+              onBack={handleBackToHistory}
               testSeriesId={selectedItem?.testSeriesId}
             />
           </div>
         );
 
-      // Individual test leaderboard
       case 'test-leaderboard':
         if (isLoadingSeries) {
           return (
@@ -732,15 +879,11 @@ const AppContent = () => {
               quizTitle={selectedItem?.title}
               testSeriesId={selectedItem?.testSeriesId}
               onBack={() => {
-                // Fixed navigation logic
                 if (selectedItem?.testSeriesId) {
-                  // If we have a testSeriesId, we need to go back to the tests list
-                  // First, retrieve the test series data
                   const seriesData = { id: selectedItem.testSeriesId };
                   setSelectedItem(seriesData);
                   setCurrentView('view-tests');
                 } else {
-                  // Otherwise go back to the main series list
                   handleBackToSeries();
                 }
               }}
@@ -779,9 +922,8 @@ const AppContent = () => {
         return (
           <div className="animate-fade-in">
             <AIQuizGenerator
-              onBack={handleBackToSeries}
-              onQuizCreated={handleSeriesCreated}
-              testSeriesId={selectedItem?.id}
+              onClose={handleBackToSeries}
+              onQuestionsGenerated={handleSeriesCreated}
             />
           </div>
         );
@@ -795,7 +937,6 @@ const AppContent = () => {
           </div>
         );
 
-      // General quiz leaderboard (different from test leaderboard)
       case 'leaderboard':
         if (isLoadingSeries) {
           return (
@@ -848,28 +989,25 @@ const AppContent = () => {
     }
   };
 
-  // Don't show header on welcome page
   const showHeader = currentView !== 'welcome';
+  const showFooter = location.pathname === '/test-series';
 
   return (
     <div className={`flex flex-col min-h-screen transition-all duration-500 ${pageLoaded ? 'opacity-100' : 'opacity-0'} ${
       isDark ? 'bg-gray-900' : 'bg-white'
     }`}>
-      {/* Header - only shown when not on welcome page */}
       {showHeader && (
         <Header 
           onViewAttempts={handleViewAttempts}
           onViewHome={handleViewHome}
+          onViewTestSeries={handleViewTestSeries}
           onViewWelcome={handleViewWelcome}
-          onAIGenerator={handleAIGenerator}
           onLoginClick={handleLoginClick}
           currentView={currentView}
         />
       )}
       
-      {/* Main Content */}
       <main className={`flex-grow ${showHeader ? 'pt-20' : ''} relative`}>
-        {/* Background decoration */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className={`absolute -top-40 -right-40 w-80 h-80 rounded-full blur-3xl animate-pulse transition-all duration-500 ${
             isDark ? 'bg-blue-400/5' : 'bg-blue-400/10'
@@ -879,7 +1017,6 @@ const AppContent = () => {
           }`}></div>
         </div>
         
-        {/* Content */}
         <div className="relative z-10">
           <ErrorBoundary>
             {renderContent()}
@@ -887,7 +1024,6 @@ const AppContent = () => {
         </div>
       </main>
 
-      {/* Login Popup */}
       <LoginPopup
         isOpen={showLoginPopup}
         onClose={handleCloseLoginPopup}
@@ -895,10 +1031,7 @@ const AppContent = () => {
         pendingAction={pendingAction}
       />
       
-      {/* Professional Footer - only shown when not on welcome page */}
-      {showHeader && (
-        <Footer />
-      )}
+      {showFooter && <Footer />}
     </div>
   );
 };
@@ -919,7 +1052,7 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error('App Error:', error, errorInfo);
+    logger.error('App Error:', error, errorInfo);
     this.setState({
       error: error,
       errorInfo: errorInfo
@@ -960,8 +1093,7 @@ class ErrorBoundary extends React.Component {
               </button>
             </div>
 
-            {/* Error Details for Development */}
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {import.meta.env.DEV && this.state.error && (
               <details className="mt-6 text-left">
                 <summary className="cursor-pointer text-sm text-gray-500 hover:text-gray-700 mb-2">
                   Show Error Details (Development)
@@ -985,7 +1117,6 @@ const ApplyCreator = () => {
   const navigate = useNavigate();
 
   const handleApply = () => {
-    // Creator features removed; redirect to home
     navigate('/test-series');
   };
 
@@ -1015,16 +1146,16 @@ const App = () => {
         <AuthProvider>
           <Routes>
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
-            {/* Creator routes removed */}
             <Route path="/apply-creator" element={<ApplyCreator />} />
             <Route path="/login" element={<AuthForm />} />
             <Route path="/" element={<AppContent />} />
             <Route path="/welcome" element={<AppContent />} />
+            <Route path="/homepage" element={<AppContent />} />
             <Route path="/test-series" element={<AppContent />} />
             <Route path="/create-series" element={<AppContent />} />
             <Route path="/ai-generator" element={<AppContent />} />
+            <Route path="/section-quiz-creator" element={<SectionWiseQuizCreator onBack={() => window.history.back()} onQuizCreated={() => window.location.href = '/test-series'} />} />
             <Route path="/test-history" element={<AppContent />} />
-            {/* Legal pages */}
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<TermsAndConditions />} />
             <Route path="/refunds" element={<RefundPolicy />} />

@@ -9,8 +9,6 @@ import {
   FiUser, 
   FiClock, 
   FiArrowLeft, 
-  FiFilter, 
-  FiChevronDown,
   FiTrendingUp,
   FiTarget,
   FiZap,
@@ -24,9 +22,6 @@ import {
   FaMedal, 
   FaChartLine, 
   FaHistory,
-  FaFire,
-  FaGem,
-  FaRocket,
   FaStar
 } from 'react-icons/fa';
 
@@ -97,29 +92,18 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
     setRetryCount(0);
 
     try {
-      // Updated to use 'test-attempts' collection for consistency
-      let q;
-      if (filter === 'best') {
-        q = query(
-          collection(db, 'test-attempts'),
-          where('testId', '==', quizId),
-          orderBy('percentage', 'desc'),
-          orderBy('timeSpent', 'asc'),
-          limit(100)
-        );
-      } else {
-        q = query(
-          collection(db, 'test-attempts'),
-          where('testId', '==', quizId),
-          orderBy('completedAt', 'desc'),
-          limit(100)
-        );
-      }
+      // Show only FIRST attempt per user on the leaderboard
+      // We fetch attempts ordered by completedAt ascending so the first seen per user is their first attempt
+      const q = query(
+        collection(db, 'test-attempts'),
+        where('testId', '==', quizId),
+        orderBy('completedAt', 'asc')
+      );
 
       const unsubscribe = onSnapshot(q, 
         (querySnapshot) => {
           const attempts = [];
-          const userAttempts = new Map();
+          const firstAttemptsByUser = new Map();
           let totalScore = 0;
           let maxScore = 0;
 
@@ -129,28 +113,34 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
             totalScore += attempt.percentage;
             maxScore = Math.max(maxScore, attempt.percentage);
 
-            // Track best attempt per user for 'best' filter
-            if (filter === 'best') {
-              const existing = userAttempts.get(attempt.userId);
-              if (!existing || 
-                  attempt.percentage > existing.percentage || 
-                  (attempt.percentage === existing.percentage && attempt.timeSpent < existing.timeSpent)) {
-                userAttempts.set(attempt.userId, attempt);
-              }
+            // Track FIRST attempt per user (since ordered by completedAt asc)
+            if (!firstAttemptsByUser.has(attempt.userId)) {
+              firstAttemptsByUser.set(attempt.userId, attempt);
             }
           });
 
           // Prepare leaderboard data
           let leaderboardData;
+          const firstAttempts = Array.from(firstAttemptsByUser.values());
           if (filter === 'best') {
-            leaderboardData = Array.from(userAttempts.values()).sort((a, b) => {
-              if (a.percentage !== b.percentage) {
-                return b.percentage - a.percentage;
-              }
-              return a.timeSpent - b.timeSpent;
-            });
+            // Rank by score (percentage desc), then time spent asc
+            leaderboardData = firstAttempts
+              .sort((a, b) => {
+                if (a.percentage !== b.percentage) {
+                  return b.percentage - a.percentage;
+                }
+                return a.timeSpent - b.timeSpent;
+              })
+              .slice(0, 10);
           } else {
-            leaderboardData = attempts;
+            // Recent: show latest among users' FIRST attempts
+            leaderboardData = firstAttempts
+              .sort((a, b) => {
+                const aTime = a.completedAt?.toMillis ? a.completedAt.toMillis() : new Date(a.completedAt).getTime();
+                const bTime = b.completedAt?.toMillis ? b.completedAt.toMillis() : new Date(b.completedAt).getTime();
+                return bTime - aTime;
+              })
+              .slice(0, 10);
           }
 
           setLeaderboard(leaderboardData);
@@ -160,7 +150,7 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
             totalAttempts: attempts.length,
             averageScore: attempts.length > 0 ? Math.round(totalScore / attempts.length) : 0,
             topScore: maxScore,
-            participantCount: new Set(attempts.map(a => a.userId)).size
+            participantCount: firstAttemptsByUser.size
           });
 
           // Find user rank
@@ -363,7 +353,7 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
         ? 'bg-gradient-to-br from-gray-900 via-blue-900/20 to-purple-900/20' 
         : 'bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20'
     }`}>
-      <div className="max-w-6xl mx-auto p-6">
+      <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:p-6 text-xs sm:text-sm md:text-base">
         {/* Professional Background Elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className={`absolute top-20 right-20 w-96 h-96 rounded-full blur-3xl animate-pulse ${
@@ -375,11 +365,11 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
         </div>
 
         {/* Header */}
-        <div className="relative z-10 flex items-center gap-4 mb-8">
+        <div className="relative z-10 flex items-center gap-3 sm:gap-4 mb-6 md:mb-8">
           {onBack && (
             <button 
               onClick={onBack}
-              className={`group rounded-2xl px-4 py-3 transition-all duration-300 flex items-center gap-2 ${
+              className={`group rounded-2xl px-4 py-3 transition-all duration-300 hidden sm:flex items-center gap-2 ${
                 isDark 
                   ? 'bg-gray-800/60 hover:bg-gray-700/60 border border-gray-600/40 text-gray-300 hover:text-white'
                   : 'bg-white/90 hover:bg-white border border-slate-200/60 text-slate-700 hover:text-slate-800 hover:shadow-slate-300/30'
@@ -391,24 +381,24 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
           )}
           
           <div>
-            <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-600">
+            <h1 className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-600">
               Leaderboard
             </h1>
-            <p className={`text-lg transition-all duration-300 ${
+            <p className={`text-sm md:text-base transition-all duration-300 ${
               isDark ? 'text-gray-400' : 'text-slate-600'
             }`}>{quizTitle}</p>
           </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="relative z-10 grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="relative z-10 grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
           <div className={`backdrop-blur-xl border rounded-2xl p-6 text-center transition-all duration-500 ${
             isDark 
               ? 'bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 border-yellow-500/30'
               : 'bg-white/90 border-yellow-200'
           }`}>
             <FaTrophy className="w-8 h-8 text-yellow-400 mx-auto mb-3" />
-            <div className={`text-2xl font-bold ${
+            <div className={`text-xl md:text-2xl font-bold ${
               isDark ? 'text-yellow-300' : 'text-yellow-700'
             }`}>{stats.topScore}%</div>
             <div className={`text-sm ${
@@ -422,7 +412,7 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
               : 'bg-white/90 border-blue-200'
           }`}>
             <FiUsers className="w-8 h-8 text-blue-400 mx-auto mb-3" />
-            <div className={`text-2xl font-bold ${
+            <div className={`text-xl md:text-2xl font-bold ${
               isDark ? 'text-blue-300' : 'text-blue-700'
             }`}>{stats.participantCount}</div>
             <div className={`text-sm ${
@@ -436,7 +426,7 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
               : 'bg-white/90 border-purple-200'
           }`}>
             <FiTarget className="w-8 h-8 text-purple-400 mx-auto mb-3" />
-            <div className={`text-2xl font-bold ${
+            <div className={`text-xl md:text-2xl font-bold ${
               isDark ? 'text-purple-300' : 'text-purple-700'
             }`}>{stats.averageScore}%</div>
             <div className={`text-sm ${
@@ -450,7 +440,7 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
               : 'bg-white/90 border-green-200'
           }`}>
             <FiTrendingUp className="w-8 h-8 text-green-400 mx-auto mb-3" />
-            <div className={`text-2xl font-bold ${
+            <div className={`text-xl md:text-2xl font-bold ${
               isDark ? 'text-green-300' : 'text-green-700'
             }`}>{stats.totalAttempts}</div>
             <div className={`text-sm ${
@@ -466,7 +456,7 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
             : 'bg-white/90 border-slate-200/60'
         }`}>
           {/* Header */}
-          <div className={`border-b p-8 ${
+          <div className={`border-b p-5 md:p-8 ${
             isDark 
               ? 'bg-gradient-to-r from-yellow-500/20 via-orange-500/20 to-yellow-500/20 border-gray-600/40'
               : 'bg-gradient-to-r from-yellow-50/80 via-orange-50/80 to-yellow-50/80 border-slate-200/60'
@@ -479,7 +469,7 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
                 <div className="absolute -inset-4 bg-gradient-to-r from-yellow-400/20 to-orange-400/20 rounded-full blur-xl animate-pulse"></div>
               </div>
               
-              <h2 className={`text-3xl font-bold mb-4 ${
+              <h2 className={`text-xl md:text-2xl font-bold mb-3 md:mb-4 ${
                 isDark ? 'text-white' : 'text-slate-800'
               }`}>Hall of Fame</h2>
               
@@ -498,7 +488,7 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
             </div>
             
             {/* Filter Buttons */}
-            <div className="mt-8 flex flex-wrap justify-center gap-4">
+            <div className="mt-6 md:mt-8 flex flex-wrap justify-center gap-3 md:gap-4">
               <button
                 onClick={() => setFilter('best')}
                 className={`flex items-center gap-3 px-6 py-3 rounded-2xl font-bold transition-all duration-300 ${
@@ -530,7 +520,7 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
           </div>
 
           {/* Leaderboard Content */}
-          <div className="p-8">
+          <div className="p-4 md:p-8">
             {leaderboard.length === 0 ? (
               <div className="text-center py-16">
                 <div className={`w-32 h-32 rounded-full flex items-center justify-center mx-auto mb-6 ${
@@ -551,27 +541,32 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
               <div className="space-y-4">
                 {/* Top 3 Podium */}
                 {leaderboard.length >= 3 && filter === 'best' && (
-                  <div className="grid grid-cols-3 gap-4 mb-12">
+                  <div className="grid grid-cols-3 gap-3 md:gap-4 mt-3 md:mt-4 mb-8 md:mb-12">
                     {/* 2nd Place */}
                     <div className="text-center">
                       <div className="relative mb-4">
-                        <div className="w-20 h-20 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center mx-auto shadow-xl">
-                          <span className="text-2xl font-bold text-white">2</span>
+                        <div className="w-14 h-14 md:w-20 md:h-20 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center mx-auto shadow-xl">
+                          <span className="text-lg md:text-2xl font-bold text-white">2</span>
                         </div>
                         <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-gray-500 text-white px-3 py-1 rounded-full text-xs font-bold">
                           {leaderboard[1]?.percentage}%
                         </div>
                       </div>
-                      <h4 className={`font-bold ${
-                        isDark ? 'text-white' : 'text-slate-800'
-                      }`}>{leaderboard[1]?.userName || 'Anonymous'}</h4>
+                      <h4
+                        className={`font-bold text-sm sm:text-base truncate max-w-[140px] sm:max-w-[200px] mx-auto ${
+                          isDark ? 'text-white' : 'text-slate-800'
+                        }`}
+                        title={leaderboard[1]?.userName || 'Anonymous'}
+                      >
+                        {leaderboard[1]?.userName || 'Anonymous'}
+                      </h4>
                     </div>
 
                     {/* 1st Place */}
-                    <div className="text-center -mt-8">
+                    <div className="text-center">
                       <div className="relative mb-4">
-                        <div className="w-24 h-24 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center mx-auto shadow-2xl shadow-yellow-500/50">
-                          <FaCrown className="text-3xl text-white" />
+                        <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center mx-auto shadow-2xl shadow-yellow-500/50">
+                          <FaCrown className="text-lg md:text-2xl text-white" />
                         </div>
                         <div className="absolute -top-4 left-1/2 -translate-x-1/2">
                           <FaStar className="text-yellow-300 animate-pulse" />
@@ -580,23 +575,33 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
                           {leaderboard[0]?.percentage}%
                         </div>
                       </div>
-                      <h4 className="text-yellow-300 font-bold text-lg">{leaderboard[0]?.userName || 'Anonymous'}</h4>
+                      <h4
+                        className="text-yellow-300 font-bold text-base sm:text-lg truncate max-w-[160px] sm:max-w-[220px] mx-auto"
+                        title={leaderboard[0]?.userName || 'Anonymous'}
+                      >
+                        {leaderboard[0]?.userName || 'Anonymous'}
+                      </h4>
                       <p className="text-yellow-200 text-sm">👑 Champion</p>
                     </div>
 
                     {/* 3rd Place */}
                     <div className="text-center">
                       <div className="relative mb-4">
-                        <div className="w-20 h-20 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center mx-auto shadow-xl">
-                          <span className="text-2xl font-bold text-white">3</span>
+                        <div className="w-14 h-14 md:w-20 md:h-20 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center mx-auto shadow-xl">
+                          <span className="text-lg md:text-2xl font-bold text-white">3</span>
                         </div>
                         <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold">
                           {leaderboard[2]?.percentage}%
                         </div>
                       </div>
-                      <h4 className={`font-bold ${
-                        isDark ? 'text-white' : 'text-slate-800'
-                      }`}>{leaderboard[1]?.userName || 'Anonymous'}</h4>
+                      <h4
+                        className={`font-bold text-sm sm:text-base truncate max-w-[140px] sm:max-w-[200px] mx-auto ${
+                          isDark ? 'text-white' : 'text-slate-800'
+                        }`}
+                        title={leaderboard[2]?.userName || 'Anonymous'}
+                      >
+                        {leaderboard[2]?.userName || 'Anonymous'}
+                      </h4>
                     </div>
                   </div>
                 )}
@@ -610,7 +615,7 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
                     return (
                       <div
                         key={attempt.id}
-                        className={`group relative overflow-hidden rounded-2xl border transition-all duration-300 hover:scale-[1.02] ${
+                        className={`group relative overflow-hidden rounded-2xl border transition-all duration-300 hover:scale-[1.01] md:hover:scale-[1.02] ${
                           isCurrentUser 
                             ? isDark
                               ? 'bg-gradient-to-r from-blue-500/20 to-blue-600/20 border-blue-500/40 shadow-lg shadow-blue-500/20'
@@ -622,21 +627,29 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
                                 : 'bg-white/90 border-slate-200/60 hover:bg-slate-100/90'
                         }`}
                       >
-                        <div className="p-6">
+                        <div className="p-3 md:p-6">
                           <div className="flex items-center gap-6">
                             {/* Rank */}
                             <div className="flex-shrink-0">
-                              {getRankIcon(rank)}
+                              <div className="md:block hidden">{getRankIcon(rank)}</div>
+                              <div className="md:hidden block">
+                                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-gray-600 to-gray-700 border-2 border-gray-500 text-white font-bold text-base">
+                                  {rank}
+                                </div>
+                              </div>
                             </div>
                             
                             {/* Player Info */}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-3 mb-2">
-                                <h3 className={`text-xl font-bold truncate ${
+                                <h3
+                                  className={`text-lg md:text-xl font-bold truncate max-w-[160px] sm:max-w-[220px] md:max-w-none ${
                                   isCurrentUser 
                                     ? isDark ? 'text-blue-300' : 'text-blue-700'
                                     : isDark ? 'text-white' : 'text-slate-800'
-                                }`}>
+                                  }`}
+                                  title={attempt.userName || 'Anonymous'}
+                                >
                                   {attempt.userName || 'Anonymous'}
                                 </h3>
                                 {isCurrentUser && (
@@ -644,13 +657,7 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
                                     YOU
                                   </span>
                                 )}
-                                {rank <= 3 && (
-                                  <div className="flex gap-1">
-                                    {[...Array(4 - rank)].map((_, i) => (
-                                      <FaStar key={i} className="w-4 h-4 text-yellow-400" />
-                                    ))}
-                                  </div>
-                                )}
+                                {/* Stars removed per design request */}
                               </div>
                               
                               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
@@ -690,7 +697,7 @@ const Leaderboard = ({ quizId, quizTitle, testSeriesId, onBack, isIndividualTest
 
                             {/* Score Badge */}
                             <div className={`flex-shrink-0 px-4 py-2 rounded-xl border ${getScoreBg(attempt.percentage)}`}>
-                              <div className={`text-2xl font-bold ${getScoreColor(attempt.percentage)}`}>
+                              <div className={`text-xl md:text-2xl font-bold ${getScoreColor(attempt.percentage)}`}>
                                 {attempt.percentage}%
                               </div>
                             </div>

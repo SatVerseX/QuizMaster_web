@@ -582,7 +582,7 @@ export class PaymentService {
   // ==================== LOGGING HELPERS ====================
   
   static logPaymentEvent(event, data) {
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.log(`[PaymentService] ${event}:`, data);
     }
     

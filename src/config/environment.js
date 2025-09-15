@@ -1,29 +1,35 @@
-// Environment configuration
+// Environment configuration compatible with Vite and Node
 const getEnvironment = () => {
-  // Check if we're in a browser environment
+  // Prefer Vite's variables when available
+  try {
+    if (typeof import.meta !== 'undefined' && import.meta.env) {
+      return import.meta.env.MODE || (import.meta.env.PROD ? 'production' : 'development');
+    }
+  } catch (_) {}
+
+  // Browser hint (optional meta tag or injected value)
   if (typeof window !== 'undefined') {
-    // Check for environment in window object (set by build process)
-    if (window.__ENV__) {
-      return window.__ENV__;
-    }
-    
-    // Check for environment in meta tag
+    if (window.__ENV__) return window.__ENV__;
     const metaEnv = document.querySelector('meta[name="environment"]');
-    if (metaEnv) {
-      return metaEnv.getAttribute('content');
-    }
+    if (metaEnv) return metaEnv.getAttribute('content');
   }
-  
-  // Fallback to NODE_ENV
-  return process.env.NODE_ENV || 'development';
+
+  // Node fallback (only when process is defined)
+  try {
+    if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV) {
+      return process.env.NODE_ENV;
+    }
+  } catch (_) {}
+  return 'development';
 };
 
-const isDevelopment = getEnvironment() === 'development';
-const isProduction = getEnvironment() === 'production';
-const isStaging = getEnvironment() === 'staging';
+const env = getEnvironment();
+const isDevelopment = env === 'development';
+const isProduction = env === 'production';
+const isStaging = env === 'staging';
 
 export const config = {
-  environment: getEnvironment(),
+  environment: env,
   isDevelopment,
   isProduction,
   isStaging,
@@ -38,7 +44,7 @@ export const config = {
   // API endpoints
   api: {
     baseUrl: isProduction 
-      ? 'https://your-production-api.com' 
+      ? 'https://quiz-master-go.vercel.app/' 
       : 'http://localhost:5000',
   },
   

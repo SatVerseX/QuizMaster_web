@@ -3,7 +3,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 class IndianLanguageVoiceService {
   constructor() {
-    this.genAI = new GoogleGenerativeAI(process.env.VITE_GEMINI_API_KEY);
+    this.genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
     this.ttsModel = this.genAI.getGenerativeModel({ 
       model: "gemini-2.5-flash-preview-tts" 
     });

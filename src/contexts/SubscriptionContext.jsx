@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -43,7 +43,7 @@ export const SubscriptionProvider = ({ children }) => {
     }
   }, [currentUser]);
 
-  const loadUserSubscription = () => {
+  const loadUserSubscription = useCallback(() => {
     const unsubscribe = onSnapshot(
       doc(db, 'subscriptions', currentUser.uid),
       (docSnap) => {
@@ -88,9 +88,9 @@ export const SubscriptionProvider = ({ children }) => {
     );
 
     return unsubscribe;
-  };
+  }, [currentUser]);
 
-  const updateSubscription = async (subscriptionData) => {
+  const updateSubscription = useCallback(async (subscriptionData) => {
     try {
       const docRef = doc(db, 'subscriptions', currentUser.uid);
       await setDoc(docRef, {
@@ -105,10 +105,10 @@ export const SubscriptionProvider = ({ children }) => {
       setError('Failed to update subscription');
       return { success: false, error: error.message };
     }
-  };
+  }, [currentUser]);
 
   // Check if user can create quiz with given question count
-  const canCreateQuiz = (questionCount) => {
+  const canCreateQuiz = useCallback((questionCount) => {
     if (!subscription) return false;
     
     if (subscription.planType === 'free') {
@@ -117,10 +117,10 @@ export const SubscriptionProvider = ({ children }) => {
     
     const maxQuestions = subscription.plan?.maxQuestions || subscription.maxQuestions || 0;
     return maxQuestions === -1 || questionCount <= maxQuestions;
-  };
+  }, [subscription]);
 
   // Check if user can use AI features
-  const canUseAI = (aiQuestionCount = 1) => {
+  const canUseAI = useCallback((aiQuestionCount = 1) => {
     if (!subscription) return false;
     
     if (subscription.planType === 'free') {
@@ -129,16 +129,16 @@ export const SubscriptionProvider = ({ children }) => {
     
     const maxAI = subscription.plan?.aiQuestions || subscription.aiQuestions || 0;
     return maxAI === -1 || aiQuestionCount <= maxAI;
-  };
+  }, [subscription]);
 
   // Check if user can monetize quizzes
-  const canMonetize = () => {
+  const canMonetize = useCallback(() => {
     if (!subscription) return false;
     return subscription.planType !== 'free' && (subscription.canMonetize || subscription.plan?.canMonetize);
-  };
+  }, [subscription]);
 
   // Get plan benefits for upgrade prompts
-  const getPlanBenefits = (planType) => {
+  const getPlanBenefits = useCallback((planType) => {
     const plans = {
       basic: {
         name: 'Basic Plan',
@@ -184,10 +184,10 @@ export const SubscriptionProvider = ({ children }) => {
     };
     
     return plans[planType] || null;
-  };
+  }, []);
 
   // Get upgrade suggestions based on usage
-  const getUpgradeSuggestion = (requiredQuestions, requiredAI = 0) => {
+  const getUpgradeSuggestion = useCallback((requiredQuestions, requiredAI = 0) => {
     if (canCreateQuiz(requiredQuestions) && canUseAI(requiredAI)) {
       return null; // No upgrade needed
     }
@@ -199,9 +199,9 @@ export const SubscriptionProvider = ({ children }) => {
     } else {
       return 'pro';
     }
-  };
+  }, [canCreateQuiz, canUseAI]);
 
-  const value = {
+  const value = useMemo(() => ({
     // Subscription data
     subscription,
     loading,
@@ -227,7 +227,7 @@ export const SubscriptionProvider = ({ children }) => {
     
     // Limits
     freeLimits: FREE_LIMITS
-  };
+  }), [subscription, loading, error, canCreateQuiz, canUseAI, canMonetize, updateSubscription, getPlanBenefits, getUpgradeSuggestion]);
 
   return (
     <SubscriptionContext.Provider value={value}>

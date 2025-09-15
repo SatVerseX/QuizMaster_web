@@ -3,21 +3,19 @@ import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { examCategories } from '../../utils/constants/examCategories';
+import { getAllSubcategories } from '../../utils/constants/examCategories';
 import usePopup from '../../hooks/usePopup';
 import BeautifulPopup from '../common/BeautifulPopup';
-import { 
-  FiPlus, 
+
+import {  
   FiDollarSign, 
   FiToggleLeft, 
   FiToggleRight,
   FiSave,
   FiArrowLeft,
   FiBookOpen,
-  FiTag,
-  FiClock,
-  FiUsers,
-  FiCheck
+  FiCheck,
+  FiSettings
 } from 'react-icons/fi';
 
 const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
@@ -26,21 +24,20 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
   const { popupState, showError, showSuccess, hidePopup } = usePopup();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1); // 1: Basic Info, 2: Pricing & Payments
+  const [showImageAdjustment, setShowImageAdjustment] = useState(false);
 
   
   const [seriesData, setSeriesData] = useState({
     title: '',
     description: '',
-    category: 'education',
-    examCategory: '',
+    category: '',
     examSubcategory: '',
-    difficulty: 'medium',
-    estimatedDuration: 60,
+    difficulty: '',
     tags: [],
     isPaid: false,
-    price: 299,
+    price: 0,
     quizzes: [],
-    coverImageUrl: '' // New field for cover image
+    coverImageUrl: ''
   });
 
   const categories = [
@@ -145,11 +142,14 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
 
       {/* Cover Image Section */}
       <div>
-        <label className={`block text-sm font-medium mb-2 transition-all duration-300 ${
-          isDark ? 'text-gray-300' : 'text-slate-700'
-        }`}>
-          Cover Image URL (Cloudinary)
-        </label>
+        <div className="flex items-center justify-between mb-2">
+          <label className={`block text-sm font-medium transition-all duration-300 ${
+            isDark ? 'text-gray-300' : 'text-slate-700'
+          }`}>
+            Cover Image URL (Cloudinary)
+          </label>
+        </div>
+        
         <div className="space-y-3">
           <input
             type="url"
@@ -162,28 +162,35 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
                 : 'bg-white border-slate-300 text-slate-800 placeholder-slate-500'
             }`}
           />
+          
           {seriesData.coverImageUrl && (
-            <div className="relative">
-              <img
-                src={seriesData.coverImageUrl}
-                alt="Cover preview"
-                className={`w-full h-32 object-cover rounded-lg border transition-all duration-300 ${
-                  isDark ? 'border-gray-600' : 'border-slate-300'
-                }`}
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  e.target.nextSibling.style.display = 'block';
-                }}
-              />
-              <div className={`hidden w-full h-32 rounded-lg border flex items-center justify-center transition-all duration-300 ${
-                isDark 
-                  ? 'bg-gray-700 border-gray-600 text-gray-400' 
-                  : 'bg-slate-100 border-slate-300 text-slate-500'
-              }`}>
-                Invalid image URL
+            <div className="space-y-3">
+              {/* Basic Preview */}
+              <div className="relative">
+                <img
+                  src={seriesData.coverImageUrl}
+                  alt="Cover preview"
+                  className={`w-full h-32 object-cover rounded-lg border transition-all duration-300 ${
+                    isDark ? 'border-gray-600' : 'border-slate-300'
+                  }`}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'block';
+                  }}
+                />
+                <div className={`hidden w-full h-32 rounded-lg border flex items-center justify-center transition-all duration-300 ${
+                  isDark 
+                    ? 'bg-gray-700 border-gray-600 text-gray-400' 
+                    : 'bg-slate-100 border-slate-300 text-slate-500'
+                }`}>
+                  Invalid image URL
+                </div>
               </div>
+
+              
             </div>
           )}
+          
           <p className={`text-xs transition-all duration-300 ${
             isDark ? 'text-gray-400' : 'text-slate-500'
           }`}>
@@ -211,41 +218,7 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
         />
       </div>
 
-        <div>
-        <label className={`block text-sm font-medium mb-2 transition-all duration-300 ${
-          isDark ? 'text-gray-300' : 'text-slate-700'
-        }`}>
-            Exam Category
-          </label>
-        <div className="relative">
-          <select
-            value={seriesData.examCategory}
-            onChange={(e) => {
-              handleInputChange('examCategory', e.target.value);
-              handleInputChange('examSubcategory', ''); // Reset subcategory when main category changes
-            }}
-            className={`w-full px-4 py-3 pr-10 rounded-lg border transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none ${
-              isDark 
-                ? 'bg-gray-800/70 border-gray-700 text-white' 
-                : 'bg-white border-slate-300 text-slate-800'
-            }`}
-          >
-            <option value="">Select Exam Category</option>
-            {examCategories.map(cat => (
-              <option key={cat.id} value={cat.id}>
-                {cat.icon} {cat.name}
-              </option>
-            ))}
-          </select>
-          <div className={`absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none transition-all duration-300 ${
-            isDark ? 'text-gray-400' : 'text-slate-500'
-          }`}>
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
-        </div>
-      </div>
+      
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
@@ -258,25 +231,18 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
           <select
             value={seriesData.examSubcategory}
             onChange={(e) => handleInputChange('examSubcategory', e.target.value)}
-            disabled={!seriesData.examCategory}
-              className={`w-full px-4 py-3 pr-10 rounded-lg border appearance-none transition-all duration-300 ${
-              seriesData.examCategory
-                  ? isDark 
+            className={`w-full px-4 py-3 pr-10 rounded-lg border appearance-none transition-all duration-300 ${
+              isDark 
                 ? 'bg-gray-800/70 border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-                    : 'bg-white border-slate-300 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-                  : isDark 
-                    ? 'bg-gray-700/50 border-gray-600 text-gray-500 cursor-not-allowed'
-                    : 'bg-slate-100 border-slate-300 text-slate-500 cursor-not-allowed'
+                : 'bg-white border-slate-300 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
             }`}
           >
             <option value="">Select Specific Exam</option>
-            {seriesData.examCategory && examCategories
-              .find(cat => cat.id === seriesData.examCategory)
-              ?.subcategories.map(sub => (
-                <option key={sub.id} value={sub.id}>
-                  {sub.icon} {sub.name}
-                </option>
-              ))}
+            {getAllSubcategories().map(sub => (
+              <option key={sub.id} value={sub.id}>
+                {sub.icon} {sub.name}
+              </option>
+            ))}
           </select>
             <div className={`absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none transition-all duration-300 ${
               isDark ? 'text-gray-400' : 'text-slate-500'
@@ -338,25 +304,7 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
         </div>
       </div>
 
-      <div>
-        <label className={`block text-sm font-medium mb-2 transition-all duration-300 ${
-          isDark ? 'text-gray-300' : 'text-slate-700'
-        }`}>
-          Estimated Duration (minutes)
-        </label>
-        <input
-          type="number"
-          min="30"
-          max="600"
-          value={seriesData.estimatedDuration}
-          onChange={(e) => handleInputChange('estimatedDuration', parseInt(e.target.value) || 60)}
-          className={`w-full px-4 py-3 rounded-lg border transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-            isDark 
-              ? 'bg-gray-800/70 border-gray-700 text-white placeholder-gray-400' 
-              : 'bg-white border-slate-300 text-slate-800 placeholder-slate-500'
-          }`}
-        />
-      </div>
+      
 
       <div>
         <label className={`block text-sm font-medium mb-2 transition-all duration-300 ${
@@ -406,6 +354,8 @@ const TestSeriesCreator = ({ onBack, onSeriesCreated }) => {
           }}
         />
       </div>
+
+
     </div>
   );
 

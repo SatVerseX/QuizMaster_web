@@ -1,18 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import { useTheme } from '../../contexts/ThemeContext';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
-import usePopup from '../../hooks/usePopup';
-import BeautifulPopup from '../common/BeautifulPopup';
-import { FiArrowLeft, FiRefreshCw, FiAlertCircle } from 'react-icons/fi';
-import TestAttemptHeader from './TestAttemptHeader';
-import PerformanceOverview from './PerformanceOverview';
-import QuestionNavigator from './QuestionNavigator';
-import DownloadModal from './DownloadModal';
-import ShareModal from './ShareModal';
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../../contexts/AuthContext";
+import { useTheme } from "../../contexts/ThemeContext";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../../lib/firebase";
+import usePopup from "../../hooks/usePopup";
+import BeautifulPopup from "../common/BeautifulPopup";
+import { FiArrowLeft, FiRefreshCw, FiAlertCircle } from "react-icons/fi";
+import TestAttemptHeader from "./TestAttemptHeader";
+import PerformanceOverview from "../test-analysis/PerformanceOverview";
+import SectionWiseAnalysis from "../test-analysis/SectionWiseAnalysis";
+import QuestionNavigator from "./QuestionNavigator";
+import DownloadModal from "./DownloadModal";
+import ShareModal from "./ShareModal";
 
-const TestAttemptDetails = ({ attempt, onBack, testSeriesId, testSeries: propTestSeries }) => {
+const TestAttemptDetails = ({
+  attempt,
+  onBack,
+  testSeriesId,
+  testSeries: propTestSeries,
+}) => {
   const { currentUser } = useAuth();
   const { isDark } = useTheme();
   const { popupState, showError, showSuccess, hidePopup } = usePopup();
@@ -20,38 +26,27 @@ const TestAttemptDetails = ({ attempt, onBack, testSeriesId, testSeries: propTes
   const [testSeries, setTestSeries] = useState(propTestSeries);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showRecommendations, setShowRecommendations] = useState(true);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [downloadLoading, setDownloadLoading] = useState(false);
+  const [activeMobileTab, setActiveMobileTab] = useState("overview");
 
   // Early validation
   useEffect(() => {
     if (!attempt) {
-      setError('No attempt data provided');
+      setError("No attempt data provided");
       setLoading(false);
       return;
     }
-    
+
     if (!attempt.id && !attempt.testId) {
-      setError('Invalid attempt data - missing required IDs');
+      setError("Invalid attempt data - missing required IDs");
       setLoading(false);
       return;
     }
 
     loadTestDetails();
-  }, [attempt]);
-
-  // Add a small delay to show loading state when attempt data is being loaded
-  useEffect(() => {
-    if (attempt && attempt.id) {
-      setLoading(true);
-      const timer = setTimeout(() => {
-        loadTestDetails();
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [attempt?.id]);
+  }, [attempt?.id, attempt?.testId]);
 
   // Update testSeries when prop changes
   useEffect(() => {
@@ -60,108 +55,193 @@ const TestAttemptDetails = ({ attempt, onBack, testSeriesId, testSeries: propTes
     }
   }, [propTestSeries]);
 
+  // Extract questions from embedded sections structure
+  const extractQuestionsFromSections = (sections) => {
+    if (!sections || !Array.isArray(sections)) {
+      return [];
+    }
+
+    const allQuestions = [];
+
+    sections.forEach((section, sectionIndex) => {
+      if (section.questions && Array.isArray(section.questions)) {
+        section.questions.forEach((question, questionIndex) => {
+          allQuestions.push({
+            ...question,
+            sectionId: section.id || `section_${sectionIndex}`,
+            sectionName: section.name || `Section ${sectionIndex + 1}`,
+            sectionIndex,
+            questionIndex,
+            globalIndex: allQuestions.length,
+            difficulty: question.difficulty || section.difficulty || "medium",
+          });
+        });
+      }
+    });
+
+    return allQuestions;
+  };
+
+  // Load test details
   const loadTestDetails = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // Validate attempt object
-      if (!attempt) {
-        throw new Error('Attempt data is not available');
+      if (!attempt || !attempt.testId) {
+        throw new Error("Attempt data is not available");
       }
 
-      // Try to load test details if testId is available
-      if (attempt.testId) {
-        try {
-          const testDoc = await getDoc(doc(db, 'quizzes', attempt.testId));
-          if (testDoc.exists()) {
-            setTestDetails(testDoc.data());
-          } else {
-            console.warn('Test document not found:', attempt.testId);
-            // Continue without test details
+      // Try to load from both collections
+      let testDoc = await getDoc(doc(db, "quizzes", attempt.testId));
+      let collectionType = "quizzes";
+
+      if (!testDoc.exists()) {
+        testDoc = await getDoc(doc(db, "section-quizzes", attempt.testId));
+        collectionType = "section-quizzes";
+      }
+
+      if (testDoc.exists()) {
+        const testData = { id: testDoc.id, ...testDoc.data() };
+
+        // Extract questions from sections if available
+        if (testData.sections && Array.isArray(testData.sections)) {
+          const extractedQuestions = extractQuestionsFromSections(
+            testData.sections
+          );
+          if (extractedQuestions.length > 0) {
+            testData.allQuestions = extractedQuestions;
           }
-        } catch (testError) {
-          console.warn('Error loading test details:', testError);
-          // Continue without test details - don't fail the whole component
         }
+
+        setTestDetails(testData);
       }
 
       setLoading(false);
     } catch (error) {
-      console.error('Error in loadTestDetails:', error);
-      setError(error.message || 'Failed to load test details');
+      console.error("Error in loadTestDetails:", error);
+      setError(error.message || "Failed to load test details");
       setLoading(false);
     }
   };
 
+  // Get question analysis
   const getQuestionAnalysis = () => {
-    // Provide fallback if testDetails is not available
-    if (!testDetails || !testDetails.questions) {
-      // Try to use questions from attempt if available
-      if (attempt?.questions) {
-        return attempt.questions.map((question, index) => {
-          const userAnswer = attempt.answers?.[index];
-          const isCorrect = userAnswer === question.correctAnswer;
-          const isFlagged = attempt.flaggedQuestions?.includes(index);
-          const isAnswered = userAnswer !== undefined;
-          
-          return {
-            ...question,
-            index,
-            userAnswer,
-            isCorrect,
-            isFlagged,
-            isAnswered,
-            status: isCorrect ? 'correct' : isAnswered ? 'incorrect' : 'skipped'
-          };
-        });
-      }
+    let questionsToAnalyze = [];
+
+    // Priority-based question loading
+    if (testDetails?.allQuestions && testDetails.allQuestions.length > 0) {
+      questionsToAnalyze = testDetails.allQuestions;
+    } else if (attempt?.questions && attempt.questions.length > 0) {
+      questionsToAnalyze = attempt.questions.map((q, index) => ({
+        ...q,
+        globalIndex: index,
+      }));
+    } else if (testDetails?.questions && testDetails.questions.length > 0) {
+      questionsToAnalyze = testDetails.questions.map((q, index) => ({
+        ...q,
+        globalIndex: index,
+      }));
+    } else if (testDetails?.sections && Array.isArray(testDetails.sections)) {
+      questionsToAnalyze = extractQuestionsFromSections(testDetails.sections);
+    }
+
+    if (questionsToAnalyze.length === 0) {
       return [];
     }
-    
-    return testDetails.questions.map((question, index) => {
-      const userAnswer = attempt.answers?.[index];
-      const isCorrect = userAnswer === question.correctAnswer;
-      const isFlagged = attempt.flaggedQuestions?.includes(index);
-      const isAnswered = userAnswer !== undefined;
-      
+
+    // Analyze each question
+    return questionsToAnalyze.map((question, index) => {
+      const questionIndex =
+        question.globalIndex !== undefined ? question.globalIndex : index;
+      const userAnswer = attempt.answers?.[questionIndex];
+      const isCorrect =
+        userAnswer !== undefined &&
+        userAnswer !== null &&
+        userAnswer === question.correctAnswer;
+      const isFlagged = attempt.flaggedQuestions?.includes(questionIndex);
+      const isAnswered = userAnswer !== undefined && userAnswer !== null;
+
       return {
         ...question,
-        index,
+        index: questionIndex,
         userAnswer,
         isCorrect,
         isFlagged,
         isAnswered,
-        status: isCorrect ? 'correct' : isAnswered ? 'incorrect' : 'skipped'
+        status: isCorrect ? "correct" : isAnswered ? "incorrect" : "skipped",
       };
     });
+  };
+
+  // Handle retake test
+  const handleRetakeTest = async () => {
+    if (safeAttempt.testId) {
+      try {
+        let testDoc = await getDoc(doc(db, "quizzes", safeAttempt.testId));
+        let collectionType = "quizzes";
+
+        if (!testDoc.exists()) {
+          testDoc = await getDoc(
+            doc(db, "section-quizzes", safeAttempt.testId)
+          );
+          collectionType = "section-quizzes";
+        }
+
+        if (testDoc.exists()) {
+          // Use unified route. App.jsx resolves whether it's section-wise by probing both collections.
+          window.location.href = `/test/${safeAttempt.testId}/take`;
+        } else {
+          showError(
+            "Test not found. It may have been deleted.",
+            "Test Not Found"
+          );
+        }
+      } catch (error) {
+        console.error("Error loading test:", error);
+        showError("Failed to load test. Please try again.", "Load Error");
+      }
+    } else {
+      showError(
+        "Unable to retake test. Test information not available.",
+        "Retake Error"
+      );
+    }
   };
 
   // Error state
   if (error) {
     return (
-      <div className={`min-h-screen flex items-center justify-center transition-all duration-500 ${
-        isDark 
-          ? 'bg-gradient-to-br from-gray-900 via-blue-900/20 to-purple-900/20' 
-          : 'bg-white'
-      }`}>
+      <div
+        className={`min-h-screen flex items-center justify-center ${
+          isDark ? "bg-gray-900" : "bg-gray-50"
+        }`}
+      >
         <div className="max-w-md mx-auto text-center p-8">
-          <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-            <FiAlertCircle className="w-10 h-10 text-red-400" />
+          <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${
+            isDark ? "bg-red-500/20" : "bg-red-100"
+          }`}>
+            <FiAlertCircle className={`w-10 h-10 ${
+              isDark ? "text-red-400" : "text-red-600"
+            }`} />
           </div>
-          <h3 className={`text-2xl font-bold mb-4 ${
-            isDark ? 'text-white' : 'text-slate-800'
-          }`}>Unable to Load Details</h3>
-          <p className={`mb-6 ${
-            isDark ? 'text-gray-400' : 'text-slate-600'
-          }`}>{error}</p>
+          <h3
+            className={`text-2xl font-bold mb-4 ${
+              isDark ? "text-gray-100" : "text-gray-800"
+            }`}
+          >
+            Unable to Load Details
+          </h3>
+          <p className={`mb-6 ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+            {error}
+          </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button
-              onClick={onBack}
-              className={`font-bold py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2 ${
-                isDark 
-                  ? 'bg-gray-600 hover:bg-gray-700 text-white' 
-                  : 'bg-slate-600 hover:bg-slate-700 text-white'
+            <button 
+              onClick={onBack} 
+              className={`px-6 py-3 rounded-lg border transition-colors flex items-center gap-2 ${
+                isDark
+                  ? "border-gray-600 bg-gray-800 text-gray-300 hover:bg-gray-700"
+                  : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
               }`}
             >
               <FiArrowLeft className="w-5 h-5" />
@@ -170,10 +250,9 @@ const TestAttemptDetails = ({ attempt, onBack, testSeriesId, testSeries: propTes
             <button
               onClick={() => {
                 setError(null);
-                setLoading(true);
                 loadTestDetails();
               }}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2"
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2"
             >
               <FiRefreshCw className="w-5 h-5" />
               Retry
@@ -187,30 +266,38 @@ const TestAttemptDetails = ({ attempt, onBack, testSeriesId, testSeries: propTes
   // Loading state
   if (loading) {
     return (
-      <div className={`min-h-screen flex items-center justify-center transition-all duration-500 ${
-        isDark 
-          ? 'bg-gradient-to-br from-gray-900 via-blue-900/20 to-purple-900/20' 
-          : 'bg-white'
-      }`}>
+      <div
+        className={`min-h-screen flex items-center justify-center ${
+          isDark ? "bg-gray-900" : "bg-gray-50"
+        }`}
+      >
         <div className="text-center">
-          <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse ${
-            isDark ? 'bg-blue-500/20' : 'bg-blue-100/60'
-          }`}>
-            <div className="w-10 h-10 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+          <div
+            className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${
+              isDark ? "bg-blue-500/20" : "bg-blue-100"
+            }`}
+          >
+            <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
           </div>
-          <h3 className={`text-xl font-bold mb-2 ${
-            isDark ? 'text-white' : 'text-slate-800'
-          }`}>Loading Analysis</h3>
-          <p className={isDark ? 'text-gray-400' : 'text-slate-600'}>Preparing your detailed performance report...</p>
+          <h3
+            className={`text-xl font-bold mb-2 ${
+              isDark ? "text-gray-100" : "text-gray-800"
+            }`}
+          >
+            Loading Analysis
+          </h3>
+          <p className={isDark ? "text-gray-400" : "text-gray-600"}>
+            Preparing your detailed performance report...
+          </p>
         </div>
       </div>
     );
   }
 
-  // Create safe attempt object with defaults
+  // Create safe attempt object
   const safeAttempt = {
-    id: 'unknown',
-    testTitle: 'Unknown Test',
+    id: "unknown",
+    testTitle: "Unknown Test",
     testId: null,
     score: 0,
     totalQuestions: 0,
@@ -219,241 +306,193 @@ const TestAttemptDetails = ({ attempt, onBack, testSeriesId, testSeries: propTes
     submittedAt: new Date(),
     answers: [],
     flaggedQuestions: [],
-    ...attempt // Override with actual attempt data if available
+    ...attempt,
   };
 
   const questionAnalysis = getQuestionAnalysis();
+  const isSectionWise = questionAnalysis.some((q) => q.sectionId);
 
   return (
-    <div className={`min-h-screen transition-all duration-500 ${
-      isDark 
-        ? 'bg-gradient-to-br from-gray-900 via-blue-900/20 to-purple-900/20' 
-        : 'bg-white'
-    } relative overflow-hidden`}>
-      {/* Background Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className={`absolute -top-40 -right-40 w-80 h-80 rounded-full blur-3xl animate-pulse ${
-          isDark ? 'bg-gradient-to-r from-blue-500/10 to-purple-500/10' : 'bg-gradient-to-r from-blue-400/8 to-indigo-400/6'
-        }`}></div>
-        <div className={`absolute -bottom-40 -left-40 w-80 h-80 rounded-full blur-3xl animate-pulse delay-1000 ${
-          isDark ? 'bg-gradient-to-r from-purple-500/10 to-pink-500/10' : 'bg-gradient-to-r from-indigo-400/6 to-purple-400/5'
-        }`}></div>
-        <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full blur-3xl animate-pulse delay-500 ${
-          isDark ? 'bg-gradient-to-r from-green-500/5 to-blue-500/5' : 'bg-gradient-to-r from-blue-300/5 to-indigo-300/4'
-        }`}></div>
-      </div>
+    <div
+      className={`min-h-screen ${
+        isDark ? "bg-gray-900" : "bg-gray-50"
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Header */}
+        <TestAttemptHeader
+          attempt={safeAttempt}
+          testSeries={testSeries || {}}
+          onBack={onBack}
+          onDownload={() => setShowDownloadModal(true)}
+          onShare={() => setShowShareModal(true)}
+        />
 
-      <div className="relative z-10 max-w-7xl mx-auto p-4 sm:p-6">
-        {/* Header with Error Boundary */}
-        <ErrorBoundary fallback={<HeaderFallback onBack={onBack} />}>
-          <TestAttemptHeader 
-            attempt={safeAttempt}
-            testSeries={testSeries || {}}
-            onBack={onBack}
-            onDownload={() => setShowDownloadModal(true)}
-            onShare={() => setShowShareModal(true)}
-          />
-        </ErrorBoundary>
+        {/* Mobile Tabs */}
+        <div className="lg:hidden mt-6 mb-4">
+          <div className={`flex rounded-xl p-1 ${
+            isDark ? "bg-gray-800" : "bg-gray-200"
+          }`}>
+            <button
+              onClick={() => setActiveMobileTab("overview")}
+              className={`flex-1 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                activeMobileTab === "overview"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : isDark
+                  ? "text-gray-300 hover:text-gray-100"
+                  : "text-gray-600 hover:text-gray-800"
+              }`}
+            >
+              Overview
+            </button>
+            {isSectionWise && (
+              <button
+                onClick={() => setActiveMobileTab("sections")}
+                className={`flex-1 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                  activeMobileTab === "sections"
+                    ? "bg-blue-600 text-white shadow-md"
+                    : isDark
+                    ? "text-gray-300 hover:text-gray-100"
+                    : "text-gray-600 hover:text-gray-800"
+                }`}
+              >
+                Sections
+              </button>
+            )}
+            {!isSectionWise && (
+              <button
+                onClick={() => setActiveMobileTab("questions")}
+                className={`flex-1 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                  activeMobileTab === "questions"
+                    ? "bg-blue-600 text-white shadow-md"
+                    : isDark
+                    ? "text-gray-300 hover:text-gray-100"
+                    : "text-gray-600 hover:text-gray-800"
+                }`}
+              >
+                Questions ({questionAnalysis.length})
+              </button>
+            )}
+          </div>
+        </div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 mt-8">
-          {/* Performance Overview with Error Boundary */}
-          <ErrorBoundary fallback={<ComponentFallback title="Performance Overview" />}>
-            <PerformanceOverview 
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+          {/* Performance Overview */}
+          <div
+            className={`lg:block lg:col-span-1 ${
+              activeMobileTab === "overview" ? "" : "hidden"
+            }`}
+          >
+            <PerformanceOverview
               attempt={safeAttempt}
               questionAnalysis={questionAnalysis}
-              showRecommendations={showRecommendations}
-              setShowRecommendations={setShowRecommendations}
             />
-          </ErrorBoundary>
+          </div>
 
-          {/* Question Navigator with Error Boundary */}
-          <ErrorBoundary fallback={<ComponentFallback title="Question Navigator" />}>
-            <QuestionNavigator 
-              questionAnalysis={questionAnalysis}
-              attempt={safeAttempt}
-            />
-          </ErrorBoundary>
+          {/* Section-wise Analysis (only for section-wise quizzes) */}
+          {isSectionWise && (
+            <div
+              className={`lg:block lg:col-span-2 ${
+                activeMobileTab === "sections" ? "" : "hidden"
+              }`}
+            >
+              <SectionWiseAnalysis
+                questionAnalysis={questionAnalysis}
+                attempt={safeAttempt}
+              />
+            </div>
+          )}
+
+          {/* Question navigator only in non section wise quizzes */}
+          {!isSectionWise && (
+            <div
+              className={`lg:block lg:col-span-2 ${
+                activeMobileTab === "questions" ? "" : "hidden"
+              }`}
+            >
+              {questionAnalysis.length > 0 ? (
+                <QuestionNavigator
+                  questionAnalysis={questionAnalysis}
+                  attempt={safeAttempt}
+                />
+              ) : (
+                <div
+                  className={`border rounded-xl p-8 text-center ${
+                    isDark
+                      ? "bg-gray-900 border-gray-700"
+                      : "bg-white border-gray-200 shadow-sm"
+                  }`}
+                >
+                  <FiAlertCircle
+                    className={`w-16 h-16 mx-auto mb-4 ${
+                      isDark ? "text-gray-500" : "text-gray-400"
+                    }`}
+                  />
+                  <h3
+                    className={`text-xl font-bold mb-2 ${
+                      isDark ? "text-gray-100" : "text-gray-800"
+                    }`}
+                  >
+                    Question Details Not Available
+                  </h3>
+                  <p
+                    className={`mb-4 ${
+                      isDark ? "text-gray-400" : "text-gray-600"
+                    }`}
+                  >
+                    Unable to load detailed question analysis for this test.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Action Buttons */}
-        <div className="relative z-10 mt-8 flex flex-col sm:flex-row gap-4 justify-center items-center">
+        <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center items-center">
           <button
             onClick={onBack}
-            className={`group backdrop-blur-xl border rounded-xl px-6 sm:px-8 py-3 sm:py-4 font-medium transition-all duration-300 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl hover:scale-105 w-full sm:w-auto ${
-              isDark 
-                ? 'bg-gradient-to-r from-gray-700/80 to-gray-600/80 border-gray-600/40 text-gray-300 hover:from-gray-600/80 hover:to-gray-500/80'
-                : 'bg-white/90 border-slate-200/60 text-slate-700 hover:bg-slate-50 hover:border-slate-300 shadow-slate-200/40'
+            className={`group border rounded-xl px-6 py-3 font-semibold transition-all duration-200 flex items-center gap-3 hover:scale-105 w-full sm:w-auto ${
+              isDark
+                ? "border-gray-600 bg-gray-800 text-gray-300 hover:bg-gray-700 hover:border-gray-500"
+                : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-400 shadow-sm hover:shadow-md"
             }`}
           >
-            <FiArrowLeft className="w-5 h-5" />
+            <FiArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
             <span>Back to Test History</span>
           </button>
-          
+
           <button
-            onClick={async () => {
-              if (safeAttempt.testId) {
-                try {
-                  // Load the test data first
-                  const testDoc = await getDoc(doc(db, 'quizzes', safeAttempt.testId));
-                  if (testDoc.exists()) {
-                    const testData = { id: testDoc.id, ...testDoc.data() };
-                    // Navigate to take the test again with proper data
-                    window.location.href = `/test/${safeAttempt.testId}/take`;
-                  } else {
-                    showError('Test not found. It may have been deleted.', 'Test Not Found');
-                  }
-                } catch (error) {
-                  console.error('Error loading test:', error);
-                  showError('Failed to load test. Please try again.', 'Load Error');
-                }
-              } else {
-                showError('Unable to retake test. Test information not available.', 'Retake Error');
-              }
-            }}
-            className="group relative bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl px-6 sm:px-8 py-3 sm:py-4 transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-blue-500/25 w-full sm:w-auto"
+            onClick={handleRetakeTest}
+            className="group bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl px-6 py-3 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl w-full sm:w-auto"
           >
-            <div className="relative flex items-center justify-center gap-3">
-              <FiRefreshCw className="w-5 h-5" />
+            <div className="flex items-center justify-center gap-3">
+              <FiRefreshCw className="w-5 h-5 transition-transform group-hover:rotate-180" />
               <span>Retake Test</span>
             </div>
           </button>
         </div>
 
-        {/* Modals with Error Boundaries */}
+        {/* Modals */}
         {showDownloadModal && (
-          <ErrorBoundary fallback={<ModalFallback onClose={() => setShowDownloadModal(false)} />}>
-            <DownloadModal 
-              attempt={safeAttempt}
-              questionAnalysis={questionAnalysis}
-              onClose={() => setShowDownloadModal(false)}
-              loading={downloadLoading}
-              setLoading={setDownloadLoading}
-            />
-          </ErrorBoundary>
+          <DownloadModal
+            attempt={safeAttempt}
+            questionAnalysis={questionAnalysis}
+            onClose={() => setShowDownloadModal(false)}
+            loading={downloadLoading}
+            setLoading={setDownloadLoading}
+          />
         )}
 
         {showShareModal && (
-          <ErrorBoundary fallback={<ModalFallback onClose={() => setShowShareModal(false)} />}>
-            <ShareModal 
-              attempt={safeAttempt}
-              onClose={() => setShowShareModal(false)}
-            />
-          </ErrorBoundary>
+          <ShareModal
+            attempt={safeAttempt}
+            onClose={() => setShowShareModal(false)}
+          />
         )}
 
-        {/* Beautiful Popup */}
-        <BeautifulPopup
-          {...popupState}
-          onClose={hidePopup}
-        />
-      </div>
-    </div>
-  );
-};
-
-// Error Boundary Component
-class ErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError(error) {
-    return { hasError: true };
-  }
-
-  componentDidCatch(error, errorInfo) {
-    console.error('Component Error:', error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return this.props.fallback || <ComponentFallback title="Component" />;
-    }
-
-    return this.props.children;
-  }
-}
-
-// Fallback Components
-const HeaderFallback = ({ onBack }) => {
-  const { isDark } = useTheme();
-  return (
-    <div className={`relative z-10 backdrop-blur-xl border rounded-2xl p-6 mb-8 shadow-2xl ${
-      isDark 
-        ? 'bg-gradient-to-br from-gray-800/60 to-gray-900/60 border-gray-600/40' 
-        : 'bg-white/90 border-slate-200/60 shadow-slate-200/40'
-    }`}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={onBack}
-            className={`p-3 rounded-xl transition-colors ${
-              isDark 
-                ? 'bg-gray-700/50 hover:bg-gray-600/50 text-gray-300 hover:text-white' 
-                : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800'
-            }`}
-          >
-            <FiArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <h1 className={`text-2xl font-bold ${
-              isDark ? 'text-white' : 'text-slate-800'
-            }`}>Test Results</h1>
-            <p className={isDark ? 'text-gray-400' : 'text-slate-500'}>Unable to load test details</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const ComponentFallback = ({ title }) => {
-  const { isDark } = useTheme();
-  return (
-    <div className={`backdrop-blur-xl border rounded-2xl p-6 shadow-2xl ${
-      isDark 
-        ? 'bg-gradient-to-br from-gray-800/60 to-gray-900/60 border-gray-600/40' 
-        : 'bg-white/90 border-slate-200/60 shadow-slate-200/40'
-    }`}>
-      <div className="text-center">
-        <FiAlertCircle className={`w-12 h-12 mx-auto mb-4 ${
-          isDark ? 'text-gray-400' : 'text-slate-400'
-        }`} />
-        <h3 className={`text-lg font-bold mb-2 ${
-          isDark ? 'text-white' : 'text-slate-800'
-        }`}>{title} Unavailable</h3>
-        <p className={isDark ? 'text-gray-400 text-sm' : 'text-slate-500 text-sm'}>Unable to load this component</p>
-      </div>
-    </div>
-  );
-};
-
-const ModalFallback = ({ onClose }) => {
-  const { isDark } = useTheme();
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className={`rounded-2xl p-6 max-w-md w-full ${
-        isDark ? 'bg-gray-800' : 'bg-white border border-slate-200'
-      }`}>
-        <div className="text-center">
-          <FiAlertCircle className={`w-12 h-12 mx-auto mb-4 ${
-            isDark ? 'text-gray-400' : 'text-slate-400'
-          }`} />
-          <h3 className={`text-lg font-bold mb-2 ${
-            isDark ? 'text-white' : 'text-slate-800'
-          }`}>Modal Error</h3>
-          <p className={`text-sm mb-6 ${
-            isDark ? 'text-gray-400' : 'text-slate-500'
-          }`}>Unable to load modal content</p>
-          <button
-            onClick={onClose}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl transition-colors"
-          >
-            Close
-          </button>
-        </div>
+        <BeautifulPopup {...popupState} onClose={hidePopup} />
       </div>
     </div>
   );

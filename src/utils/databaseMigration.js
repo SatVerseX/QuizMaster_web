@@ -5,7 +5,9 @@ import {
     doc, 
     setDoc, 
     writeBatch,
-    serverTimestamp 
+    serverTimestamp,
+    query,
+    where
   } from 'firebase/firestore';
   import { db } from '../lib/firebase';
   
@@ -72,6 +74,72 @@ import {
         
       } catch (error) {
         console.error('❌ Migration failed:', error);
+        return { success: false, error: error.message };
+      }
+    }
+    
+    // Fix totalQuizzes count for all test series
+    static async fixTestSeriesQuizCounts() {
+      console.log('🔧 Starting test series quiz count fix...');
+      
+      try {
+        // Get all test series
+        const testSeriesRef = collection(db, 'test-series');
+        const testSeriesSnapshot = await getDocs(testSeriesRef);
+        
+        const batch = writeBatch(db);
+        let updatedCount = 0;
+        
+        for (const testSeriesDoc of testSeriesSnapshot.docs) {
+          const testSeriesData = testSeriesDoc.data();
+          const testSeriesId = testSeriesDoc.id;
+          
+          // Count quizzes in 'quizzes' collection
+          const quizzesQuery = query(
+            collection(db, 'quizzes'),
+            where('testSeriesId', '==', testSeriesId)
+          );
+          const quizzesSnapshot = await getDocs(quizzesQuery);
+          const regularQuizzesCount = quizzesSnapshot.size;
+          
+          // Count quizzes in 'section-quizzes' collection
+          const sectionQuizzesQuery = query(
+            collection(db, 'section-quizzes'),
+            where('testSeriesId', '==', testSeriesId)
+          );
+          const sectionQuizzesSnapshot = await getDocs(sectionQuizzesQuery);
+          const sectionQuizzesCount = sectionQuizzesSnapshot.size;
+          
+          // Calculate total count
+          const actualTotalQuizzes = regularQuizzesCount + sectionQuizzesCount;
+          const currentTotalQuizzes = testSeriesData.totalQuizzes || 0;
+          
+          // Only update if counts don't match
+          if (actualTotalQuizzes !== currentTotalQuizzes) {
+            console.log(`Test Series "${testSeriesData.title}": ${currentTotalQuizzes} → ${actualTotalQuizzes} quizzes`);
+            
+            const testSeriesRef = doc(db, 'test-series', testSeriesId);
+            batch.update(testSeriesRef, {
+              totalQuizzes: actualTotalQuizzes,
+              updatedAt: serverTimestamp()
+            });
+            
+            updatedCount++;
+          }
+        }
+        
+        // Execute batch update
+        if (updatedCount > 0) {
+          await batch.commit();
+          console.log(`🎉 Successfully fixed ${updatedCount} test series quiz counts!`);
+        } else {
+          console.log('✨ All test series quiz counts are already correct!');
+        }
+        
+        return { success: true, count: updatedCount };
+        
+      } catch (error) {
+        console.error('❌ Quiz count fix failed:', error);
         return { success: false, error: error.message };
       }
     }

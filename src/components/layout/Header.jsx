@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useTheme } from "../../contexts/ThemeContext";
 import { Link } from "react-router-dom";
@@ -15,14 +15,15 @@ import {
   FiShield,
   FiFileText,
   FiLogIn,
+  FiPlus,
 } from "react-icons/fi";
-import { FaBrain, FaPuzzlePiece } from "react-icons/fa";
+import { FaPuzzlePiece } from "react-icons/fa";
 
 const Header = ({
   onViewAttempts,
   onViewHome,
+  onViewTestSeries,
   onViewWelcome,
-  onAIGenerator,
   onLoginClick,
   currentView,
 }) => {
@@ -34,17 +35,15 @@ const Header = ({
   const userMenuCloseTimerRef = React.useRef(null);
   const [avatarError, setAvatarError] = React.useState(false);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     try {
       await logout();
     } catch (error) {
       console.error("Failed to log out:", error);
     }
-  };
+  }, [logout]);
 
-  const toggleMenu = () => {
-    setIsMenuOpen((prev) => !prev);
-  };
+  const toggleMenu = useCallback(() => setIsMenuOpen((prev) => !prev), []);
 
   // Close menus when clicking outside
   React.useEffect(() => {
@@ -101,26 +100,14 @@ const Header = ({
       <div className="container-responsive">
         <div className="flex justify-between items-center h-16 px-4 sm:px-6">
           {/* Enhanced Logo - Mobile Optimized */}
-          <div cl assName="flex items-center flex-1 min-w-0">
+          <div className="flex items-center flex-1 min-w-0">
             <button
               onClick={() => onViewHome && onViewHome()}
               className="group flex items-center relative"
               onMouseEnter={() => setLogoHovered(true)}
               onMouseLeave={() => setLogoHovered(false)}
             >
-             <div
-                className={`mr-3 p-2.5 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 text-white transform transition-all duration-300 shadow-lg shadow-orange-500/20 ${
-                  logoHovered
-                    ? "scale-110 rotate-3 shadow-xl shadow-orange-500/40"
-                    : ""
-                }`}
-              >
-                <FaPuzzlePiece
-                  className={`w-5 h-5 sm:w-6 sm:h-6 transition-transform duration-500 ${
-                    logoHovered ? "rotate-180" : ""
-                  }`}
-                />
-              </div>
+             
               <div className="flex flex-col min-w-0">
                 <span
                   className={`text-lg sm:text-xl lg:text-2xl font-extrabold bg-gradient-to-r from-orange-500 via-red-500 to-yellow-500 bg-clip-text text-transparent transition-all duration-300 truncate drop-shadow-sm ${
@@ -147,6 +134,23 @@ const Header = ({
 
           {/* Enhanced Mobile Controls */}
           <div className="flex items-center gap-3 md:hidden">
+            {isAdmin && (
+              <Link
+                to="/create-series"
+                className={`group relative p-2.5 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md border ${
+                  theme === "dark"
+                    ? "text-gray-200 hover:bg-gradient-to-r hover:from-purple-900/30 hover:to-indigo-900/30 border-gray-700/50"
+                    : "text-slate-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-indigo-50 border-slate-200/60"
+                }`}
+                title="Create Test Series"
+                aria-label="Create Test Series"
+              >
+                <div className="relative">
+                  <FiPlus className="w-5 h-5 transition-all duration-300 group-hover:scale-110" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-indigo-500 rounded-full opacity-0 group-hover:opacity-20 blur-sm transition-opacity duration-300"></div>
+                </div>
+              </Link>
+            )}
             {/* Theme Toggle Button */}
             <button
               onClick={toggleTheme}
@@ -196,7 +200,7 @@ const Header = ({
                   }`}
                 >
                   <button
-                    onClick={() => onViewHome && onViewHome()}
+                    onClick={() => onViewTestSeries && onViewTestSeries()}
                     className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 ${
                       theme === "dark"
                         ? "text-gray-300 hover:bg-gray-700 hover:shadow-sm"
@@ -221,22 +225,27 @@ const Header = ({
                     <span className="text-sm font-medium">My Progress</span>
                   </button>
 
-                  {onAIGenerator && isAdmin && (
-                    <button
-                      onClick={() => onAIGenerator()}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 ${
-                        theme === "dark"
-                          ? "text-gray-300 hover:bg-gray-700 hover:shadow-sm"
-                          : "text-slate-700 hover:bg-white hover:shadow-sm"
-                      }`}
-                      title="AI Generator"
-                    >
-                      <FaBrain className="icon-responsive" />
-                      <span className="text-sm font-medium">AI Generator</span>
-                    </button>
-                  )}
+                  
                 </div>
               </nav>
+            )}
+
+            {/* Create Test Series - Admin only */}
+            {isAdmin && (
+              <Link
+                to="/create-series"
+                className={`group relative p-2.5 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md border ${
+                  theme === "dark"
+                    ? "text-gray-200 hover:bg-gradient-to-r hover:from-purple-900/30 hover:to-indigo-900/30 border-gray-700/50"
+                    : "text-slate-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-indigo-50 border-slate-200/60"
+                }`}
+                title="Create Test Series"
+                aria-label="Create Test Series"
+              >
+                <div className="relative flex items-center gap-2">
+                  <FiPlus className="w-5 h-5" />
+                </div>
+              </Link>
             )}
 
             {/* Theme Toggle Button */}
@@ -289,7 +298,9 @@ const Header = ({
                         alt={currentUser.displayName || "User"}
                         className="w-full h-full object-cover"
                         referrerPolicy="no-referrer"
-                        loading="lazy"
+                        loading="eager"
+                        decoding="sync"
+                        fetchPriority="high"
                         onError={() => setAvatarError(true)}
                       />
                     ) : (
@@ -332,7 +343,9 @@ const Header = ({
                               alt={currentUser.displayName || "User"}
                               className="w-full h-full object-cover"
                               referrerPolicy="no-referrer"
-                              loading="lazy"
+                              loading="eager"
+                              decoding="sync"
+                              fetchPriority="high"
                               onError={() => setAvatarError(true)}
                             />
                           ) : (
@@ -594,7 +607,7 @@ const Header = ({
                     <div className="space-y-2 px-4">
                       <button
                         onClick={() => {
-                          onViewHome && onViewHome();
+                          onViewTestSeries && onViewTestSeries();
                           setIsMenuOpen(false);
                         }}
                         className={`group w-full flex items-center gap-4 p-4 rounded-xl transition-all duration-300 hover:shadow-md ${
@@ -661,30 +674,7 @@ const Header = ({
                         <span className="font-medium">Welcome</span>
                       </button>
 
-                      {onAIGenerator && isAdmin && (
-                        <button
-                          onClick={() => {
-                            onAIGenerator();
-                            setIsMenuOpen(false);
-                          }}
-                          className={`group w-full flex items-center gap-4 p-4 rounded-xl transition-all duration-300 hover:shadow-md ${
-                            theme === "dark"
-                              ? "text-gray-200 hover:bg-gray-800 border border-transparent hover:border-green-500/30"
-                              : "text-slate-700 hover:bg-slate-50 border border-transparent hover:border-slate-200"
-                          }`}
-                        >
-                          <div
-                            className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300 ${
-                              theme === "dark"
-                                ? "bg-green-900/50 text-green-400 group-hover:bg-green-800/60 border border-green-700/50"
-                                : "bg-green-100 text-green-600 group-hover:bg-green-200 border border-green-200"
-                            }`}
-                          >
-                            <FaBrain className="w-5 h-5" />
-                          </div>
-                          <span className="font-medium">AI Generator</span>
-                        </button>
-                      )}
+                      
                     </div>
                   </nav>
 
@@ -777,7 +767,7 @@ const Header = ({
                     <div className="space-y-2 px-4">
                       <button
                         onClick={() => {
-                          onViewHome && onViewHome();
+                          onViewTestSeries && onViewTestSeries();
                           setIsMenuOpen(false);
                         }}
                         className={`group w-full flex items-center gap-4 p-4 rounded-xl transition-all duration-300 hover:shadow-md ${

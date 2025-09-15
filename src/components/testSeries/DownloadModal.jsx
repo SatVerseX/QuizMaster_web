@@ -364,7 +364,7 @@ const DownloadModal = ({ attempt, questionAnalysis, onClose, loading, setLoading
           <button
             onClick={handleDownloadPDF}
             disabled={loading}
-            className={`w-full flex items-center gap-4 p-4 border rounded-xl transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
+            className={`w-full flex items-center gap-4 p-4 border rounded-xl transition-all duration-300 hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
               isDark 
                 ? 'bg-red-600/20 hover:bg-red-600/30 border-red-500/40 text-red-300' 
                 : 'bg-red-100/60 hover:bg-red-200/60 border-red-400/60 text-red-700'
@@ -382,33 +382,11 @@ const DownloadModal = ({ attempt, questionAnalysis, onClose, loading, setLoading
               <div className="text-sm opacity-80">Complete test report with questions & answers</div>
             </div>
           </button>
-
-          <button
-            onClick={handleDownloadJSON}
-            disabled={loading}
-            className={`w-full flex items-center gap-4 p-4 border rounded-xl transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
-              isDark 
-                ? 'bg-blue-600/20 hover:bg-blue-600/30 border-blue-500/40 text-blue-300' 
-                : 'bg-blue-100/60 hover:bg-blue-200/60 border-blue-400/60 text-blue-700'
-            }`}
-          >
-            {loading ? (
-              <div className={`w-6 h-6 border-2 border-t-transparent rounded-full animate-spin ${
-                isDark ? 'border-blue-400' : 'border-blue-600'
-              }`}></div>
-            ) : (
-              <FiDatabase className="w-6 h-6" />
-            )}
-            <div className="flex-1 text-left">
-              <div className="font-bold">JSON Data</div>
-              <div className="text-sm opacity-80">Raw data for analysis</div>
-            </div>
-          </button>
         </div>
 
         <button
           onClick={onClose}
-          className={`w-full p-3 rounded-xl transition-colors ${
+          className={`w-full p-3 rounded-xl transition-colors hover:cursor-pointer ${
             isDark 
               ? 'bg-gray-700/50 hover:bg-gray-600/50 text-gray-300' 
               : 'bg-slate-100/60 hover:bg-slate-200/60 text-slate-700 hover:text-slate-800'

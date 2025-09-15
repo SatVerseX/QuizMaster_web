@@ -20,11 +20,15 @@ import {
   FiHelpCircle,
   FiChevronUp
 } from 'react-icons/fi';
+import ComplaintForm from '../feedback/ComplaintForm';
+import RecommendationForm from '../feedback/RecommendationForm';
 
 const Footer = () => {
   const { theme, isDark } = useTheme();
   const { isAdmin, currentUser } = useAuth();
   const [showScrollTop, setShowScrollTop] = React.useState(false);
+  const [showComplaint, setShowComplaint] = React.useState(false);
+  const [showRecommendation, setShowRecommendation] = React.useState(false);
 
   React.useEffect(() => {
     const handleScroll = () => {
@@ -42,6 +46,7 @@ const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   return (
+    <>
     <footer className={`relative transition-all duration-500 ${
       isDark 
         ? 'bg-gradient-to-br from-gray-900 via-blue-900/10 to-purple-900/10' 
@@ -60,17 +65,95 @@ const Footer = () => {
       <div className="container-responsive relative z-10">
         {/* Main Footer Content */}
         <div className="py-16">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {/* Mobile: Collapsible sections */}
+          <div className="md:hidden space-y-4 mb-10">
+            {(() => {
+              const quickLinks = [
+                { icon: FiHome, label: 'Test Series', to: '/test-series' },
+                ...(isAdmin ? [
+                  { icon: FiBookOpen, label: 'Create Series', to: '/create-series' },
+                  { icon: FiHelpCircle, label: 'AI Generator', to: '/ai-generator' }
+                ] : []),
+                ...(currentUser ? [
+                  { icon: FiTarget, label: 'My Progress', to: '/test-history' }
+                ] : [])
+              ];
+              const legalLinks = [
+                { icon: FiShield, label: 'Privacy Policy', to: '/privacy' },
+                { icon: FiFileText, label: 'Terms & Conditions', to: '/terms' },
+                { icon: FiHelpCircle, label: 'Refund Policy', to: '/refunds' },
+                { icon: FaEnvelope, label: 'Contact Us', to: '/contact' }
+              ];
+              const supportItems = [
+                { type: 'button', label: 'Report Issue', onClick: () => setShowComplaint(true) },
+                { type: 'button', label: 'Suggest Feature', onClick: () => setShowRecommendation(true) },
+                { type: 'link', label: 'support@quizmaster.com', href: 'mailto:support@quizmaster.com' }
+              ];
+
+              const Section = ({ title, children }) => (
+                <details className={`${isDark ? 'bg-gray-900/60 border-gray-700' : 'bg-white/90 border-slate-200/60'} rounded-xl border`}>
+                  <summary className={`flex items-center justify-between px-4 py-3 cursor-pointer select-none ${isDark ? 'text-white' : 'text-slate-800'}`}>
+                    <span className="font-semibold">{title}</span>
+                    <FiChevronUp className="w-4 h-4 transition-transform details-open:rotate-180" />
+                  </summary>
+                  <div className="px-4 pb-4">
+                    {children}
+                  </div>
+                </details>
+              );
+
+              return (
+                <>
+                  <Section title="Quick Links">
+                    <ul className="space-y-3">
+                      {quickLinks.map((link, i) => (
+                        <li key={i}>
+                          <Link to={link.to} className={`${isDark ? 'text-gray-300 hover:text-white' : 'text-slate-600 hover:text-slate-800'} flex items-center gap-3`}>
+                            <link.icon className="w-4 h-4" />
+                            <span className="text-sm">{link.label}</span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </Section>
+
+                  <Section title="Legal">
+                    <ul className="space-y-3">
+                      {legalLinks.map((link, i) => (
+                        <li key={i}>
+                          <Link to={link.to} className={`${isDark ? 'text-gray-300 hover:text-white' : 'text-slate-600 hover:text-slate-800'} flex items-center gap-3`}>
+                            <link.icon className="w-4 h-4" />
+                            <span className="text-sm">{link.label}</span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </Section>
+
+                  <Section title="Support">
+                    <div className="space-y-3">
+                      <button onClick={supportItems[0].onClick} className={`${isDark ? 'text-red-300 hover:text-red-200' : 'text-red-600 hover:text-red-700'} text-sm underline underline-offset-4`}>
+                        {supportItems[0].label}
+                      </button>
+                      <button onClick={supportItems[1].onClick} className={`${isDark ? 'text-blue-300 hover:text-blue-200' : 'text-blue-600 hover:text-blue-700'} text-sm underline underline-offset-4`}>
+                        {supportItems[1].label}
+                      </button>
+                      <div className={`${isDark ? 'text-blue-400' : 'text-blue-600'} text-sm`}>
+                        <a href={supportItems[2].href}>{supportItems[2].label}</a>
+                      </div>
+                    </div>
+                  </Section>
+                </>
+              );
+            })()}
+          </div>
+
+          {/* Desktop: 4-column layout */}
+          <div className="hidden md:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {/* Brand Section */}
             <div className="lg:col-span-1">
               <div className="flex items-center mb-6">
-                <div className={`p-3 mr-4 rounded-xl shadow-lg transition-all duration-300 ${
-                  isDark 
-                    ? 'bg-gradient-to-br from-orange-500 to-red-600' 
-                    : 'bg-gradient-to-br from-orange-500 to-red-600'
-                }`}>
-                  <FaPuzzlePiece className="w-8 h-8 text-white" />
-                </div>
+                
                 <div>
                   <h3 className={`text-2xl font-bold transition-all duration-300 ${
                     isDark 
@@ -200,25 +283,28 @@ const Footer = () => {
                   </p>
                 </div>
                 
-                <div className={`p-4 rounded-xl transition-all duration-300 ${
-                  isDark
-                    ? 'bg-gradient-to-br from-blue-900/20 to-purple-900/20 border border-blue-700/30'
-                    : 'bg-white/80 border border-slate-200/60 shadow-sm'
-                }`}>
-                  <p className={`text-sm font-medium mb-2 transition-all duration-300 ${
-                    isDark ? 'text-blue-300' : 'text-slate-700'
-                  }`}>
-                    Get in touch
-                  </p>
-                  <a
-                    href="mailto:support@quizmaster.com"
-                    className={`text-sm transition-all duration-300 ${
-                      isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'
+                {/* Help Us Improve - links */}
+                <div className="flex justify-center gap-6">
+                  <button
+                    onClick={() => setShowComplaint(true)}
+                    className={`text-sm underline underline-offset-4 transition-colors ${
+                      isDark ? 'text-red-300 hover:text-red-500' : 'text-red-600 hover:text-red-700'
                     }`}
                   >
-                    support@quizmaster.com
-                  </a>
+                    Report Issue
+                  </button>
+                  
+                  <button
+                    onClick={() => setShowRecommendation(true)}
+                    className={`text-sm underline underline-offset-4 transition-colors ${
+                      isDark ? 'text-blue-300 hover:text-blue-200' : 'text-blue-600 hover:text-blue-700'
+                    }`}
+                  >
+                    Suggest Feature
+                  </button>
                 </div>
+
+                
               </div>
             </div>
           </div>
@@ -233,18 +319,13 @@ const Footer = () => {
               isDark ? 'text-gray-400' : 'text-slate-600'
             }`}>
               <p className="flex items-center gap-2">
-                © {currentYear} QuizMaster. Made with 
-                <FaHeart className="w-4 h-4 text-red-500 animate-pulse" /> 
-                for learners worldwide.
+                © {currentYear} QuizMaster
+                
               </p>
             </div>
             
             <div className="flex items-center gap-6">
-              <div className={`text-sm transition-all duration-300 ${
-                isDark ? 'text-gray-400' : 'text-slate-600'
-              }`}>
-                Version 2.0.0
-              </div>
+              
               
               <button
                 onClick={scrollToTop}
@@ -262,6 +343,42 @@ const Footer = () => {
         </div>
       </div>
     </footer>
+
+    {/* Feedback Modals */}
+    {showComplaint && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div className={` flex justify-center rounded-xl shadow-2xl p-6 relative w-full max-w-lg mx-4 ${
+          isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-slate-200'
+        }`}>
+          <button
+            onClick={() => setShowComplaint(false)}
+            aria-label="Close"
+            className={`absolute top-4 right-4 text-2xl ${isDark ? 'text-gray-300' : 'text-slate-600'}`}
+          >
+            ×
+          </button>
+          <ComplaintForm onClose={() => setShowComplaint(false)} />
+        </div>
+      </div>
+    )}
+
+    {showRecommendation && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div className={` flex justify-center rounded-xl shadow-2xl p-6 relative w-full max-w-lg mx-4 ${
+          isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-slate-200'
+        }`}>
+          <button
+            onClick={() => setShowRecommendation(false)}
+            aria-label="Close"
+            className={`absolute top-4 right-4 text-2xl ${isDark ? 'text-gray-300' : 'text-slate-600'}`}
+          >
+            ×
+          </button>
+          <RecommendationForm onClose={() => setShowRecommendation(false)} />
+        </div>
+      </div>
+    )}
+    </>
   );
 };
 

@@ -4,6 +4,16 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  // Ensure production keeps utilities we compose conditionally
+  safelist: [
+    // Gradient endpoints used across cards/badges
+    { pattern: /^(from|to|via)-(blue|indigo|purple|violet|emerald|green|yellow|orange|red|pink)-(50|100|200|300|400|500|600|700)$/ },
+    // Backgrounds and borders we toggle by theme/state
+    { pattern: /^(bg|text|border)-(white|black|slate|gray|blue|indigo|purple|violet|emerald|green|yellow|orange|red)-(50|100|200|300|400|500|600|700)$/ },
+    // Common translucent utilities used in UI (Tailwind color with opacity)
+    'bg-white/5', 'bg-white/10', 'bg-white/20', 'bg-black/5', 'bg-black/10',
+    'border-white/10', 'border-white/20', 'border-white/30', 'border-black/10',
+  ],
   theme: {
     extend: {
       colors: {
@@ -36,6 +46,13 @@ export default {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
+        poppins: ['Poppins', 'sans-serif'],
+        roboto: ['Roboto', 'sans-serif'],
+        inter: ['Inter', 'sans-serif'],
+        geist: ['Geist', 'sans-serif'],
+        firaCode: ['Fira Code', 'monospace'],
+        berkeleyMono: ['Berkeley Mono', 'monospace'],
+        fkgrotesk: ['FKGroteskNeue', 'sans-serif'],
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-in-out',

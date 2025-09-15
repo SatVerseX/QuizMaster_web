@@ -20,21 +20,47 @@ const BeautifulPopup = ({
   const popupRef = useRef(null);
 
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-      
-      if (autoClose) {
-        const timer = setTimeout(() => {
-          onClose();
-        }, autoCloseDelay);
-        return () => clearTimeout(timer);
+    // lock body scroll with position fixed to prevent background scroll/jump
+    if (!isOpen) {
+      const stored = document.body.getAttribute('data-scroll-lock-position');
+      if (stored) {
+        const y = parseInt(stored, 10) || 0;
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        document.body.removeAttribute('data-scroll-lock-position');
+        window.scrollTo(0, -y);
       }
-    } else {
-      document.body.style.overflow = 'unset';
+      return;
+    }
+
+    const scrollY = -window.scrollY;
+    document.body.setAttribute('data-scroll-lock-position', String(scrollY));
+    document.body.style.position = 'fixed';
+    document.body.style.top = `${scrollY}px`;
+    document.body.style.width = '100%';
+    document.body.style.overflow = 'hidden';
+
+    let timer;
+    if (autoClose) {
+      timer = setTimeout(() => {
+        onClose();
+      }, autoCloseDelay);
     }
 
     return () => {
-      document.body.style.overflow = 'unset';
+      const stored = document.body.getAttribute('data-scroll-lock-position');
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.overflow = '';
+      if (stored) {
+        const y = parseInt(stored, 10) || 0;
+        document.body.removeAttribute('data-scroll-lock-position');
+        window.scrollTo(0, -y);
+      }
+      if (timer) clearTimeout(timer);
     };
   }, [isOpen, autoClose, autoCloseDelay, onClose]);
 
@@ -216,7 +242,7 @@ const BeautifulPopup = ({
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes popupSlideIn {
           from {
             opacity: 0;

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
-import { FiPlus, FiTrash2, FiSave, FiArrowLeft } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiSave, FiArrowLeft, FiAlertCircle } from 'react-icons/fi';
 import { v4 as uuidv4 } from 'uuid';
 
 const QuizCreator = ({ onBack, onQuizCreated }) => {
@@ -14,8 +14,18 @@ const QuizCreator = ({ onBack, onQuizCreated }) => {
       id: uuidv4(), 
       question: '', 
       options: ['', '', '', ''], 
-      correctAnswer: 0 
-    }]
+      correctAnswer: 0,
+      negativeMarking: {
+        enabled: false,
+        type: 'fractional',
+        value: 0.25
+      }
+    }],
+    negativeMarking: {
+      enabled: false,
+      type: 'fractional',
+      value: 0.25
+    }
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -25,7 +35,17 @@ const QuizCreator = ({ onBack, onQuizCreated }) => {
       ...prev,
       questions: [
         ...prev.questions,
-        { id: uuidv4(), question: '', options: ['', '', '', ''], correctAnswer: 0 }
+        { 
+          id: uuidv4(), 
+          question: '', 
+          options: ['', '', '', ''], 
+          correctAnswer: 0,
+          negativeMarking: {
+            enabled: false,
+            type: 'fractional',
+            value: 0.25
+          }
+        }
       ]
     }));
   };
@@ -150,6 +170,118 @@ const QuizCreator = ({ onBack, onQuizCreated }) => {
                 className="w-full pl-4 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-300 min-h-[120px] resize-y"
               />
             </div>
+
+            {/* Negative Marking Section */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
+                    <FiAlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-gray-900 dark:text-white">
+                      Enable Negative Marking
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      Deduct marks for wrong answers
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setQuiz(prev => ({
+                    ...prev,
+                    negativeMarking: {
+                      ...prev.negativeMarking,
+                      enabled: !prev.negativeMarking.enabled
+                    }
+                  }))}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
+                    quiz.negativeMarking.enabled
+                      ? 'bg-red-500'
+                      : 'bg-gray-200 dark:bg-gray-600'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      quiz.negativeMarking.enabled ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Negative Marking Settings */}
+              {quiz.negativeMarking.enabled && (
+                <div className="space-y-4 p-4 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/30">
+                  {/* Type Selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Marking Type
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { value: 'fractional', label: 'Fractional', description: '1/4th mark deduction' },
+                        { value: 'fixed', label: 'Fixed', description: 'Fixed mark deduction' }
+                      ].map(type => (
+                        <button
+                          key={type.value}
+                          type="button"
+                          onClick={() => setQuiz(prev => ({
+                            ...prev,
+                            negativeMarking: {
+                              ...prev.negativeMarking,
+                              type: type.value
+                            }
+                          }))}
+                          className={`p-3 rounded-lg border transition-all duration-300 text-left ${
+                            quiz.negativeMarking.type === type.value
+                              ? 'bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-400 text-red-700 dark:text-red-300'
+                              : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                          }`}
+                        >
+                          <div className="font-semibold">{type.label}</div>
+                          <div className="text-xs opacity-75">{type.description}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Value Input */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {quiz.negativeMarking.type === 'fractional' ? 'Fraction Value' : 'Mark Deduction'}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0.1"
+                        max="1"
+                        step="0.05"
+                        value={quiz.negativeMarking.value}
+                        onChange={(e) => setQuiz(prev => ({
+                          ...prev,
+                          negativeMarking: {
+                            ...prev.negativeMarking,
+                            value: parseFloat(e.target.value) || 0.25
+                          }
+                        }))}
+                        className="w-full px-4 py-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-300"
+                        placeholder={quiz.negativeMarking.type === 'fractional' ? "0.25" : "0.25"}
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
+                        {quiz.negativeMarking.type === 'fractional' ? 'fraction' : 'marks'}
+                      </div>
+                    </div>
+                    <div className="mt-1 text-xs text-gray-500">
+                      {quiz.negativeMarking.type === 'fractional' 
+                        ? `For each wrong answer, ${quiz.negativeMarking.value} marks will be deducted`
+                        : `For each wrong answer, ${quiz.negativeMarking.value} marks will be deducted`
+                      }
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -215,6 +347,116 @@ const QuizCreator = ({ onBack, onQuizCreated }) => {
                         />
                       </div>
                     ))}
+                  </div>
+                </div>
+
+                {/* Individual Question Negative Marking */}
+                <div className="space-y-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Question-Specific Negative Marking
+                  </label>
+                  
+                  <div className="space-y-4">
+                    {/* Enable/Disable Toggle */}
+                    <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-gradient-to-br from-red-100 to-pink-100 dark:from-red-900/30 dark:to-pink-900/30 rounded-lg flex items-center justify-center">
+                          <FiAlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+                        </div>
+                        <div>
+                          <div className="font-semibold text-gray-900 dark:text-white">
+                            Override Global Setting
+                          </div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">
+                            Set specific negative marking for this question
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => updateQuestion(question.id, 'negativeMarking', {
+                          ...question.negativeMarking,
+                          enabled: !question.negativeMarking.enabled
+                        })}
+                        className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
+                          question.negativeMarking.enabled
+                            ? 'bg-red-500'
+                            : 'bg-gray-200 dark:bg-gray-600'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                            question.negativeMarking.enabled ? 'translate-x-5' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+
+                    {/* Question-Specific Negative Marking Settings */}
+                    {question.negativeMarking.enabled && (
+                      <div className="space-y-4 p-4 rounded-lg border border-red-200 dark:border-red-400/30 bg-red-50 dark:bg-red-500/10">
+                        {/* Type Selection */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Marking Type
+                          </label>
+                          <div className="grid grid-cols-2 gap-3">
+                            {[
+                              { value: 'fractional', label: 'Fractional', description: '1/4th mark deduction' },
+                              { value: 'fixed', label: 'Fixed', description: 'Fixed mark deduction' }
+                            ].map(type => (
+                              <button
+                                key={type.value}
+                                type="button"
+                                onClick={() => updateQuestion(question.id, 'negativeMarking', {
+                                  ...question.negativeMarking,
+                                  type: type.value
+                                })}
+                                className={`p-3 rounded-lg border transition-all duration-300 text-left ${
+                                  question.negativeMarking.type === type.value
+                                    ? 'bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-400 text-red-700 dark:text-red-300'
+                                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                }`}
+                              >
+                                <div className="font-semibold">{type.label}</div>
+                                <div className="text-xs opacity-75">{type.description}</div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Value Input */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {question.negativeMarking.type === 'fractional' ? 'Fraction Value' : 'Mark Deduction'}
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              min="0.1"
+                              max="1"
+                              step="0.05"
+                              value={question.negativeMarking.value}
+                              onChange={(e) => updateQuestion(question.id, 'negativeMarking', {
+                                ...question.negativeMarking,
+                                value: parseFloat(e.target.value) || 0.25
+                              })}
+                              className="w-full px-4 py-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-300"
+                              placeholder={question.negativeMarking.type === 'fractional' ? "0.25" : "0.25"}
+                            />
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
+                              {question.negativeMarking.type === 'fractional' ? 'fraction' : 'marks'}
+                            </div>
+                          </div>
+                          <div className="mt-1 text-xs text-gray-500">
+                            {question.negativeMarking.type === 'fractional' 
+                              ? `For this question, ${question.negativeMarking.value} marks will be deducted for wrong answers`
+                              : `For this question, ${question.negativeMarking.value} marks will be deducted for wrong answers`
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
