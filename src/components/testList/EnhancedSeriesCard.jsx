@@ -25,8 +25,9 @@ const EnhancedSeriesCard = memo(
         onSubscribeSeries && onSubscribeSeries(series);
       } else {
         await recordFreeView(series);
-        if (series.tests && series.tests.length > 0) {
-          onViewTests && onViewTests(series);
+        // Always send normal users to the tests list; the page can handle empty lists.
+        if (onViewTests) {
+          onViewTests(series);
         } else {
           onViewSeries(series);
         }

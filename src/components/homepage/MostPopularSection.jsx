@@ -125,6 +125,18 @@ const MostPopularSection = ({
 
   const handleViewDetails = (seriesItem) => {
     try {
+      const subscribed = hasUserSubscribed(seriesItem.id);
+      const creator = isCreator(seriesItem);
+
+      // For normal users: prefer tests list for free or already-subscribed series
+      if (!creator && (subscribed || !seriesItem.isPaid)) {
+        if (onViewTests) {
+          onViewTests(seriesItem);
+          return;
+        }
+      }
+
+      // Fallbacks: creator → dashboard; others → dashboard if tests handler not available
       if (onViewSeries) {
         onViewSeries(seriesItem);
       } else {
@@ -132,7 +144,6 @@ const MostPopularSection = ({
       }
     } catch (error) {
       console.error('Details navigation error:', error);
-      
     }
   };
 
