@@ -216,10 +216,34 @@ const AppContent = () => {
                 } else {
                   setSelectedItem(testData);
                 }
-              } else {
-                logger.error('Test not found:', testId);
-                navigate('/test-series');
+                return true; // indicate handled
               }
+              // Fallback: try section-quizzes
+              return getDoc(doc(db, 'section-quizzes', testId)).then((secSnap) => {
+                if (secSnap.exists()) {
+                  const testData = { id: secSnap.id, ...secSnap.data(), type: 'section-wise' };
+                  logger.log('App: Test data loaded from section-quizzes:', testData);
+                  if (testData.testSeriesId) {
+                    return getDoc(doc(db, 'test-series', testData.testSeriesId))
+                      .then((seriesSnap) => {
+                        if (seriesSnap.exists()) {
+                          const seriesData = { id: seriesSnap.id, ...seriesSnap.data() };
+                          logger.log('App: Series data loaded:', seriesData);
+                          setSelectedItem({ ...testData, testSeriesId: testData.testSeriesId });
+                        } else {
+                          setSelectedItem(testData);
+                        }
+                      });
+                  } else {
+                    setSelectedItem(testData);
+                  }
+                  return true;
+                }
+                // Not found in either collection
+                logger.error('Test not found in quizzes or section-quizzes:', testId);
+                navigate('/test-series');
+                return false;
+              });
             })
             .catch((err) => {
               logger.error('Failed to load test:', err);
