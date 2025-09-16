@@ -17,10 +17,10 @@ const TestSeriesCard = ({
 
   return (
     <div 
-      className={`rounded-lg p-4 sm:p-5 border hover:shadow-lg ${
+      className={`rounded p-3 border ${
         isDark 
-          ? 'bg-gray-800 border-gray-700 hover:border-blue-600'
-          : 'bg-white border-gray-200 hover:border-blue-300'
+          ? 'bg-gray-800 border-gray-700'
+          : 'bg-white border-gray-200'
       }`}
     >
       {/* Series Header */}
@@ -30,15 +30,13 @@ const TestSeriesCard = ({
       >
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-              isDark ? 'bg-blue-600/20' : 'bg-blue-100'
+            <div className={`w-8 h-8 rounded flex items-center justify-center ${
+              isDark ? 'bg-blue-600' : 'bg-blue-500'
             }`}>
-              <FiBookOpen className={`w-5 h-5 ${
-                isDark ? 'text-blue-400' : 'text-blue-600'
-              }`} />
+              <FiBookOpen className="w-4 h-4 text-white" />
             </div>
             <div>
-              <h2 className={`text-lg sm:text-xl font-bold ${
+              <h2 className={`text-lg font-medium ${
                 isDark ? 'text-white' : 'text-gray-900'
               }`}>
                 {seriesTitle}
@@ -58,7 +56,7 @@ const TestSeriesCard = ({
 
       {/* Tests within Series */}
       {isExpanded && (
-        <div className="ml-6 space-y-3">
+        <div className="ml-4 space-y-2">
           {Object.entries(testsInSeries).map(([testTitle, testAttempts], testIndex) => (
             <TestCard
               key={testTitle}

@@ -318,7 +318,7 @@ const RecentActivityCompact = ({
               <div
                 key={rec.id}
                 onClick={() => handleRecommendationClick(rec)}
-                className={`p-2 rounded-lg cursor-pointer ${
+                className={`p-4 rounded-lg cursor-pointer ${
                   isDark ? 'bg-gray-700/50 hover:bg-gray-700' : 'bg-gray-50 hover:bg-gray-100'
                 }`}
               >
@@ -327,9 +327,7 @@ const RecentActivityCompact = ({
                     <h5 className={`text-xs font-medium truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>
                       {rec.title}
                     </h5>
-                    <p className={`text-xs truncate ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                      {rec.reason}
-                    </p>
+                    
                     {rec.priority && (
                       <div className="flex items-center gap-1 mt-1">
                         <span className={`text-xs px-1 py-0.5 rounded ${
@@ -347,10 +345,10 @@ const RecentActivityCompact = ({
                       </div>
                     )}
                   </div>
-                  <span className={`text-xs px-2 py-1 rounded ml-2 ${
-                    rec.difficulty === 'Easy' ? 'bg-green-100 text-green-700' :
-                    rec.difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-700' :
-                    'bg-red-100 text-red-700'
+                  <span className={`text-xs px-2 py-2 rounded-lg ml-2 ${
+                    rec.difficulty === 'Easy' ? 'bg-green-100 text-green-600' :
+                    rec.difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-600' :
+                    'bg-red-100 text-red-600'
                   }`}>
                     {rec.difficulty}
                   </span>

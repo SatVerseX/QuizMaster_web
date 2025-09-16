@@ -63,16 +63,7 @@ const TestHistoryHeader = ({
         >
           <FiBarChart2 className="w-4 h-4" />
         </button>
-        <button
-          onClick={exportData}
-          className={`p-2 rounded-lg transition-all duration-300 ${
-            isDark 
-              ? 'bg-green-500/20 border border-green-500/30 text-green-300 hover:bg-green-500/30'
-              : 'bg-white/90 border border-slate-200/60 text-green-600 hover:bg-white hover:shadow-slate-300/30'
-          }`}
-        >
-          <FiDownload className="w-4 h-4" />
-        </button>
+        
       </div>
     </div>
   );

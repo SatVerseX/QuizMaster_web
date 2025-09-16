@@ -14,13 +14,13 @@ const EmptyState = ({
   setActiveFilter
 }) => {
   return (
-    <div className="text-center py-16 sm:py-24 lg:py-32">
+    <div className="text-center py-12 sm:py-20 lg:py-28">
       {/* Enhanced Text Content */}
-      <div className="relative mb-8 sm:mb-12">
-        <h3 className={`text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-black text-transparent bg-clip-text mb-4 sm:mb-6 leading-tight ${
+      <div className="relative mb-6 sm:mb-10">
+        <h3 className={`text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-black text-transparent bg-clip-text mb-4 sm:mb-4 leading-tight ${
           isDark 
-            ? 'bg-gradient-to-r from-white via-blue-200 to-purple-200'
-            : 'bg-gradient-to-r from-slate-800 via-blue-600 to-purple-600'
+            ? 'bg-gradient-to-r from-white/90 via-blue-200/60 to-purple-200/60'
+            : 'bg-gradient-to-r from-slate-800/90 via-blue-600/70 to-purple-600/70'
         }`}>
           {(() => {
             if (searchTerm) return 'No Matching Series Found';
@@ -31,8 +31,8 @@ const EmptyState = ({
             return 'Ready to Begin Your Journey?';
           })()}
         </h3>
-        <p className={`text-base sm:text-lg lg:text-xl xl:text-2xl mb-6 sm:mb-8 max-w-3xl mx-auto leading-relaxed ${
-          isDark ? 'text-gray-300' : 'text-slate-600'
+        <p className={`text-sm sm:text-base lg:text-lg xl:text-xl mb-4 sm:mb-6 max-w-3xl mx-auto leading-relaxed ${
+          isDark ? 'text-gray-400' : 'text-slate-600'
         }`}>
           {(() => {
             if (searchTerm) return 'Try adjusting your search criteria or exploring different categories to find the perfect test series for you.';
@@ -46,20 +46,20 @@ const EmptyState = ({
 
         {/* Free Access specific content */}
         {!searchTerm && activeFilter === 'free' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 max-w-2xl mx-auto mb-8">
-            <div className="bg-gradient-to-r from-emerald-500/10 to-emerald-600/10 border border-emerald-500/20 rounded-xl p-4 text-center hover-lift">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 max-w-2xl mx-auto mb-6">
+            <div className="bg-gradient-to-r from-emerald-500/5 to-emerald-600/5 border border-emerald-500/10 rounded-lg p-4 text-center hover-lift">
               <div className="w-12 h-12 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                <FaGem className="w-6 h-6 text-emerald-400" />
+                <FaGem className="w-6 h-6 text-emerald-300" />
               </div>
               <h4 className="text-white font-semibold mb-2">Premium Series</h4>
-              <p className="text-sm text-emerald-200">Explore our premium test series</p>
+              <p className="text-sm text-emerald-300">Explore our premium test series</p>
             </div>
-            <div className="bg-gradient-to-r from-blue-500/10 to-blue-600/10 border border-blue-500/20 rounded-xl p-4 text-center hover-lift">
+            <div className="bg-gradient-to-r from-blue-500/5 to-blue-600/5 border border-blue-500/10 rounded-lg p-4 text-center hover-lift">
               <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                <FiBookOpen className="w-6 h-6 text-blue-400" />
+                <FiBookOpen className="w-6 h-6 text-blue-300" />
               </div>
               <h4 className="text-white font-semibold mb-2">All Series</h4>
-              <p className="text-sm text-blue-200">Browse all available test series</p>
+              <p className="text-sm text-blue-300">Browse all available test series</p>
             </div>
           </div>
         )}
@@ -70,14 +70,14 @@ const EmptyState = ({
         {isAdmin && (
           <button
             onClick={onCreateSeries}
-            className="group relative bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-2xl sm:rounded-3xl px-8 sm:px-10 lg:px-12 py-4 sm:py-5 lg:py-6 transition-all duration-500 transform hover:scale-110 shadow-2xl hover:shadow-purple-500/25 border border-purple-400/30"
+            className="group relative bg-purple-600/90 hover:bg-purple-700/90 text-white font-bold rounded-lg sm:rounded-xl px-6 sm:px-8 lg:px-10 py-3 sm:py-4 lg:py-5 transition-all duration-500 transform hover:scale-103 shadow-lg hover:shadow-purple-500/25 border border-purple-400/20"
           >
-            <div className="absolute inset-0 bg-purple-400/20 rounded-2xl sm:rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="absolute inset-0 bg-purple-400/20 rounded-lg sm:rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             <div className="relative flex items-center gap-3 sm:gap-4">
-              <div className="p-2 bg-white/20 rounded-xl">
+              <div className="p-2 bg-white/20 rounded-lg">
                 <FiPlus className="w-6 h-6 sm:w-7 sm:h-7" />
               </div>
-              <span className="text-lg sm:text-xl lg:text-2xl">Create Your First Series</span>
+              <span className="text-lg sm:text-xl lg:text-lg">Create Your First Series</span>
               <FaRocket className="w-6 h-6 sm:w-7 sm:h-7 animate-bounce" />
             </div>
           </button>
@@ -89,7 +89,7 @@ const EmptyState = ({
               setSearchTerm('');
               setActiveFilter('all');
             }}
-            className="px-8 sm:px-10 py-4 sm:py-5 bg-gradient-to-r from-gray-700/80 to-gray-600/80 border-2 border-gray-600/60 text-gray-300 hover:text-white hover:bg-gray-600/80 hover:border-gray-500/60 rounded-2xl sm:rounded-3xl transition-all duration-300 flex items-center gap-3 sm:gap-4 text-base sm:text-lg lg:text-xl font-semibold shadow-lg hover:shadow-xl"
+            className="px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-gray-700/80 to-gray-600/80 border border-gray-600/60 text-gray-400 hover:text-white hover:bg-gray-600/70 hover:border-gray-500/40 rounded-lg sm:rounded-xl transition duration-200 flex items-center gap-3 sm:gap-4 text-sm sm:text-base lg:text-lg font-semibold shadow-md hover:shadow-lg"
           >
             <FiTarget className="w-5 h-5 sm:w-6 sm:h-6" />
             View All Series
@@ -101,14 +101,14 @@ const EmptyState = ({
           <div className="flex flex-col sm:flex-row gap-4">
             <button 
               onClick={() => setActiveFilter('paid')}
-              className="px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-yellow-600/80 to-yellow-700/80 border-2 border-yellow-500/60 text-white rounded-xl sm:rounded-2xl transition-all duration-300 flex items-center gap-3 hover:scale-105 shadow-lg"
+              className="px-6 sm:px-6 py-3 sm:py-3 bg-gradient-to-r from-yellow-600/80 to-yellow-700/80 border border-yellow-500/60 text-white rounded-lg sm:rounded-lg transition duration-200 flex items-center gap-3 hover:scale-103 shadow-md"
             >
               <FaCrown className="w-5 h-5" />
               View Premium Series
             </button>
             <button 
               onClick={() => setActiveFilter('all')}
-              className="px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-blue-600/80 to-blue-700/80 border-2 border-blue-500/60 text-white rounded-xl sm:rounded-2xl transition-all duration-300 flex items-center gap-3 hover:scale-105 shadow-lg"
+              className="px-6 sm:px-6 py-3 sm:py-3 bg-gradient-to-r from-blue-600/80 to-blue-700/80 border border-blue-500/60 text-white rounded-lg sm:rounded-lg transition duration-200 flex items-center gap-3 hover:scale-103 shadow-md"
             >
               <FiBookOpen className="w-5 h-5" />
               Browse All Series
@@ -121,7 +121,7 @@ const EmptyState = ({
           <div className="flex flex-col sm:flex-row gap-4">
             <button 
               onClick={() => setActiveFilter('all')}
-              className="px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-blue-600/80 to-blue-700/80 border-2 border-blue-500/60 text-white rounded-xl sm:rounded-2xl transition-all duration-300 flex items-center gap-3 hover:scale-105 shadow-lg"
+              className="px-6 sm:px-6 py-3 sm:py-3 bg-gradient-to-r from-blue-600/80 to-blue-700/80 border border-blue-500/60 text-white rounded-lg sm:rounded-lg transition duration-200 flex items-center gap-3 hover:scale-103 shadow-md"
             >
               <FiBookOpen className="w-5 h-5" />
               Browse All Series

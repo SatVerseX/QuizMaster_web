@@ -17,10 +17,10 @@ const SearchFilterControls = ({
 }) => {
   return (
     <div className="relative z-[70] mb-8 sm:mb-12">
-      <div className={`backdrop-blur-xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 xl:p-10 ${
+      <div className={`backdrop-blur-md sm:rounded-2xl p-3 sm:p-5 lg:p-6 xl:p-8 ${
         isDark 
-          ? ' border-gray-600/60 ' 
-          : ' border-slate-200/60 shadow-slate-200/40'
+          ? ' border-gray-600/40 ' 
+          : ' border-slate-200/40 shadow-slate-200/30'
       }`}>
         {/* Controls Row: Search + Exam Category + Specific Exam + Filter */}
         <div className="flex flex-col xl:flex-row gap-4 sm:gap-5 items-stretch xl:items-end">
@@ -38,9 +38,9 @@ const SearchFilterControls = ({
                 placeholder="Search test series..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className={`w-full pl-11 pr-4 py-3 rounded-2xl backdrop-blur-sm border-2 focus:outline-none focus:ring-4 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-300 font-medium text-sm shadow-lg ${
+                className={`w-full pl-11 pr-4 py-3 rounded-xl backdrop-blur-xs border focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-300 font-normal text-sm shadow-md ${
                   isDark 
-                    ? 'bg-gray-900/80 border-gray-600/60 text-white placeholder-gray-400' 
+                    ? 'bg-gray-900/80 border-gray-700/60 text-white placeholder-gray-400' 
                     : 'bg-white/80 border-slate-300/60 text-slate-800 placeholder-slate-500'
                 }`}
               />
@@ -52,9 +52,9 @@ const SearchFilterControls = ({
                 type="button"
                 aria-label="Open filters"
                 onClick={() => setShowMobileFilters(true)}
-                className={`h-11 w-11 flex items-center justify-center rounded-2xl border transition-all shadow-md ${
+                className={`h-11 w-11 flex items-center justify-center rounded-xl border transition-all shadow-sm ${
                   isDark
-                    ? 'bg-gray-900/80 border-gray-600/60 text-white hover:bg-gray-800'
+                    ? 'bg-gray-900/80 border-gray-600/40 text-white hover:bg-gray-800'
                     : 'bg-white/80 border-slate-300/60 text-slate-800 hover:bg-gray-50'
                 }`}
               >
@@ -93,9 +93,9 @@ const SearchFilterControls = ({
                 onClick={() => { 
                   setSelectedSubcategory(''); 
                 }}
-                className={`px-4 py-2.5 rounded-xl border font-medium text-sm transition-all duration-300 ${
+                className={`px-4 py-2.5 rounded-xl border font-normal text-sm transition-all duration-300 ${
                   isDark 
-                    ? 'bg-red-600/20 border-red-500/40 text-red-300 hover:bg-red-600/30 hover:border-red-500/60'
+                    ? 'bg-red-600/20 border-red-500/40 text-red-300 hover:bg-red-600/25 hover:border-red-500/50'
                     : 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100 hover:border-red-300'
                 }`}
               >

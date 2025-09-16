@@ -80,35 +80,35 @@ const ProfessionalDropdown = ({
   };
 
   return (
-    <div ref={dropdownRef} className={`relative ${isOpen ? 'z-[100]' : 'z-10'} ${className}`}>
+    <div ref={dropdownRef} className={`relative ${isOpen ? 'z-60' : 'z-10'} ${className}`}>
       {/* Trigger Button */}
       <button
         type="button"
         onClick={handleToggle}
         disabled={disabled}
-        className={`w-full h-11 px-4 pr-12 rounded-xl backdrop-blur-sm border shadow-sm text-left flex items-center justify-between transition-all duration-300 font-medium text-sm focus:outline-none ${
+        className={`w-full h-10 px-3 pr-10 rounded-lg backdrop-blur-xs border shadow-xs text-left flex items-center justify-between transition-all duration-300 font-normal text-xs focus:outline-none ${
           disabled
             ? isDark 
-              ? 'bg-gray-800/40 border-gray-700/40 text-gray-500 cursor-not-allowed' 
-              : 'bg-slate-100/80 border-slate-200/60 text-slate-500 cursor-not-allowed'
+              ? 'bg-gray-800/30 border-gray-700/30 text-gray-400 cursor-not-allowed' 
+              : 'bg-slate-100/70 border-slate-200/40 text-slate-400 cursor-not-allowed'
             : isDark 
-              ? 'bg-gray-900/60 border-gray-600/40 text-white hover:bg-gray-800/70 hover:border-gray-500/60 focus:ring-4 focus:ring-blue-500/30' 
-              : 'bg-white/80 border-slate-300/60 text-slate-800 hover:bg-gray-50 hover:border-slate-400/70 focus:ring-4 focus:ring-blue-500/30'
+              ? 'bg-gray-900/50 border-gray-600/30 text-white hover:bg-gray-800/50 hover:border-gray-500/30 focus:ring-2 focus:ring-blue-500/20' 
+              : 'bg-white/80 border-slate-300/60 text-slate-800 hover:bg-gray-50 hover:border-slate-400/70 focus:ring-2 focus:ring-blue-500/20'
         } ${isOpen ? 'ring-4 ring-blue-500/30 border-blue-500/50' : ''}`}
       >
-        <span className={selectedOption ? '' : isDark ? 'text-gray-400' : 'text-gray-500'}>
+        <span className={selectedOption ? '' : isDark ? 'text-gray-400' : 'text-gray-400'}>
           {selectedOption ? selectedOption.label : placeholder}
         </span>
         
         <div className={`rounded-full w-7 h-7 flex items-center justify-center border transition-all duration-200 ${
           isDark 
-            ? 'bg-gray-800/70 border-gray-600/50' 
-            : 'bg-white border-slate-200/80 shadow-sm'
+            ? 'bg-gray-800/60 border-gray-600/30' 
+            : 'bg-white border-slate-200/40 shadow-xs'
         }`}>
           <FiChevronDown 
-            className={`w-4 h-4 transition-transform duration-200 ${
+            className={`w-3 h-3 transition-transform duration-150 ${
               isOpen ? 'rotate-180' : ''
-            } ${isDark ? 'text-gray-300' : 'text-slate-500'}`} 
+            } ${isDark ? 'text-gray-400' : 'text-slate-400'}`} 
           />
         </div>
       </button>
@@ -117,13 +117,13 @@ const ProfessionalDropdown = ({
       {isOpen && (
         <>
           {isMobile && (
-            <div className="fixed inset-0 bg-black/40 z-[90]" onClick={() => setIsOpen(false)} />
+             <div className="fixed inset-0 bg-black/30 z-50" onClick={() => setIsOpen(false)} />
           )}
           <div 
-            className={`${isMobile ? 'relative mt-2' : 'absolute top-full left-0 right-0 mt-2'} py-2 rounded-xl border shadow-2xl backdrop-blur-xl max-h-60 transition-all duration-200 professional-dropdown z-[100] ${
+            className={`${isMobile ? 'relative mt-2' : 'absolute top-full left-0 right-0 mt-2'} py-1.5 rounded-lg border shadow backdrop-blur-md max-h-60 transition-all duration-200 professional-dropdown z-60 ${
               isDark 
-                ? 'bg-gray-900/98 border-gray-600/40' 
-                : 'bg-white/98 border-slate-200/60'
+                ? 'bg-gray-900/80 border-gray-600/30' 
+                : 'bg-white/90 border-slate-200/40'
             }`}
             style={{
               boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
@@ -137,20 +137,20 @@ const ProfessionalDropdown = ({
                 key={option.value}
                 type="button"
                 onClick={() => handleSelect(option)}
-                className={`w-full px-4 py-3 text-left text-sm font-medium transition-all duration-150 hover:scale-[1.01] ${
+                className={`w-full px-3 py-3 text-left text-xs font-normal transition hover:scale-100 ${
                   selectedOption?.value === option.value
                     ? isDark 
-                      ? 'bg-blue-600/90 text-white shadow-lg' 
-                      : 'bg-blue-600 text-white shadow-lg'
+                      ? 'bg-blue-600/70 text-white shadow' 
+                      : 'bg-blue-600 text-white shadow'
                     : isDark
-                      ? 'text-gray-200 hover:bg-gray-800/60 hover:text-white'
-                      : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                      ? 'text-gray-400 hover:bg-gray-800/30 hover:text-white'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <span>{option.label}</span>
                   {selectedOption?.value === option.value && (
-                    <FiCheck className="w-4 h-4 flex-shrink-0 ml-2" />
+                    <FiCheck className="w-3 h-3 flex-shrink-0 ml-1" />
                   )}
                 </div>
               </button>
@@ -162,4 +162,4 @@ const ProfessionalDropdown = ({
   );
 };
 
-export default memo(ProfessionalDropdown);
+export default memo(ProfessionalDropdown)

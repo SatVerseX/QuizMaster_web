@@ -202,7 +202,7 @@ const TestAttemptHistory = ({ onBack, onViewAttempt }) => {
 
   return (
     <div className={`min-h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      <div className="max-w-7xl mx-auto p-4">
+      <div className="max-w-6xl mx-auto p-3">
         
         <TestHistoryHeader 
           onBack={onBack}
@@ -227,8 +227,8 @@ const TestAttemptHistory = ({ onBack, onViewAttempt }) => {
           setShowMobileFilters={setShowMobileFilters}
         />
 
-        <div className="mt-6">
-          <div className={`rounded-xl p-4 shadow-md border ${
+        <div className="mt-4">
+          <div className={`rounded-lg p-3 border ${
             isDark 
               ? 'bg-gray-800 border-gray-700'
               : 'bg-white border-gray-200'

@@ -31,6 +31,7 @@ import TestSeriesAIGenerator from './components/testSeries/TestSeriesAIGenerator
 import TestAttemptViewer from './components/testSeries/TestAttemptViewer';
 import TestAttemptHistory from './components/testSeries/TestAttemptHistory';
 import TestSeriesTestsList from './components/testSeries/TestSeriesTestsList';
+import UserSubscriptions from './components/testSeries/UserSubscriptions';
 import TestAttemptDetails from './components/testSeries/TestAttemptDetails';
 
 // Quiz Components
@@ -120,6 +121,8 @@ const AppContent = () => {
       setCurrentView('ai-generator');
     } else if (path === '/test-history') {
       setCurrentView('test-history');
+    } else if (path === '/subscriptions') {
+      setCurrentView('subscriptions');
     } else if (path === '/homepage') {
       setCurrentView('homepage');
     } else if (path.startsWith('/series/')) {
@@ -611,6 +614,12 @@ const AppContent = () => {
     navigate('/test-series');
   };
 
+  const handleViewSubscriptions = () => {
+    setCurrentView('subscriptions');
+    setSelectedItem(null);
+    navigate('/subscriptions');
+  };
+
   const handleGetStarted = () => {
     setCurrentView('homepage');
     setSelectedItem(null);
@@ -686,6 +695,15 @@ const AppContent = () => {
               onViewSeries={handleViewSeries}
               onSubscribeSeries={handleSubscribeSeries}
               onViewTests={handleViewTests}
+            />
+          </div>
+        );
+      case 'subscriptions':
+        return (
+          <div className="animate-fade-in">
+            <UserSubscriptions
+              onViewTests={handleViewTests}
+              onSubscribeSeries={handleSubscribeSeries}
             />
           </div>
         );
@@ -1151,6 +1169,7 @@ const App = () => {
             <Route path="/" element={<AppContent />} />
             <Route path="/welcome" element={<AppContent />} />
             <Route path="/homepage" element={<AppContent />} />
+            <Route path="/subscriptions" element={<AppContent />} />
             <Route path="/test-series" element={<AppContent />} />
             <Route path="/create-series" element={<AppContent />} />
             <Route path="/ai-generator" element={<AppContent />} />

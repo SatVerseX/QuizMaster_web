@@ -38,24 +38,24 @@ const EnhancedSeriesCard = memo(
         onClick={handleCardClick}
         className={`${
           isDark
-            ? "group relative backdrop-blur-xl border rounded-3xl overflow-hidden shadow-2xl transition-all duration-500  cursor-pointer h-80 sm:h-80 flex flex-col border-white/10 border-2 sm:hover:border-white"
-            : "group relative backdrop-blur-xl border rounded-3xl overflow-hidden shadow-2xl transition-all duration-500  cursor-pointer h-80 sm:h-80 flex flex-col border-white/10 border-2 sm:hover:border-blue-700"
+            ? "group relative border-2 border-gray-700 rounded-3xl overflow-hidden shadow-lg transition-all duration-300 cursor-pointer h-80 sm:h-80 flex flex-col hover:border-white"
+            : "group relative border-2 border-gray-200 rounded-3xl overflow-hidden shadow-lg transition-all duration-300 cursor-pointer h-80 sm:h-80 flex flex-col hover:border-blue-400"
         }`}
       >
         {/* Premium/Free Badge */}
         <div className="absolute top-4 right-4 z-20">
           {series.isPaid ? (
             isSubscribed ? (
-              <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-3 py-2 rounded-full text-xs font-bold flex items-center gap-2 shadow-xl backdrop-blur-sm border border-green-400/30">
+              <div className="bg-green-500 text-white px-3 py-2 rounded-full text-xs font-bold flex items-center gap-2 shadow-md">
                 <FaCheck className="w-3 h-3" />
               </div>
             ) : (
-              <div className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-3 py-2 rounded-full text-xs font-bold flex items-center gap-2 shadow-xl backdrop-blur-sm border border-yellow-400/30">
+              <div className="bg-orange-500 text-white px-3 py-2 rounded-full text-xs font-bold flex items-center gap-2 shadow-md">
                 <FaCrown className="w-3 h-3" />
               </div>
             )
           ) : (
-            <div className="bg-gradient-to-r from-emerald-500 to-green-500 text-white px-3 py-2 rounded-full text-xs font-bold flex items-center gap-2 shadow-xl backdrop-blur-sm border border-emerald-400/30">
+            <div className="bg-green-500 text-white px-3 py-2 rounded-full text-xs font-bold flex items-center gap-2 shadow-md">
               <span>Free</span>
             </div>
           )}
@@ -72,41 +72,47 @@ const EnhancedSeriesCard = memo(
                 e.target.style.display = "none";
               }}
             />
+            
           </div>
         ) : (
-          // Fallback gradient background when no image
-          <div className="absolute inset-0 z-0 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600">
-            <div className="absolute inset-0 bg-black/40"></div>
+          // Simple gradient background instead of complex multi-stop gradient
+          <div className="absolute inset-0 z-0 bg-gradient-to-br from-blue-500 to-purple-600">
+            <div className="absolute inset-0 bg-black opacity-40"></div>
           </div>
         )}
 
         {/* Bottom Stats Container */}
         <div className="relative z-10 mt-auto">
-          <div className="bg-white/10 backdrop-blur-xl p-2 border border-white/20">
+          {/* Simplified background with basic transparency */}
+          <div className={`p-4 border-t ${
+            isDark 
+              ? "bg-black bg-opacity-60 border-gray-600" 
+              : "bg-white bg-opacity-80 border-gray-300"
+          }`}>
             <div className="grid grid-cols-2 gap-4">
               {/* Total Tests */}
               <div className="flex items-center gap-3">
-                <div className="w-7 h-7 bg-blue-500/20 rounded-xl flex items-center justify-center border border-blue-400/30">
-                  <FiBookOpen className="text-blue-300 w-7 h-7" />
+                <div className="w-8 h-8 bg-blue-500 bg-opacity-20 rounded-lg flex items-center justify-center">
+                  <FiBookOpen className="text-white w-4 h-4" />
                 </div>
                 <div>
-                  <div className="text-white font-bold text-xs">
+                  <div className={`${isDark?"text-gray-300 font-bold text-xs":"text-gray-800 font-bold text-xs"}`}>
                     {series.totalTests || 0}
                   </div>
-                  <div className="text-gray-300 text-xs font-medium">Tests</div>
+                  <div className={`${isDark?"text-gray-300 text-xs":"text-gray-800 text-xs"}`}>Tests</div>
                 </div>
               </div>
 
               {/* Total Students/Views */}
               <div className="flex items-center gap-3">
-                <div className="w-7 h-7 bg-purple-500/20 rounded-xl flex items-center justify-center border border-purple-400/30">
-                  <FiUsers className="text-purple-300 w-7 h-7" />
+                <div className="w-8 h-8 bg-purple-500 bg-opacity-20 rounded-lg flex items-center justify-center">
+                  <FiUsers className="text-white w-4 h-4" />
                 </div>
                 <div>
-                  <div className="text-white font-bold text-xs">
+                  <div className={`${isDark?"text-gray-300 font-bold text-xs":"text-gray-800 font-bold text-xs"}`}>
                     {series.totalSubscribers || 0}
                   </div>
-                  <div className="text-gray-300 text-xs font-medium">
+                  <div className={`${isDark?"text-gray-300 text-xs":"text-gray-800 text-xs"}`}>
                     Students
                   </div>
                 </div>

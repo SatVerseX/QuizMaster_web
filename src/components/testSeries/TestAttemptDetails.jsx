@@ -238,7 +238,7 @@ const TestAttemptDetails = ({
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button 
               onClick={onBack} 
-              className={`px-6 py-3 rounded-lg border transition-colors flex items-center gap-2 ${
+              className={`px-6 py-3 rounded-lg border transition-colors flex items-center justify-center gap-2 ${
                 isDark
                   ? "border-gray-600 bg-gray-800 text-gray-300 hover:bg-gray-700"
                   : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
@@ -252,7 +252,7 @@ const TestAttemptDetails = ({
                 setError(null);
                 loadTestDetails();
               }}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2"
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
             >
               <FiRefreshCw className="w-5 h-5" />
               Retry
@@ -453,7 +453,7 @@ const TestAttemptDetails = ({
         <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center items-center">
           <button
             onClick={onBack}
-            className={`group border rounded-xl px-6 py-3 font-semibold transition-all duration-200 flex items-center gap-3 hover:scale-105 w-full sm:w-auto ${
+            className={`group border rounded-xl px-6 py-3 font-semibold transition-all duration-200 flex items-center justify-center gap-3 hover:scale-105 w-full sm:w-auto ${
               isDark
                 ? "border-gray-600 bg-gray-800 text-gray-300 hover:bg-gray-700 hover:border-gray-500"
                 : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-400 shadow-sm hover:shadow-md"
@@ -465,7 +465,7 @@ const TestAttemptDetails = ({
 
           <button
             onClick={handleRetakeTest}
-            className="group bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl px-6 py-3 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl w-full sm:w-auto"
+            className="group bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl px-6 py-3 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl w-full sm:w-auto justify-center items-center"
           >
             <div className="flex items-center justify-center gap-3">
               <FiRefreshCw className="w-5 h-5 transition-transform group-hover:rotate-180" />

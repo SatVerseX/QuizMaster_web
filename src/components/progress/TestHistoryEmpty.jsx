@@ -7,28 +7,28 @@ const TestHistoryEmpty = ({ searchTerm, filter, setSearchTerm, setFilter }) => {
   const { isDark } = useTheme();
 
   return (
-    <div className="text-center py-12 sm:py-16">
-      <div className="relative mb-6">
-        <div className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center mx-auto mb-4 border ${
-          isDark ? 'bg-gray-800 border-gray-700' : 'bg-gray-100 border-gray-300'
+    <div className="text-center py-8">
+      <div className="mb-4">
+        <div className={`w-16 h-16 rounded flex items-center justify-center mx-auto mb-3 border ${
+          isDark ? 'bg-gray-800 border-gray-700' : 'bg-gray-100 border-gray-200'
         }`}>
-          <FaGraduationCap className={`w-10 h-10 sm:w-12 sm:h-12 ${
+          <FaGraduationCap className={`w-8 h-8 ${
             isDark ? 'text-gray-400' : 'text-gray-500'
           }`} />
         </div>
-        <div className={`absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center ${
+        <div className={`w-5 h-5 rounded flex items-center justify-center mx-auto ${
           isDark ? 'bg-yellow-500' : 'bg-yellow-400'
         }`}>
           <FiStar className="w-3 h-3 text-white" />
         </div>
       </div>
 
-      <h3 className={`text-2xl font-bold mb-3 ${
+      <h3 className={`text-xl font-medium mb-2 ${
         isDark ? 'text-white' : 'text-gray-900'
       }`}>
         {searchTerm || filter !== 'all' ? 'No Matching Results' : 'Ready to Start Testing?'}
       </h3>
-      <p className={`text-base max-w-2xl mx-auto px-4 ${
+      <p className={`text-sm max-w-lg mx-auto px-4 ${
         isDark ? 'text-gray-400' : 'text-gray-600'
       }`}>
         {searchTerm || filter !== 'all'
@@ -38,13 +38,13 @@ const TestHistoryEmpty = ({ searchTerm, filter, setSearchTerm, setFilter }) => {
       </p>
 
       {(searchTerm || filter !== 'all') && (
-        <div className="mt-6">
+        <div className="mt-4">
           <button
             onClick={() => {
               setSearchTerm('');
               setFilter('all');
             }}
-            className={`font-bold rounded-lg px-6 py-3 ${
+            className={`font-medium rounded px-4 py-2 ${
               isDark 
                 ? 'bg-blue-600 hover:bg-blue-700 text-white'
                 : 'bg-blue-600 hover:bg-blue-700 text-white'
