@@ -220,22 +220,7 @@ const TestSeriesTestsList = ({
       <div className="max-w-6xl mx-auto p-4">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-6">
-          <button
-            onClick={onBack}
-            className={`hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg border text-sm ${
-              isDark
-                ? "bg-gray-800 border-gray-700 text-gray-300 hover:text-white hover:bg-gray-700"
-                : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
-            }`}
-          >
-            <FiArrowLeft className="w-4 h-4" />
-            Back to Series
-          </button>
-
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-blue-600">
-              <FaGraduationCap className="w-5 h-5 text-white" />
-            </div>
             <div>
               <h1
                 className={`text-xl sm:text-2xl font-bold ${
@@ -244,7 +229,11 @@ const TestSeriesTestsList = ({
               >
                 {testSeries.title}
               </h1>
-              <p className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+              <p
+                className={`text-sm ${
+                  isDark ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
                 All Available Tests • {tests.length} Tests
               </p>
             </div>
@@ -521,10 +510,10 @@ const TestSeriesTestsList = ({
                           onClick={() =>
                             onViewLeaderboard && onViewLeaderboard(test)
                           }
-                          className={`px-4 py-2 border rounded-lg font-bold flex items-center justify-center gap-2 ${
+                          className={`px-4 py-2  rounded-lg font-bold flex items-center justify-center gap-2 ${
                             isDark
-                              ? "border-white text-white hover:cursor-pointer"
-                              : "border-blue-300 text-blue-600 hover:cursor-pointer"  
+                              ? "bg-gradient-to-r from-orange-600 to-pink-600 text-white hover:cursor-pointer"
+                              : "bg-gradient-to-r from-orange-600 to-pink-600 text-white hover:cursor-pointer"
                           }`}
                         >
                           <FiTrendingUp className="w-4 h-4" />

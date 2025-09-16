@@ -145,7 +145,7 @@ const Header = ({
                 title="Create Test Series"
                 aria-label="Create Test Series"
               >
-                <div className="relative">
+                <div className="relative flex items-center justify-center">
                   <FiPlus className="w-4 h-4 transition duration-200 group-hover:scale-105" />
                   <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-indigo-500 rounded-full opacity-0 group-hover:opacity-20 blur-sm transition-opacity duration-200"></div>
                 </div>
@@ -162,7 +162,7 @@ const Header = ({
               }`}
               title={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
             >
-              <div className="relative">
+              <div className="relative flex items-center justify-center">
                 {theme === "dark" ? (
                   <FiSun className="w-4 h-4 transition duration-200 group-hover:scale-105 group-hover:text-yellow-500" />
                 ) : (
@@ -181,7 +181,7 @@ const Header = ({
               onClick={toggleMenu}
               aria-label="Toggle menu"
             >
-              <div className="relative">
+              <div className="relative flex items-center justify-center">
                 <FiMenu className="w-4 h-4 transition-transform group-hover:scale-105" />
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full opacity-0 group-hover:opacity-20 blur-sm transition-opacity duration-200"></div>
               </div>
