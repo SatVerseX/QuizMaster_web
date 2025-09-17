@@ -17,32 +17,56 @@ const ShareModal = ({ attempt, onClose }) => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Returns motivational message based on score percentage
+  // Returns motivational message based on score percentage (with emoji for non-WhatsApp)
   const getScoreMessage = (percentage) => {
-    if (percentage >= 90) return { text: 'Outstanding Performance! 🌟' };
+    if (percentage >= 90) return { text: 'Outstanding Performance! 🏆' };
     if (percentage >= 80) return { text: 'Excellent Work! 🎉' };
     if (percentage >= 70) return { text: 'Good Performance! 👏' };
     if (percentage >= 60) return { text: 'Fair Performance 📈' };
     return { text: 'Keep Practicing! 💪' };
   };
 
+  // Emoji-free text for WhatsApp
+  const getScoreMessagePlain = (percentage) => {
+    if (percentage >= 90) return { text: 'Outstanding Performance!' };
+    if (percentage >= 80) return { text: 'Excellent Work!' };
+    if (percentage >= 70) return { text: 'Good Performance!' };
+    if (percentage >= 60) return { text: 'Fair Performance' };
+    return { text: 'Keep Practicing!' };
+  };
+
   // Opens social media sharing dialog for selected platform
   const shareToSocial = (platform) => {
     const scoreMessage = getScoreMessage(attempt.percentage);
+    const scoreMessagePlain = getScoreMessagePlain(attempt.percentage);
     const shareUrl = 'https://quiz-master-go.vercel.app/';
+
+    // WhatsApp: ***NO EMOJIS AT ALL***
+    const whatsappText = `Just completed "${attempt.testTitle}" and scored ${attempt.percentage}%! ${scoreMessagePlain.text}
+
+Performance:
+${attempt.score}/${attempt.totalQuestions} correct answers
+Completed in ${formatTime(attempt.timeSpent)}
+Difficulty: ${attempt.difficulty}
+
+#TestSeries #LearningProgress #QuizMaster
+
+Try it -> ${shareUrl}`;
+
+    // All others: Emojis allowed
     const shareText = `🎯 Just completed "${attempt.testTitle}" and scored ${attempt.percentage}%! ${scoreMessage.text}
 
 📊 Performance:
 ✅ ${attempt.score}/${attempt.totalQuestions} correct answers
-⏱️ Completed in ${formatTime(attempt.timeSpent)}
-🎓 Difficulty: ${attempt.difficulty}
+⏳ Completed in ${formatTime(attempt.timeSpent)}
+🎯 Difficulty: ${attempt.difficulty}
 
 #TestSeries #LearningProgress #QuizMaster
 
 Try it -> ${shareUrl}`;
 
     const platformUrls = {
-      whatsapp: `https://wa.me/?text=${encodeURIComponent(shareText)}`,
+      whatsapp: `https://wa.me/?text=${encodeURIComponent(whatsappText)}`,
       twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`,
       linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}&summary=${encodeURIComponent(shareText)}`,
       facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`
@@ -53,15 +77,15 @@ Try it -> ${shareUrl}`;
     }
   };
 
-  // Copies formatted results to clipboard with success feedback
+  // Copies formatted results to clipboard with success feedback (with emoji)
   const copyToClipboard = async () => {
     const scoreMessage = getScoreMessage(attempt.percentage);
     const shareUrl = 'https://quiz-master-go.vercel.app/';
     const shareText = `🎯 Test Results: "${attempt.testTitle}"
 
 📊 Score: ${attempt.percentage}% (${attempt.score}/${attempt.totalQuestions} correct)
-⏱️ Time: ${formatTime(attempt.timeSpent)}
-🎓 Difficulty: ${attempt.difficulty}
+⏳ Time: ${formatTime(attempt.timeSpent)}
+🎯 Difficulty: ${attempt.difficulty}
 
 #TestSeries #LearningProgress #QuizMaster
 

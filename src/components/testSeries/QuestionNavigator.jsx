@@ -87,51 +87,71 @@ const QuestionNavigator = ({ questionAnalysis, attempt }) => {
     };
   };
 
-  // Call Gemini 2.5 Flash API for detailed explanation
+  // Call Gemini 2.5 Flash API for detailed explanation with optimizations
   const getGeminiExplanation = async (questionData) => {
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
-      const prompt = `
-You are an expert AI tutor provide to the point explanation for the question.
-
-**Question Analysis:**
-- Question: "${questionData.question}"
-- Topic: ${questionData.topic}
-- Student's Answer: Option ${
-        questionData.userAnswer !== undefined
-          ? String.fromCharCode(65 + questionData.userAnswer)
-          : "Not answered"
+      // Check for cached explanation first
+      const cacheKey = `ai-explanation-${questionData.question.substring(0, 50)}-${questionData.correctAnswer}`;
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        const cachedData = JSON.parse(cached);
+        // Cache valid for 24 hours
+        if (Date.now() - cachedData.timestamp < 24 * 60 * 60 * 1000) {
+          return cachedData.explanation;
+        }
       }
-- Correct Answer: Option ${String.fromCharCode(
-        65 + questionData.correctAnswer
-      )}
-- Result: ${questionData.isCorrect ? "Correct ✅" : "Incorrect ❌"}
 
-**Options:**
-${questionData.options
-  .map((option, index) => `${String.fromCharCode(65 + index)}) ${option}`)
-  .join("\n")}
+      const model = genAI.getGenerativeModel({ 
+        model: "gemini-2.5-flash",
+        generationConfig: {
+          temperature: 0.3, // Lower temperature for more consistent, faster responses
+          maxOutputTokens: 300, // Limit response length for faster generation
+          topP: 0.8,
+          topK: 20
+        }
+      });
 
-Current Explanation: ${questionData.explanation}
+      // Optimized, concise prompt
+      const prompt = `Explain this question concisely:
 
-Task: Provide a concise, well-structured explanation that helps the student understand:
+Q: ${questionData.question}
+Correct: ${String.fromCharCode(65 + questionData.correctAnswer)}
+Student: ${questionData.userAnswer !== undefined ? String.fromCharCode(65 + questionData.userAnswer) : "Not answered"}
 
-📚 Detailed Explanation
-[Why the correct answer is right]
+Options:
+${questionData.options.map((opt, i) => `${String.fromCharCode(65 + i)}) ${opt}`).join('\n')}
 
-❌ Why Other Options Are Wrong
-[Brief analysis of incorrect options]
+Provide:
+1. Why correct answer is right
+2. Why others are wrong  
+3. Key concept to remember
 
-🔑 Key Concepts
-[Important concepts/facts to remember]
+Keep under 150 words.`;
 
-Keep it educational and well-organized. Use short paragraphs and bullet points for easy reading. Limit response to ~200 words.
-`;
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 15000)
+      );
 
-      const result = await model.generateContent(prompt);
+      const result = await Promise.race([
+        model.generateContent(prompt),
+        timeoutPromise
+      ]);
+
       const response = await result.response;
-      return response.text();
+      const explanation = response.text();
+
+      // Cache the explanation
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify({
+          explanation,
+          timestamp: Date.now()
+        }));
+      } catch (e) {
+        console.warn('Failed to cache explanation:', e);
+      }
+
+      return explanation;
     } catch (error) {
       console.error("Gemini API Error:", error);
       throw new Error("Failed to get AI explanation. Please try again.");

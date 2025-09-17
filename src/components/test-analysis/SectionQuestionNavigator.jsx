@@ -17,7 +17,7 @@ const SectionQuestionNavigator = ({ section, onClose }) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showExplanation, setShowExplanation] = useState(false);
   const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
-  const [explanations, setExplanations] = useState("");
+  const [explanations, setExplanations] = useState({});
 
   const currentQuestion = section.questions[currentQuestionIndex];
 
@@ -58,64 +58,51 @@ const SectionQuestionNavigator = ({ section, onClose }) => {
     setShowExplanation(false);
   };
 
-  const generateQuestionAnalysis = () => {
+  // Optimized: Simpler data structure for API call
+  const generateQuestionData = () => {
+    const userAns = currentQuestion.userAnswer;
+    const correctAns = currentQuestion.correctAnswer;
+    
     return {
-      question: currentQuestion.question,
-      topic: currentQuestion.topic || "General Knowledge",
-      userAnswer: currentQuestion.userAnswer,
-      correctAnswer: currentQuestion.correctAnswer,
-      isCorrect: currentQuestion.userAnswer === currentQuestion.correctAnswer,
-      options: currentQuestion.options || [],
-      explanation: currentQuestion.explanation || "No explanation provided",
+      q: currentQuestion.question,
+      opts: currentQuestion.options || [],
+      user: userAns !== undefined ? userAns : -1,
+      correct: correctAns,
+      isRight: userAns === correctAns,
+      exp: currentQuestion.explanation || ""
     };
   };
 
-  // Call Gemini 2.5 Flash API for detailed explanation
-  const getGeminiExplanation = async (questionData) => {
+  // Optimized: Much shorter, focused prompt
+  const getGeminiExplanation = async (data) => {
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-      const prompt = `
-You are an expert AI tutor provide to the point explanation for the question.
+      const model = genAI.getGenerativeModel({ 
+        model: "gemini-1.5-flash", // Using lighter model for faster response
+        generationConfig: {
+          maxOutputTokens: 300, // Limit response length
+          temperature: 0.1, // More focused responses
+        }
+      });
 
-**Question Analysis:**
-- Question: "${questionData.question}"
-- Topic: ${questionData.topic}
-- Student's Answer: Option ${
-        questionData.userAnswer !== undefined
-          ? String.fromCharCode(65 + questionData.userAnswer)
-          : "Not answered"
-      }
-- Correct Answer: Option ${String.fromCharCode(
-        65 + questionData.correctAnswer
-      )}
-- Result: ${questionData.isCorrect ? "Correct ✅" : "Incorrect ❌"}
+      // Optimized: Concise prompt
+      const prompt = `Question: ${data.q}
 
-**Options:**
-${questionData.options
-  .map((option, index) => `${String.fromCharCode(65 + index)}) ${option}`)
-  .join("\n")}
+Options: ${data.opts.map((opt, i) => `${String.fromCharCode(65 + i)}) ${opt}`).join(' | ')}
 
-Current Explanation: ${questionData.explanation}
+Student chose: ${data.user >= 0 ? String.fromCharCode(65 + data.user) : 'No answer'}
+Correct: ${String.fromCharCode(65 + data.correct)}
+Result: ${data.isRight ? 'Correct ✅' : 'Wrong ❌'}
 
-Task: Provide a concise, well-structured explanation that helps the student understand:
-
-📚 Detailed Explanation
-[Why the correct answer is right]
-
-❌ Why Other Options Are Wrong
-[Brief analysis of incorrect options]
-
-🔑 Key Concepts
-[Important concepts/facts to remember]
-
-Use short paragraphs and bullet points for easy reading. Limit the response to ~180-220 words.`;
+Provide brief explanation (150 words max):
+📚 Why correct answer is right
+❌ Why wrong options fail  
+🔑 Key concept to remember`;
 
       const result = await model.generateContent(prompt);
-      const response = await result.response;
-      return response.text();
+      return result.response.text();
     } catch (error) {
-      console.error("Gemini API Error:", error);
-      throw new Error("Failed to get AI explanation. Please try again.");
+      console.error("API Error:", error);
+      throw new Error("AI explanation failed");
     }
   };
 
@@ -124,18 +111,49 @@ Use short paragraphs and bullet points for easy reading. Limit the response to ~
       setShowExplanation(false);
       return;
     }
+
+    const questionId = `${section.name}-${currentQuestionIndex}`;
+    
+    // Check cache first
+    if (explanations[questionId]) {
+      setShowExplanation(true);
+      return;
+    }
+
     setShowExplanation(true);
     setIsLoadingExplanation(true);
+
     try {
-      const questionData = generateQuestionAnalysis();
-      const geminiExplanation = await getGeminiExplanation(questionData);
-      setExplanations(geminiExplanation || "");
-    } catch (error) {
-      setExplanations(
-        `Unable to fetch AI explanation right now.\n\nQuick Review:\n• Correct answer: ${String.fromCharCode(
-          65 + currentQuestion.correctAnswer
-        )}\n• Review the standard explanation below\n• Revisit key concepts and practice similar questions`
+      const questionData = generateQuestionData();
+      
+      // Add timeout for faster failure
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout')), 10000)
       );
+      
+      const explanationPromise = getGeminiExplanation(questionData);
+      
+      const aiExplanation = await Promise.race([explanationPromise, timeoutPromise]);
+      
+      // Cache the result
+      setExplanations(prev => ({
+        ...prev,
+        [questionId]: aiExplanation
+      }));
+      
+    } catch (error) {
+      const fallback = `Quick Review:
+📚 Correct Answer: ${String.fromCharCode(65 + currentQuestion.correctAnswer)}
+❌ Your Answer: ${currentQuestion.userAnswer !== undefined ? String.fromCharCode(65 + currentQuestion.userAnswer) : 'Not answered'}
+
+${currentQuestion.explanation || 'Review the standard explanation and key concepts for this topic.'}
+
+🔑 Practice similar questions to strengthen understanding.`;
+      
+      setExplanations(prev => ({
+        ...prev,
+        [questionId]: fallback
+      }));
     } finally {
       setIsLoadingExplanation(false);
     }
@@ -163,9 +181,11 @@ Use short paragraphs and bullet points for easy reading. Limit the response to ~
     );
   }
 
+  const questionId = `${section.name}-${currentQuestionIndex}`;
+
   return (
     <>
-      {/* Main card */}
+      {/* Main card - keeping all existing UI exactly the same */}
       <div className="transition-all duration-200">
         <div
           className={`border rounded-xl shadow-sm overflow-hidden max-w-2xl mx-auto ${
@@ -271,7 +291,7 @@ Use short paragraphs and bullet points for easy reading. Limit the response to ~
             </div>
           </div>
 
-          {/* Body */}
+          {/* Body - keeping all existing UI exactly the same */}
           <div className="p-4">
             {/* Question */}
             <div
@@ -346,7 +366,7 @@ Use short paragraphs and bullet points for easy reading. Limit the response to ~
               </div>
             </div>
 
-            {/* Options */}
+            {/* Options - keeping all existing UI exactly the same */}
             <div className="grid grid-cols-1 gap-3 mb-5">
               {currentQuestion.options?.map((option, optionIndex) => {
                 const isCorrect = optionIndex === currentQuestion.correctAnswer;
@@ -490,7 +510,7 @@ Use short paragraphs and bullet points for easy reading. Limit the response to ~
         </div>
       </div>
 
-      {/* AI Explanation Modal - Improved Dark Theme */}
+      {/* AI Explanation Modal - keeping all existing UI exactly the same */}
       {showExplanation && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
@@ -513,7 +533,6 @@ Use short paragraphs and bullet points for easy reading. Limit the response to ~
               }`}
             >
               <div className="flex items-center gap-3">
-                
                 <div>
                   <h6 className={`font-bold text-lg ${
                     isDark ? "text-gray-100" : "text-gray-800"
@@ -549,19 +568,19 @@ Use short paragraphs and bullet points for easy reading. Limit the response to ~
                   <p className={`mt-4 text-base font-medium ${
                     isDark ? "text-gray-300" : "text-gray-700"
                   }`}>
-                    Generating detailed explanation...
+                    Generating explanation...
                   </p>
                   <p className={`mt-2 text-sm ${
                     isDark ? "text-gray-500" : "text-gray-500"
                   }`}>
-                    Please wait while AI analyzes the question
+                    This should be quick!
                   </p>
                 </div>
               ) : (
                 <div className={`text-base leading-relaxed whitespace-pre-wrap ${
                   isDark ? "text-gray-200" : "text-gray-800"
                 }`}>
-                  {explanations}
+                  {explanations[questionId]}
                 </div>
               )}
             </div>
@@ -586,7 +605,6 @@ Use short paragraphs and bullet points for easy reading. Limit the response to ~
                 >
                   <span className="font-bold text-xs">AI</span>
                 </div>
-                
               </div>
             </div>
           </div>

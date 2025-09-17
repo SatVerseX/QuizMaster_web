@@ -1354,7 +1354,7 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
                       <img
                         src={currentQuestion.image}
                         alt="Question illustration"
-                        className="w-full h-auto object-contain bg-gray-50 dark:bg-gray-800"
+                        className="w-auto h-auto object-contain bg-gray-50 dark:bg-gray-800"
                         onError={(e) => {
                           e.target.style.display = 'none';
                           e.target.nextSibling.style.display = 'flex';
@@ -1438,7 +1438,7 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
                                     <img
                                       src={currentQuestion.optionImages[index]}
                                       alt={`Option ${String.fromCharCode(65 + index)} illustration`}
-                                      className="w-full h-auto object-contain bg-gray-50 dark:bg-gray-800"
+                                      className="w-auto h-auto object-contain bg-gray-50 dark:bg-gray-800"
                                       style={{
                                         maxHeight: '200px',
                                         objectFit: 'contain'

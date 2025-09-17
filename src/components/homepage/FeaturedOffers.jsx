@@ -301,7 +301,7 @@ const FeaturedOffers = ({
     <section
       className={`py-4 sm:py-8 ${isDark ? "bg-gray-900/50" : "bg-white/50"}`}
     >
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 ">
         <div className="text-center mb-4 sm:mb-6">
           <div className="flex items-center justify-center gap-2 mb-2">
             <FaFire className="text-orange-500 text-lg sm:text-xl" />
@@ -336,7 +336,7 @@ const FeaturedOffers = ({
               }`}
             >
               {/* Image Container with Click Feedback */}
-              <div className="relative h-[280px] sm:h-[400px] lg:h-[500px]">
+              <div className="relative h-[280px] sm:h-[400px] lg:h-[565px] ">
                 {currentOfferData.image ? (
                   <img
                     src={currentOfferData.image}
@@ -376,12 +376,7 @@ const FeaturedOffers = ({
                   </div>
                 </div>
 
-                {/* Enhanced Dark Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60 sm:bg-black/20"></div>
-
-                {/* Click Indication Overlay */}
-                <div className="absolute inset-0 bg-white/0 hover:bg-white/5 transition-colors duration-300 pointer-events-none"></div>
-
+               
                 {/* Top Bar */}
                 <div className="absolute top-3 left-3 right-3 sm:top-6 sm:left-6 sm:right-6 flex justify-between items-start z-20">
                   {/* Badge */}
