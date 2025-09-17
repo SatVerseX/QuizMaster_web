@@ -13,7 +13,6 @@ import {
   FiShield,
 } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
-import { FaPuzzlePiece } from "react-icons/fa";
 
 const AuthForm = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -33,7 +32,6 @@ const AuthForm = () => {
   const { isDark } = useTheme();
   const navigate = useNavigate();
 
-  // Animation effect on mount and form toggle
   useEffect(() => {
     setAnimateForm(true);
     const timer = setTimeout(() => setAnimateForm(false), 600);
@@ -51,7 +49,6 @@ const AuthForm = () => {
     e.preventDefault();
     setLoading(true);
     setError("");
-
     try {
       if (isLogin) {
         await login(formData.email, formData.password);
@@ -80,7 +77,6 @@ const AuthForm = () => {
       navigate("/homepage");
     } catch (error) {
       let errorMessage = "Failed to sign in with Google";
-
       if (error.code === "auth/popup-closed-by-user") {
         errorMessage = "Sign in was cancelled";
       } else if (error.code === "auth/popup-blocked") {
@@ -89,7 +85,6 @@ const AuthForm = () => {
       } else if (error.code === "auth/cancelled-popup-request") {
         errorMessage = "Sign in was cancelled";
       }
-
       setError(errorMessage);
     } finally {
       setGoogleLoading(false);
@@ -98,109 +93,66 @@ const AuthForm = () => {
 
   return (
     <div
-      className={`min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 relative overflow-hidden transition-all duration-500 ${
+      className={`min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 relative ${
         isDark ? "bg-slate-900" : "bg-white"
       }`}
     >
-      {/* Background Effects matching the theme */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Subtle background gradients */}
-        <div
-          className={`absolute -top-20 -right-20 w-96 h-96 rounded-full blur-3xl transition-all duration-500 ${
-            isDark
-              ? "bg-gradient-to-br from-blue-600/20 to-indigo-700/20"
-              : "bg-gradient-to-br from-blue-400/8 to-indigo-400/6"
-          }`}
-        ></div>
-        <div
-          className={`absolute -bottom-32 -left-32 w-96 h-96 rounded-full blur-3xl transition-all duration-500 ${
-            isDark
-              ? "bg-gradient-to-tr from-slate-800/30 to-slate-700/30"
-              : "bg-gradient-to-tr from-slate-200/20 to-slate-300/20"
-          }`}
-        ></div>
-        <div
-          className={`absolute top-1/3 left-1/3 w-64 h-64 rounded-full blur-3xl transition-all duration-500 ${
-            isDark
-              ? "bg-gradient-to-tr from-orange-500/10 to-red-500/10"
-              : "bg-gradient-to-tr from-orange-400/8 to-red-400/8"
-          }`}
-        ></div>
-
-        {/* Grid pattern overlay */}
-        <div
-          className={`absolute inset-0 transition-all duration-500 ${
-            isDark
-              ? "bg-[linear-gradient(rgba(30,41,59,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(30,41,59,0.1)_1px,transparent_1px)] bg-[size:20px_20px]"
-              : "bg-[linear-gradient(rgba(148,163,184,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.1)_1px,transparent_1px)] bg-[size:20px_20px]"
-          }`}
-        ></div>
-      </div>
-
-      {/* Back to Home Button */}
+      {/* Home Button */}
       <button
         onClick={() => navigate("/homepage")}
-        className={`hidden sm:flex absolute top-6 left-6 z-20 group flex items-center gap-2 px-4 py-2 backdrop-blur-sm rounded-lg font-medium transition-all duration-300 ${
+        className={`hidden sm:flex absolute top-6 left-6 z-20 group flex items-center gap-2 px-3 py-2 rounded-lg font-medium border text-sm transition-all duration-300 ${
           isDark
-            ? "bg-slate-800/80 border border-slate-700/50 text-slate-300 hover:bg-slate-700/80 hover:text-white hover:border-slate-600"
-            : "bg-white/90 border border-slate-200/60 text-slate-700 hover:bg-slate-50 hover:border-slate-300 shadow-lg"
+            ? "bg-slate-800/90 border-slate-700 text-slate-300 hover:bg-slate-700 hover:border-slate-600"
+            : "bg-white border-slate-200 text-slate-700 hover:bg-blue-50 hover:border-blue-200"
         }`}
       >
-        <FiArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-300" />
+        <FiArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
         <span>Back to Home</span>
       </button>
 
       <div className="max-w-md w-full relative z-10">
-        {/* Logo matching the image style */}
-        <div className="flex justify-center mb-8">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              
+        {/* Logo */}
+        <div className="flex justify-center mb-7 mt-3">
+          <div className="text-center">
+            <div className="text-3xl font-bold">
+              <span className="bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent">
+                Quiz
+              </span>
+              <span className="bg-gradient-to-r from-purple-500 to-orange-500 bg-clip-text text-transparent">
+                Master
+              </span>
             </div>
-            <div className="text-left">
-              <div className="text-3xl font-bold">
-                <span
-                  className={`transition-all duration-300 bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent`}
-                >
-                  Quiz
-                </span>
-                <span className="bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
-                  Master
-                </span>
-              </div>
-              <div
-                className={`text-sm font-medium transition-all duration-300 ${
-                  isDark ? "text-white/80" : "text-slate-600"
-                }`}
-              >
-                Test Your Knowledge
-              </div>
+            <div
+              className={`text-sm font-medium ${
+                isDark ? "text-slate-300" : "text-slate-500"
+              }`}
+            >
+              Test Your Knowledge
             </div>
           </div>
         </div>
 
-        {/* Form Container matching the theme */}
+        {/* Form Container */}
         <div
-          className={`relative backdrop-blur-xl p-6 sm:p-8 shadow-2xl rounded-2xl border transition-all duration-700 transform ${
+          className={`relative p-6 sm:p-8 rounded-xl border ${
             animateForm ? "scale-105" : "scale-100"
-          } hover:scale-102 ${
-            isDark
-              ? "bg-slate-800/50 border-slate-700/50 hover:shadow-blue-500/10 hover:border-slate-600/50"
-              : "bg-white/90 border-slate-200/60 hover:shadow-slate-300/20 hover:border-slate-300"
-          }`}
+          } transition-all duration-500
+          ${isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200 shadow-md"}
+        `}
         >
-          {/* Header */}
           <div className="text-center mb-6">
             <h2
-              className={`text-3xl font-bold mb-3 transition-all duration-300 ${
-                isDark ? "text-white" : "inline-block bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent"
+              className={`text-2xl font-bold mb-2 ${
+                isDark
+                  ? "text-slate-50"
+                  : "bg-gradient-to-r from-blue-700 to-emerald-500 bg-clip-text text-transparent"
               }`}
             >
               {isLogin ? "Welcome Back!" : "Join QuizMaster"}
             </h2>
             <p
-              className={`transition-all duration-300 ${
-                isDark ? "text-slate-400" : "text-slate-600"
+              className={`${
+                isDark ? "text-slate-400" : "text-slate-500"
               }`}
             >
               {isLogin
@@ -212,20 +164,13 @@ const AuthForm = () => {
           {/* Error Message */}
           {error && (
             <div
-              className={`mb-6 p-4 border rounded-lg text-sm transition-all duration-300 ${
-                isDark
-                  ? "bg-red-500/10 border-red-500/20 text-red-300"
-                  : "bg-red-50 border-red-200 text-red-700"
+              className={`mb-5 p-3 rounded bg-red-50 text-red-700 border border-red-200 text-sm flex items-center gap-2 ${
+                isDark &&
+                "bg-red-700/10 text-red-300 border-red-500/20"
               }`}
             >
-              <div className="flex items-center gap-2">
-                <FiShield
-                  className={`w-4 h-4 ${
-                    isDark ? "text-red-400" : "text-red-500"
-                  }`}
-                />
-                <span>{error}</span>
-              </div>
+              <FiShield className="w-4 h-4" />
+              <span>{error}</span>
             </div>
           )}
 
@@ -233,22 +178,16 @@ const AuthForm = () => {
           <button
             onClick={handleGoogleSignIn}
             disabled={googleLoading || loading}
-            className={`w-full flex items-center justify-center gap-3 px-6 py-3 border rounded-lg transition-all duration-300 font-medium shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 mb-6 disabled:opacity-50 ${
+            className={`w-full flex items-center justify-center gap-3 px-5 py-2 rounded-lg border font-medium text-base transition-all duration-200 mb-5 ${
               isDark
-                ? "bg-slate-700/50 border-slate-600/50 text-white hover:bg-slate-600/50 focus:ring-blue-500/50"
-                : "bg-white border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 focus:ring-blue-500/50"
+                ? "bg-slate-700 border-slate-600 text-slate-100 hover:bg-slate-600"
+                : "bg-white border-slate-200 text-slate-700 hover:bg-blue-50"
             }`}
           >
             {googleLoading ? (
-              <div
-                className={`animate-spin rounded-full h-5 w-5 border-2 border-t-current ${
-                  isDark ? "border-white/30" : "border-slate-400"
-                }`}
-              ></div>
+              <span className="animate-spin rounded-full h-5 w-5 border-2 border-t-current border-blue-400"></span>
             ) : (
-              <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center shadow-sm">
-                <FcGoogle className="w-4 h-4" />
-              </div>
+              <FcGoogle className="w-5 h-5" />
             )}
             <span>
               {googleLoading ? "Connecting..." : "Continue with Google"}
@@ -256,25 +195,10 @@ const AuthForm = () => {
           </button>
 
           {/* Divider */}
-          <div className="relative mb-6">
-            <div
-              className={`absolute inset-0 flex items-center transition-all duration-300 ${
-                isDark ? "border-slate-600/50" : "border-slate-300"
-              }`}
-            >
-              <div className="w-full border-t"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span
-                className={`px-4 transition-all duration-300 ${
-                  isDark
-                    ? "bg-slate-800/50 text-slate-400"
-                    : "bg-white text-slate-500"
-                }`}
-              >
-                OR
-              </span>
-            </div>
+          <div className="my-4 flex items-center">
+            <div className={`flex-grow border-t ${isDark ? "border-slate-600" : "border-slate-200"}`} />
+            <span className={`mx-2 text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>OR</span>
+            <div className={`flex-grow border-t ${isDark ? "border-slate-600" : "border-slate-200"}`} />
           </div>
 
           {/* Form */}
@@ -282,9 +206,7 @@ const AuthForm = () => {
             {!isLogin && (
               <div className="relative">
                 <FiUser
-                  className={`absolute left-3 top-1/2 transform -translate-y-1/2 transition-all duration-300 ${
-                    isDark ? "text-slate-400" : "text-slate-500"
-                  }`}
+                  className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDark ? "text-slate-400" : "text-slate-400"}`}
                 />
                 <input
                   type="text"
@@ -292,10 +214,9 @@ const AuthForm = () => {
                   placeholder="Full Name"
                   value={formData.displayName}
                   onChange={handleChange}
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg placeholder-slate-400 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 ${
-                    isDark
-                      ? "bg-slate-700/30 border-slate-600/50 text-white"
-                      : "bg-white border-slate-300 text-slate-700 focus:border-blue-500"
+                  className={`w-full pl-10 pr-4 py-2 border rounded placeholder-slate-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all ${isDark
+                    ? "bg-slate-700 border-slate-600 text-white"
+                    : "bg-white border-slate-200 text-slate-800"
                   }`}
                   required={!isLogin}
                   disabled={loading || googleLoading}
@@ -305,9 +226,7 @@ const AuthForm = () => {
 
             <div className="relative">
               <FiMail
-                className={`absolute left-3 top-1/2 transform -translate-y-1/2 transition-all duration-300 ${
-                  isDark ? "text-slate-400" : "text-slate-500"
-                }`}
+                className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDark ? "text-slate-400" : "text-slate-400"}`}
               />
               <input
                 type="email"
@@ -315,10 +234,9 @@ const AuthForm = () => {
                 placeholder="Email Address"
                 value={formData.email}
                 onChange={handleChange}
-                className={`w-full pl-10 pr-4 py-3 border rounded-lg placeholder-slate-400 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 ${
-                  isDark
-                    ? "bg-slate-700/30 border-slate-600/50 text-white"
-                    : "bg-white border-slate-300 text-slate-700 focus:border-blue-500"
+                className={`w-full pl-10 pr-4 py-2 border rounded placeholder-slate-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all ${isDark
+                  ? "bg-slate-700 border-slate-600 text-white"
+                  : "bg-white border-slate-200 text-slate-800"
                 }`}
                 required
                 disabled={loading || googleLoading}
@@ -327,9 +245,7 @@ const AuthForm = () => {
 
             <div className="relative">
               <FiLock
-                className={`absolute left-3 top-1/2 transform -translate-y-1/2 transition-all duration-300 ${
-                  isDark ? "text-slate-400" : "text-slate-500"
-                }`}
+                className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDark ? "text-slate-400" : "text-slate-400"}`}
               />
               <input
                 type={showPassword ? "text" : "password"}
@@ -337,10 +253,9 @@ const AuthForm = () => {
                 placeholder="Password"
                 value={formData.password}
                 onChange={handleChange}
-                className={`w-full pl-10 pr-12 py-3 border rounded-lg placeholder-slate-400 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 ${
-                  isDark
-                    ? "bg-slate-700/30 border-slate-600/50 text-white"
-                    : "bg-white border-slate-300 text-slate-700 focus:border-blue-500"
+                className={`w-full pl-10 pr-10 py-2 border rounded placeholder-slate-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all ${isDark
+                  ? "bg-slate-700 border-slate-600 text-white"
+                  : "bg-white border-slate-200 text-slate-800"
                 }`}
                 required
                 disabled={loading || googleLoading}
@@ -348,11 +263,7 @@ const AuthForm = () => {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className={`absolute right-3 top-1/2 transform -translate-y-1/2 transition-all duration-300 ${
-                  isDark
-                    ? "text-slate-400 hover:text-white"
-                    : "text-slate-500 hover:text-slate-700"
-                }`}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
                 disabled={loading || googleLoading}
               >
                 {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
@@ -362,9 +273,7 @@ const AuthForm = () => {
             {!isLogin && (
               <div className="relative">
                 <FiLock
-                  className={`absolute left-3 top-1/2 transform -translate-y-1/2 transition-all duration-300 ${
-                    isDark ? "text-slate-400" : "text-slate-500"
-                  }`}
+                  className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDark ? "text-slate-400" : "text-slate-400"}`}
                 />
                 <input
                   type={showConfirmPassword ? "text" : "password"}
@@ -372,10 +281,9 @@ const AuthForm = () => {
                   placeholder="Confirm Password"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className={`w-full pl-10 pr-12 py-3 border rounded-lg placeholder-slate-400 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 ${
-                    isDark
-                      ? "bg-slate-700/30 border-slate-600/50 text-white"
-                      : "bg-white border-slate-300 text-slate-700 focus:border-blue-500"
+                  className={`w-full pl-10 pr-10 py-2 border rounded placeholder-slate-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all ${isDark
+                    ? "bg-slate-700 border-slate-600 text-white"
+                    : "bg-white border-slate-200 text-slate-800"
                   }`}
                   required={!isLogin}
                   disabled={loading || googleLoading}
@@ -383,11 +291,7 @@ const AuthForm = () => {
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className={`absolute right-3 top-1/2 transform -translate-y-1/2 transition-all duration-300 ${
-                    isDark
-                      ? "text-slate-400 hover:text-white"
-                      : "text-slate-500 hover:text-slate-700"
-                  }`}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
                   disabled={loading || googleLoading}
                 >
                   {showConfirmPassword ? (
@@ -399,35 +303,28 @@ const AuthForm = () => {
               </div>
             )}
 
-            {/* Submit Button matching the green "Next" button style from image */}
             <button
               type="submit"
               disabled={loading || googleLoading}
-              className="w-full flex items-center justify-center gap-2 font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:transform-none mt-6 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white"
+              className="w-full flex items-center justify-center gap-2 py-2 rounded-lg font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-all disabled:opacity-70 mt-3"
             >
               {loading ? (
                 <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white/30 border-t-white"></div>
-                  <span>
-                    {isLogin ? "Signing In..." : "Creating Account..."}
-                  </span>
+                  <span className="animate-spin rounded-full h-5 w-5 border-2 border-white/30 border-t-white" />
+                  <span>{isLogin ? "Signing In..." : "Creating Account..."}</span>
                 </>
               ) : (
                 <>
-                  <span>{isLogin ? "Sign In" : "Create Account"}</span>
+                  {isLogin ? "Sign In" : "Create Account"}
                   <FiChevronRight className="w-5 h-5" />
                 </>
               )}
             </button>
           </form>
 
-          {/* Toggle form */}
+          {/* Toggle Form */}
           <div className="mt-6 text-center">
-            <p
-              className={`transition-all duration-300 ${
-                isDark ? "text-slate-400" : "text-slate-600"
-              }`}
-            >
+            <p className={`${isDark ? "text-slate-400" : "text-slate-500"}`}>
               {isLogin ? "Don't have an account?" : "Already have an account?"}
               <button
                 type="button"
@@ -442,7 +339,7 @@ const AuthForm = () => {
                     confirmPassword: "",
                   });
                 }}
-                className="ml-2 font-medium text-blue-400 hover:text-blue-300 transition-colors duration-200 focus:outline-none"
+                className="ml-2 font-medium text-blue-600 hover:text-blue-500 transition-colors"
                 disabled={loading || googleLoading}
               >
                 {isLogin ? "Sign up now" : "Log in"}
@@ -451,36 +348,33 @@ const AuthForm = () => {
           </div>
         </div>
 
-        {/* Feature badges matching the theme */}
-        <div className="flex flex-wrap justify-center gap-3 mt-6">
+        {/* Features */}
+        <div className="flex flex-wrap justify-center gap-2 mt-6">
           <div
-            className={`backdrop-blur-sm px-4 py-2 rounded-full border text-sm flex items-center gap-2 transition-all duration-300 ${
-              isDark
-                ? "bg-slate-800/30 border-slate-700/50 text-slate-300"
-                : "bg-white/80 border-slate-200/60 text-slate-700 shadow-sm"
-            }`}
+            className={`px-3 py-1 rounded-full text-xs flex items-center gap-2 border ${isDark
+                ? "bg-slate-800 border-slate-600 text-slate-300"
+                : "bg-blue-50 border-blue-100 text-blue-500"
+              }`}
           >
-            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-            AI-Powered Quizzes
+            <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+            AI Quizzes
           </div>
           <div
-            className={`backdrop-blur-sm px-4 py-2 rounded-full border text-sm flex items-center gap-2 transition-all duration-300 ${
-              isDark
-                ? "bg-slate-800/30 border-slate-700/50 text-slate-300"
-                : "bg-white/80 border-slate-200/60 text-slate-700 shadow-sm"
-            }`}
+            className={`px-3 py-1 rounded-full text-xs flex items-center gap-2 border ${isDark
+                ? "bg-slate-800 border-slate-600 text-slate-300"
+                : "bg-green-50 border-green-100 text-green-500"
+              }`}
           >
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            Real-time Leaderboards
+            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+            Leaderboards
           </div>
           <div
-            className={`backdrop-blur-sm px-4 py-2 rounded-full border text-sm flex items-center gap-2 transition-all duration-300 ${
-              isDark
-                ? "bg-slate-800/30 border-slate-700/50 text-slate-300"
-                : "bg-white/80 border-slate-200/60 text-slate-700 shadow-sm"
-            }`}
+            className={`px-3 py-1 rounded-full text-xs flex items-center gap-2 border ${isDark
+                ? "bg-slate-800 border-slate-600 text-slate-300"
+                : "bg-orange-50 border-orange-100 text-orange-500"
+              }`}
           >
-            <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+            <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
             Progress Tracking
           </div>
         </div>
