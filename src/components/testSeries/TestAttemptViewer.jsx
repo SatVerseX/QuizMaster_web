@@ -1350,7 +1350,7 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
                 {/* Question Image */}
                 {currentQuestion.image && (
                   <div className="mb-4 sm:mb-5 sm:mr-130 sm:ml-1">
-                    <div className="relative rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700 max-w-md mx-auto">
+                    <div className="relative rounded-xl overflow-hidden  max-w-md mx-auto">
                       <img
                         src={currentQuestion.image}
                         alt="Question illustration"
@@ -1392,7 +1392,7 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
                           e.preventDefault(); // Prevent default radio behavior
                           handleAnswerSelect(index);
                         }}
-                        className={`group flex items-start sm:items-center p-3 sm:p-4 rounded-md sm:rounded-lg border-2 cursor-pointer transition-all duration-300 hover:scale-[1.01] ${
+                        className={`group flex items-start sm:items-center p-3 sm:p-4 rounded-md sm:rounded-lg border-2 cursor-pointer transition-all duration-300  ${
                           isSelected
                             ? 'border-blue-500/60 bg-gradient-to-r from-blue-500/20 to-purple-500/20 shadow-lg shadow-blue-500/25'
                             : (isDark 
@@ -1434,11 +1434,11 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
                               {/* Option Image */}
                               {currentQuestion.optionImages && currentQuestion.optionImages[index] && (
                                 <div className="mt-3">
-                                  <div className="relative rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600 max-w-sm">
+                                  <div className="relative w-auto h-auto rounded-lg overflow-hidden  dark:border-gray-600 max-w-sm">
                                     <img
                                       src={currentQuestion.optionImages[index]}
                                       alt={`Option ${String.fromCharCode(65 + index)} illustration`}
-                                      className="w-auto h-auto object-contain bg-gray-50 dark:bg-gray-800"
+                                      className="w-auto h-auto object-contain bg-gray-50 dark:bg-gray-800 "
                                       style={{
                                         maxHeight: '200px',
                                         objectFit: 'contain'
