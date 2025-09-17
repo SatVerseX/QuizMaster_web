@@ -97,28 +97,15 @@ const AuthForm = () => {
         isDark ? "bg-slate-900" : "bg-white"
       }`}
     >
-      {/* Home Button */}
-      <button
-        onClick={() => navigate("/homepage")}
-        className={`hidden sm:flex absolute top-6 left-6 z-20 group flex items-center gap-2 px-3 py-2 rounded-lg font-medium border text-sm transition-all duration-300 ${
-          isDark
-            ? "bg-slate-800/90 border-slate-700 text-slate-300 hover:bg-slate-700 hover:border-slate-600"
-            : "bg-white border-slate-200 text-slate-700 hover:bg-blue-50 hover:border-blue-200"
-        }`}
-      >
-        <FiArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-        <span>Back to Home</span>
-      </button>
-
       <div className="max-w-md w-full relative z-10">
         {/* Logo */}
         <div className="flex justify-center mb-7 mt-3">
           <div className="text-center">
             <div className="text-3xl font-bold">
-              <span className="bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-red-500 to-yellow-500">
                 Quiz
               </span>
-              <span className="bg-gradient-to-r from-purple-500 to-orange-500 bg-clip-text text-transparent">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-red-500 to-yellow-500">
                 Master
               </span>
             </div>
@@ -137,24 +124,15 @@ const AuthForm = () => {
           className={`relative p-6 sm:p-8 rounded-xl border ${
             animateForm ? "scale-105" : "scale-100"
           } transition-all duration-500
-          ${isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200 shadow-md"}
+          ${
+            isDark
+              ? "bg-slate-800 border-slate-700"
+              : "bg-white border-slate-200 shadow-md"
+          }
         `}
         >
           <div className="text-center mb-6">
-            <h2
-              className={`text-2xl font-bold mb-2 ${
-                isDark
-                  ? "text-slate-50"
-                  : "bg-gradient-to-r from-blue-700 to-emerald-500 bg-clip-text text-transparent"
-              }`}
-            >
-              {isLogin ? "Welcome Back!" : "Join QuizMaster"}
-            </h2>
-            <p
-              className={`${
-                isDark ? "text-slate-400" : "text-slate-500"
-              }`}
-            >
+            <p className={`${isDark ? "text-slate-400" : "text-slate-500"}`}>
               {isLogin
                 ? "Sign in to continue your quiz journey"
                 : "Create your account and start exploring"}
@@ -165,8 +143,7 @@ const AuthForm = () => {
           {error && (
             <div
               className={`mb-5 p-3 rounded bg-red-50 text-red-700 border border-red-200 text-sm flex items-center gap-2 ${
-                isDark &&
-                "bg-red-700/10 text-red-300 border-red-500/20"
+                isDark && "bg-red-700/10 text-red-300 border-red-500/20"
               }`}
             >
               <FiShield className="w-4 h-4" />
@@ -196,9 +173,23 @@ const AuthForm = () => {
 
           {/* Divider */}
           <div className="my-4 flex items-center">
-            <div className={`flex-grow border-t ${isDark ? "border-slate-600" : "border-slate-200"}`} />
-            <span className={`mx-2 text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>OR</span>
-            <div className={`flex-grow border-t ${isDark ? "border-slate-600" : "border-slate-200"}`} />
+            <div
+              className={`flex-grow border-t ${
+                isDark ? "border-slate-600" : "border-slate-200"
+              }`}
+            />
+            <span
+              className={`mx-2 text-xs ${
+                isDark ? "text-slate-500" : "text-slate-400"
+              }`}
+            >
+              OR
+            </span>
+            <div
+              className={`flex-grow border-t ${
+                isDark ? "border-slate-600" : "border-slate-200"
+              }`}
+            />
           </div>
 
           {/* Form */}
@@ -206,7 +197,9 @@ const AuthForm = () => {
             {!isLogin && (
               <div className="relative">
                 <FiUser
-                  className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDark ? "text-slate-400" : "text-slate-400"}`}
+                  className={`absolute left-3 top-1/2 -translate-y-1/2 ${
+                    isDark ? "text-slate-400" : "text-slate-400"
+                  }`}
                 />
                 <input
                   type="text"
@@ -214,9 +207,10 @@ const AuthForm = () => {
                   placeholder="Full Name"
                   value={formData.displayName}
                   onChange={handleChange}
-                  className={`w-full pl-10 pr-4 py-2 border rounded placeholder-slate-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all ${isDark
-                    ? "bg-slate-700 border-slate-600 text-white"
-                    : "bg-white border-slate-200 text-slate-800"
+                  className={`w-full pl-10 pr-4 py-2 border rounded placeholder-slate-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all ${
+                    isDark
+                      ? "bg-slate-700 border-slate-600 text-white"
+                      : "bg-white border-slate-200 text-slate-800"
                   }`}
                   required={!isLogin}
                   disabled={loading || googleLoading}
@@ -226,7 +220,9 @@ const AuthForm = () => {
 
             <div className="relative">
               <FiMail
-                className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDark ? "text-slate-400" : "text-slate-400"}`}
+                className={`absolute left-3 top-1/2 -translate-y-1/2 ${
+                  isDark ? "text-slate-400" : "text-slate-400"
+                }`}
               />
               <input
                 type="email"
@@ -234,9 +230,10 @@ const AuthForm = () => {
                 placeholder="Email Address"
                 value={formData.email}
                 onChange={handleChange}
-                className={`w-full pl-10 pr-4 py-2 border rounded placeholder-slate-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all ${isDark
-                  ? "bg-slate-700 border-slate-600 text-white"
-                  : "bg-white border-slate-200 text-slate-800"
+                className={`w-full pl-10 pr-4 py-2 border rounded placeholder-slate-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all ${
+                  isDark
+                    ? "bg-slate-700 border-slate-600 text-white"
+                    : "bg-white border-slate-200 text-slate-800"
                 }`}
                 required
                 disabled={loading || googleLoading}
@@ -245,7 +242,9 @@ const AuthForm = () => {
 
             <div className="relative">
               <FiLock
-                className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDark ? "text-slate-400" : "text-slate-400"}`}
+                className={`absolute left-3 top-1/2 -translate-y-1/2 ${
+                  isDark ? "text-slate-400" : "text-slate-400"
+                }`}
               />
               <input
                 type={showPassword ? "text" : "password"}
@@ -253,9 +252,10 @@ const AuthForm = () => {
                 placeholder="Password"
                 value={formData.password}
                 onChange={handleChange}
-                className={`w-full pl-10 pr-10 py-2 border rounded placeholder-slate-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all ${isDark
-                  ? "bg-slate-700 border-slate-600 text-white"
-                  : "bg-white border-slate-200 text-slate-800"
+                className={`w-full pl-10 pr-10 py-2 border rounded placeholder-slate-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all ${
+                  isDark
+                    ? "bg-slate-700 border-slate-600 text-white"
+                    : "bg-white border-slate-200 text-slate-800"
                 }`}
                 required
                 disabled={loading || googleLoading}
@@ -273,7 +273,9 @@ const AuthForm = () => {
             {!isLogin && (
               <div className="relative">
                 <FiLock
-                  className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDark ? "text-slate-400" : "text-slate-400"}`}
+                  className={`absolute left-3 top-1/2 -translate-y-1/2 ${
+                    isDark ? "text-slate-400" : "text-slate-400"
+                  }`}
                 />
                 <input
                   type={showConfirmPassword ? "text" : "password"}
@@ -281,9 +283,10 @@ const AuthForm = () => {
                   placeholder="Confirm Password"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className={`w-full pl-10 pr-10 py-2 border rounded placeholder-slate-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all ${isDark
-                    ? "bg-slate-700 border-slate-600 text-white"
-                    : "bg-white border-slate-200 text-slate-800"
+                  className={`w-full pl-10 pr-10 py-2 border rounded placeholder-slate-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all ${
+                    isDark
+                      ? "bg-slate-700 border-slate-600 text-white"
+                      : "bg-white border-slate-200 text-slate-800"
                   }`}
                   required={!isLogin}
                   disabled={loading || googleLoading}
@@ -311,7 +314,9 @@ const AuthForm = () => {
               {loading ? (
                 <>
                   <span className="animate-spin rounded-full h-5 w-5 border-2 border-white/30 border-t-white" />
-                  <span>{isLogin ? "Signing In..." : "Creating Account..."}</span>
+                  <span>
+                    {isLogin ? "Signing In..." : "Creating Account..."}
+                  </span>
                 </>
               ) : (
                 <>
@@ -345,37 +350,6 @@ const AuthForm = () => {
                 {isLogin ? "Sign up now" : "Log in"}
               </button>
             </p>
-          </div>
-        </div>
-
-        {/* Features */}
-        <div className="flex flex-wrap justify-center gap-2 mt-6">
-          <div
-            className={`px-3 py-1 rounded-full text-xs flex items-center gap-2 border ${isDark
-                ? "bg-slate-800 border-slate-600 text-slate-300"
-                : "bg-blue-50 border-blue-100 text-blue-500"
-              }`}
-          >
-            <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-            AI Quizzes
-          </div>
-          <div
-            className={`px-3 py-1 rounded-full text-xs flex items-center gap-2 border ${isDark
-                ? "bg-slate-800 border-slate-600 text-slate-300"
-                : "bg-green-50 border-green-100 text-green-500"
-              }`}
-          >
-            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-            Leaderboards
-          </div>
-          <div
-            className={`px-3 py-1 rounded-full text-xs flex items-center gap-2 border ${isDark
-                ? "bg-slate-800 border-slate-600 text-slate-300"
-                : "bg-orange-50 border-orange-100 text-orange-500"
-              }`}
-          >
-            <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
-            Progress Tracking
           </div>
         </div>
       </div>
