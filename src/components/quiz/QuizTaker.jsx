@@ -163,6 +163,7 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
       const attemptData = {
         quizId: quiz.id,
         quizTitle: quiz.title,
+        testSeriesId: quiz.testSeriesId || null,
         userId: currentUser.uid,
         userName: currentUser.displayName || 'Anonymous',
         userEmail: currentUser.email,

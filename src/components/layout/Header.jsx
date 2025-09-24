@@ -456,7 +456,7 @@ const Header = ({
               }`}
             >
               {currentUser ? (
-                <div className="flex flex-col h-full">
+                <div className="flex flex-col h-[100vh]">
                   {/* Enhanced User Profile */}
                   <div
                     className={`relative p-5 border-b transition duration-200 ${
@@ -635,9 +635,9 @@ const Header = ({
 
                   {/* Enhanced Sign Out Section */}
                   <div
-                    className={`border-t px-3 py-3 transition duration-200 ${
+                    className={`border-t border-slate-400 px-3 py-3 transition duration-200 ${
                       theme === "dark"
-                        ? "border-gray-700/30 bg-gray-900"
+                        ? "border-slate-700/30 bg-gray-900"
                         : "bg-white"
                     }`}
                   >

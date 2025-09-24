@@ -8,18 +8,7 @@ const TestAttemptHeader = ({ attempt, onBack, onDownload, onShare }) => {
 
   return (
     <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 mb-8">
-      <button
-        onClick={onBack}
-        className={`group backdrop-blur-xl border rounded-xl px-4 sm:px-6 py-2 sm:py-3 font-medium transition-all duration-300 hidden sm:flex items-center gap-2 sm:gap-3 shadow-lg hover:shadow-xl hover:scale-105 ${
-          isDark 
-            ? 'bg-gradient-to-r from-gray-800/80 to-gray-700/80 border-gray-600/40 text-gray-300 hover:from-gray-700/80 hover:to-gray-600/80' 
-            : 'bg-white/90 border-slate-200/60 text-slate-700 hover:bg-slate-50 hover:border-slate-300 shadow-slate-200/40'
-        }`}
-      >
-        <FiArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:-translate-x-1" />
-        <span className="hidden sm:inline">Back to History</span>
-        <span className="sm:hidden">Back</span>
-      </button>
+      
       
       <div className="flex-1">
         <h1 className={`text-2xl sm:text-4xl font-black mb-1 sm:mb-2 leading-tight ${
@@ -32,9 +21,7 @@ const TestAttemptHeader = ({ attempt, onBack, onDownload, onShare }) => {
         <p className={`text-lg sm:text-xl flex items-center gap-2 ${
           isDark ? 'text-gray-400' : 'text-slate-600'
         }`}>
-          <FaGraduationCap className={`w-4 h-4 sm:w-5 sm:h-5 ${
-            isDark ? 'text-blue-400' : 'text-blue-600'
-          }`} />
+          
           {attempt.testTitle} • {attempt.testSeriesTitle}
         </p>
       </div>

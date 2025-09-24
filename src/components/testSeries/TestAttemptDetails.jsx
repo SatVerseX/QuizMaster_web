@@ -236,17 +236,7 @@ const TestAttemptDetails = ({
             {error}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button 
-              onClick={onBack} 
-              className={`px-6 py-3 rounded-lg border transition-colors flex items-center justify-center gap-2 ${
-                isDark
-                  ? "border-gray-600 bg-gray-800 text-gray-300 hover:bg-gray-700"
-                  : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-              }`}
-            >
-              <FiArrowLeft className="w-5 h-5" />
-              Back to History
-            </button>
+            
             <button
               onClick={() => {
                 setError(null);
@@ -451,17 +441,7 @@ const TestAttemptDetails = ({
 
         {/* Action Buttons */}
         <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <button
-            onClick={onBack}
-            className={`group border rounded-xl px-6 py-3 font-semibold transition-all duration-200 flex items-center justify-center gap-3 hover:scale-105 w-full sm:w-auto ${
-              isDark
-                ? "border-gray-600 bg-gray-800 text-gray-300 hover:bg-gray-700 hover:border-gray-500"
-                : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-400 shadow-sm hover:shadow-md"
-            }`}
-          >
-            <FiArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
-            <span>Back to Test History</span>
-          </button>
+          
 
           <button
             onClick={handleRetakeTest}

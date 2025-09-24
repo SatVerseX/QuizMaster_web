@@ -488,7 +488,10 @@ const AdminDashboard = () => {
               testSeries={testSeries}
               loading={loading}
               onRefresh={fetchOffers}
-              onEdit={setEditingOffer}
+              onEdit={(offer) => {
+                setEditingOffer(offer);
+                setShowOfferForm(true);
+              }}
               onDelete={handleDeleteOffer}
               onCreate={() => setShowOfferForm(true)}
               isDark={isDark}

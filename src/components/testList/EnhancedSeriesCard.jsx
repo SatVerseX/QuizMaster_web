@@ -1,6 +1,7 @@
-import React, { memo } from "react";
+import React, { memo, useState, useCallback } from "react";
 import { FiBookOpen, FiUsers } from "react-icons/fi";
-import { FaCrown, FaGem, FaCheck } from "react-icons/fa";
+import { FaCrown, FaGem, FaCheck, FaStar } from "react-icons/fa";
+import { submitRating, canUserRate } from "../../services/ratingService";
 
 const EnhancedSeriesCard = memo(
   ({
@@ -15,6 +16,25 @@ const EnhancedSeriesCard = memo(
     recordFreeView,
   }) => {
     const isSubscribed = hasUserSubscribed(series.id);
+    const [userRating, setUserRating] = useState(0);
+    const [canRate, setCanRate] = useState(false);
+
+    React.useEffect(() => {
+      let mounted = true;
+      (async () => {
+        if (currentUser?.uid && series?.id) {
+          try {
+            const allowed = await canUserRate(series.id, currentUser.uid);
+            if (mounted) setCanRate(!!allowed);
+          } catch (_) {
+            if (mounted) setCanRate(false);
+          }
+        } else {
+          setCanRate(false);
+        }
+      })();
+      return () => { mounted = false; };
+    }, [currentUser?.uid, series?.id]);
 
     const handleCardClick = async () => {
       if (!currentUser) {
@@ -33,6 +53,17 @@ const EnhancedSeriesCard = memo(
         }
       }
     };
+
+    const handleRate = useCallback(async (value, e) => {
+      e?.stopPropagation();
+      if (!currentUser || !canRate) return; // optionally prompt login or show tooltip
+      try {
+        setUserRating(value);
+        await submitRating({ seriesId: series.id, userId: currentUser.uid, value });
+      } catch (err) {
+        // no-op, keep UI silent here
+      }
+    }, [currentUser, series?.id]);
 
     return (
       <div
@@ -60,6 +91,20 @@ const EnhancedSeriesCard = memo(
               <span>Free</span>
             </div>
           )}
+        </div>
+
+        {/* Rating badge - top-left with transparent background */}
+        <div className="absolute top-4 left-4 z-20">
+          <div className={`flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-sm ${isDark ? 'bg-black/40' : 'bg-white/40'} shadow-sm`}
+          >
+            <FaStar className="w-3 h-3 text-yellow-400" />
+            <span className={`${isDark ? 'text-white' : 'text-gray-900'} text-xs font-semibold`}>
+              {((series.averageRating || 0).toFixed ? (series.averageRating || 0).toFixed(1) : (series.averageRating || 0))}
+            </span>
+            <span className={`${isDark ? 'text-gray-300' : 'text-gray-700'} text-[10px]`}>
+              ({series.ratingsCount || 0})
+            </span>
+          </div>
         </div>
 
         {/* Cover Image - Full Card Background */}
@@ -118,6 +163,8 @@ const EnhancedSeriesCard = memo(
                   </div>
                 </div>
               </div>
+
+              
             </div>
           </div>
         </div>

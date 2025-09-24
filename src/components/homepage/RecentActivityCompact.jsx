@@ -219,7 +219,12 @@ const RecentActivityCompact = ({
   };
 
   if (!currentUser) {
-    return null;
+    return <>
+    <div className='flex flex-col justify-center items-center   font-bold w-full h-full text-slate-500'>
+      <h1 className='font-bold text-[45px] '>?</h1>
+      <h4 className='sm:ml-10 p-4'>Login To view Your recent activities and recommendations</h4>
+    </div>
+    </>;
   }
 
   return (

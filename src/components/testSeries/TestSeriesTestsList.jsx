@@ -17,7 +17,8 @@ import {
   FiZap,
   FiAlertCircle,
 } from "react-icons/fi";
-import { FaRobot, FaGraduationCap } from "react-icons/fa";
+import { FaRobot, FaGraduationCap, FaStar } from "react-icons/fa";
+import { submitRating, canUserRate, getUserRating } from "../../services/ratingService";
 
 const TestSeriesTestsList = ({
   testSeries,
@@ -30,6 +31,13 @@ const TestSeriesTestsList = ({
   const [tests, setTests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [canRate, setCanRate] = useState(false);
+  const [userRating, setUserRating] = useState(0);
+  const [savingRating, setSavingRating] = useState(false);
+  const [hasRated, setHasRated] = useState(false);
+  const [ratingError, setRatingError] = useState(null);
+  const [ratingSuccess, setRatingSuccess] = useState(false);
+  const [hoverRating, setHoverRating] = useState(0);
 
   // Dev-only logger to avoid noisy logs in production
   const debugLog = (...args) => {
@@ -51,8 +59,34 @@ const TestSeriesTestsList = ({
     }
 
     loadTests();
+    // Check rating eligibility
+    (async () => {
+      try {
+        if (currentUser?.uid) {
+          const allowed = await canUserRate(testSeries.id, currentUser.uid);
+          setCanRate(!!allowed);
+          const existing = await getUserRating({ seriesId: testSeries.id, userId: currentUser.uid });
+          if (existing && typeof existing.value === 'number') {
+            setUserRating(existing.value);
+            setHasRated(true);
+          } else {
+            setHasRated(false);
+            setUserRating(0);
+          }
+        } else {
+          setCanRate(false);
+          setHasRated(false);
+          setUserRating(0);
+        }
+      } catch (err) {
+        debugLog('Error checking rating eligibility:', err);
+        setCanRate(false);
+        setHasRated(false);
+        setUserRating(0);
+      }
+    })();
     return () => {};
-  }, [testSeries?.id]);
+  }, [testSeries?.id, currentUser?.uid]);
 
   const loadTests = async () => {
     debugLog("Loading tests for series:", testSeries.id);
@@ -141,8 +175,23 @@ const TestSeriesTestsList = ({
         return 0;
       });
 
-      debugLog("Final tests array:", testsData.length);
-      setTests(testsData);
+      // Enrich attempts count per test from attempts collections
+      const withAttempts = await Promise.all(testsData.map(async (t) => {
+        try {
+          const [testAttemptsSnap, quizAttemptsSnap] = await Promise.all([
+            getDocs(query(collection(db, 'test-attempts'), where('testId', '==', t.id))),
+            getDocs(query(collection(db, 'quiz-attempts'), where('quizId', '==', t.id)))
+          ]);
+          const totalAttempts = (testAttemptsSnap?.size || 0) + (quizAttemptsSnap?.size || 0);
+          return { ...t, totalAttempts };
+        } catch (e) {
+          console.warn('Attempt count load failed for test', t.id, e);
+          return { ...t, totalAttempts: t.totalAttempts || 0 };
+        }
+      }));
+
+      debugLog("Final tests array:", withAttempts.length);
+      setTests(withAttempts);
       setLoading(false);
       setError(null);
 
@@ -173,6 +222,39 @@ const TestSeriesTestsList = ({
         return "bg-red-500";
       default:
         return "bg-yellow-500";
+    }
+  };
+
+  const handleRate = async (value) => {
+    if (!currentUser?.uid || !canRate || savingRating) return;
+    
+    try {
+      setSavingRating(true);
+      setRatingError(null);
+      setRatingSuccess(false);
+      
+      const result = await submitRating({ 
+        seriesId: testSeries.id, 
+        userId: currentUser.uid, 
+        value 
+      });
+      
+      if (result.success) {
+        setUserRating(value);
+        setHasRated(true);
+        setRatingSuccess(true);
+        
+        // Auto-hide success message after 3 seconds
+        setTimeout(() => setRatingSuccess(false), 3000);
+      }
+    } catch (error) {
+      debugLog('Rating submission error:', error);
+      setRatingError(error.message || 'Failed to submit rating');
+      
+      // Auto-hide error message after 5 seconds
+      setTimeout(() => setRatingError(null), 5000);
+    } finally {
+      setSavingRating(false);
     }
   };
 
@@ -330,7 +412,11 @@ const TestSeriesTestsList = ({
                     isDark ? "text-green-400" : "text-green-600"
                   }`}
                 >
-                  4.8
+                  {(
+                    Number(testSeries.averageRating || 0).toFixed
+                      ? Number(testSeries.averageRating || 0).toFixed(1)
+                      : (testSeries.averageRating || 0)
+                  )}
                 </div>
                 <div
                   className={`text-sm ${
@@ -343,6 +429,122 @@ const TestSeriesTestsList = ({
             </div>
           </div>
         </div>
+
+        {/* Enhanced Rating Section */}
+        {canRate && (
+        <div className="mb-6">
+          <div
+            className={`border rounded-xl p-4 ${
+              isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+            }`}
+          >
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <div className={`text-sm font-medium mb-1 ${isDark ? "text-gray-300" : "text-gray-800"}`}>
+                  {hasRated ? "Your Rating" : "Rate This Series"}
+                </div>
+                {hasRated && (
+                  <div className={`text-xs ${isDark ? "text-gray-500" : "text-gray-600"}`}>
+                    Click to update your rating
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex flex-col items-end gap-2">
+                {/* Star Rating */}
+                <div className="flex items-center gap-1">
+                  {[1,2,3,4,5].map((starValue) => (
+                    <button
+                      key={starValue}
+                      onClick={() => handleRate(starValue)}
+                      onMouseEnter={() => setHoverRating(starValue)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      disabled={savingRating}
+                      className={`p-1 rounded transition-all duration-150 ${
+                        savingRating ? 'cursor-wait' : 'cursor-pointer hover:scale-110'
+                      }`}
+                      title={`Rate ${starValue} star${starValue !== 1 ? 's' : ''}`}
+                    >
+                      <FaStar 
+                        className={`w-5 h-5 transition-colors duration-150 ${
+                          (hoverRating || userRating) >= starValue 
+                            ? 'text-yellow-400' 
+                            : isDark ? 'text-gray-600' : 'text-gray-300'
+                        } ${savingRating ? 'opacity-50' : ''}`} 
+                      />
+                    </button>
+                  ))}
+                  {savingRating && (
+                    <div className="ml-2">
+                      <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Rating Info */}
+                <div className="text-right">
+                  {hasRated && userRating > 0 && (
+                    <div className={`text-xs ${isDark ? "text-green-400" : "text-green-600"}`}>
+                      You rated: {userRating} star{userRating !== 1 ? 's' : ''}
+                    </div>
+                  )}
+                  <div className={`text-xs ${isDark ? "text-gray-500" : "text-gray-600"}`}>
+                    Series avg: {Number(testSeries.averageRating || 0).toFixed(1)} 
+                    ({testSeries.ratingsCount || 0} rating{testSeries.ratingsCount !== 1 ? 's' : ''})
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Success Message */}
+            {ratingSuccess && (
+              <div className={`mt-3 p-2 rounded-lg ${
+                isDark ? "bg-green-900/30 text-green-400" : "bg-green-50 text-green-700"
+              }`}>
+                <div className="flex items-center gap-2 text-sm">
+                  <FiStar className="w-4 h-4" />
+                  {hasRated ? "Rating updated successfully!" : "Thanks for rating!"}
+                </div>
+              </div>
+            )}
+
+            {/* Error Message */}
+            {ratingError && (
+              <div className={`mt-3 p-2 rounded-lg ${
+                isDark ? "bg-red-900/30 text-red-400" : "bg-red-50 text-red-700"
+              }`}>
+                <div className="flex items-center gap-2 text-sm">
+                  <FiAlertCircle className="w-4 h-4" />
+                  {ratingError}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+        )}
+
+        {/* Not Eligible Message */}
+        {currentUser && !canRate && (
+          <div className="mb-6">
+            <div
+              className={`border rounded-xl p-4 ${
+                isDark ? "bg-gray-800/50 border-gray-700" : "bg-gray-50 border-gray-200"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <FiAlertCircle className={`w-5 h-5 ${isDark ? "text-gray-400" : "text-gray-500"}`} />
+                <div>
+                  <div className={`text-sm font-medium ${isDark ? "text-gray-300" : "text-gray-700"}`}>
+                    Complete a test to rate this series
+                  </div>
+                  <div className={`text-xs ${isDark ? "text-gray-500" : "text-gray-600"}`}>
+                    Take any test from this series to unlock rating
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Tests List */}
         <div>

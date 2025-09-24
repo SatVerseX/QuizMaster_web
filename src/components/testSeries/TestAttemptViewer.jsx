@@ -470,18 +470,7 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
 
           {/* Mobile-Optimized Header */}
           <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 mb-4 sm:mb-6">
-            <button
-              onClick={onBack}
-              className={`group backdrop-blur-xl border rounded-lg px-3 sm:px-4 py-1 sm:py-2 text-xs font-medium transition-all duration-300 hidden sm:flex items-center gap-1 sm:gap-2 shadow-md hover:shadow-lg hover:scale-105 ${
-                isDark 
-                  ? 'bg-gradient-to-r from-gray-800/80 to-gray-700/80 border-gray-600/40 text-gray-300 hover:from-gray-700/80 hover:to-gray-600/80'
-                  : 'bg-white/90 border-slate-200/60 text-slate-700 hover:bg-slate-50 hover:border-slate-300 shadow-slate-200/40'
-              }`}
-            >
-              <FiArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 transition-transform group-hover:-translate-x-1" />
-              <span className="hidden sm:inline">Back to Series</span>
-              <span className="sm:hidden">Back</span>
-            </button>
+            
             
             <div className="flex-1">
               <h1 className={`text-xl sm:text-2xl font-black mb-0 sm:mb-1 leading-tight transition-all duration-300 ${
@@ -494,9 +483,7 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
               <p className={`text-sm sm:text-base flex items-center gap-1 transition-all duration-300 ${
                 isDark ? 'text-gray-400' : 'text-slate-600'
               }`}>
-                <FaGraduationCap className={`w-3 h-3 sm:w-4 sm:h-4 transition-all duration-300 ${
-                  isDark ? 'text-blue-400' : 'text-blue-600'
-                }`} />
+                
                 {testSeries.title}
               </p>
             </div>
@@ -516,13 +503,7 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
               }`}></div>
               
               <div className="relative text-center mb-4 sm:mb-6">
-                <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 shadow-lg transition-all duration-300 ${
-                  isDark 
-                    ? 'bg-gradient-to-br from-blue-500 to-purple-600'
-                    : 'bg-gradient-to-br from-blue-600 to-indigo-600'
-                }`}>
-                  <FaBrain className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
-                </div>
+                
                 <h2 className={`text-xl sm:text-2xl font-bold mb-2 sm:mb-3 transition-all duration-300 ${
                   isDark ? 'text-white' : 'text-slate-800'
                 }`}>

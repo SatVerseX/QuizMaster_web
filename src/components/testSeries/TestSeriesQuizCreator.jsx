@@ -244,16 +244,7 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
   const renderDesktopHeader = () => (
     <div className="hidden lg:block relative z-10 mb-12">
       <div className="flex items-center gap-6 mb-8">
-          <button
-            onClick={onBack}
-          className={mode(
-            "group bg-white backdrop-blur-xl border border-slate-200 text-slate-600 rounded-xl px-6 py-3 text-sm font-medium hover:bg-slate-50 transition-all duration-300 flex items-center gap-3 shadow-lg hover:shadow-xl hover:scale-105",
-            "group bg-gradient-to-r from-gray-800/80 to-gray-700/80 backdrop-blur-xl border border-gray-600/40 text-gray-300 rounded-xl px-6 py-3 text-sm font-medium hover:from-gray-700/80 hover:to-gray-600/80 transition-all duration-300 flex items-center gap-3 shadow-lg hover:shadow-xl hover:scale-105"
-          )}
-          >
-            <FiArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
-            <span>Back to Series</span>
-          </button>
+         
           
           <div className="flex-1">
           <h1 className={mode(

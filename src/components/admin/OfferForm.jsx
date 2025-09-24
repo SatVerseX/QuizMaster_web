@@ -199,15 +199,16 @@ const OfferForm = ({
         discountPercentage: parseFloat(formData.discountPercentage),
         startDate: new Date(formData.startDate),
         endDate: new Date(formData.endDate),
-        createdAt: offer ? undefined : serverTimestamp(),
         updatedAt: serverTimestamp(),
         createdBy: 'admin'
       };
 
       if (offer) {
+        // Do not send undefined fields to updateDoc
         await updateDoc(doc(db, 'offers', offer.id), offerData);
       } else {
-        await addDoc(collection(db, 'offers'), offerData);
+        // Only set createdAt when creating
+        await addDoc(collection(db, 'offers'), { ...offerData, createdAt: serverTimestamp() });
       }
 
       onSave();

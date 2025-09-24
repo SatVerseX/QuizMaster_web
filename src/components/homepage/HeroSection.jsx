@@ -28,11 +28,7 @@ const HeroSection = ({ isDark, currentUser, onViewAllSeries }) => {
             Explore Test Series
           </button>
           
-          {!currentUser && (
-            <button className="px-6 py-3 border-2 border-blue-600 text-blue-600 hover:bg-blue-50 rounded-xl font-semibold">
-              Sign Up Free
-            </button>
-          )}
+          
         </div>
       </div>
     </div>

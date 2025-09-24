@@ -18,10 +18,10 @@ const TrendingSection = ({
   return (
     <div className="mb-12">
       <div className="text-center mb-6">
-        <h2 className={` p-2 sm:p-4 rounded-lg sm:text-3xl font-bold mb-3 flex items-center justify-center gap-2 ${
-          isDark ? 'text-white' : 'text-red-600 bg-red-100'
+        <h2 className={` p-4 sm:p-4 rounded-xl text-3xl sm:text-3xl font-bold mb-3 border-2 border-red-300 flex items-center justify-center gap-2 ${
+          isDark ? 'text-white' : 'text-slate-800 '
         }`}>
-          <FaFire className="text-red-600 text-2xl" />
+          <FaFire className="text-red-500 text-2xl" />
           Trending Now
         </h2>
         <p className={`text-base max-w-2xl mx-auto ${
