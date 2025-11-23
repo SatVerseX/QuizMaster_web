@@ -79,13 +79,17 @@ const EnhancedHomepage = ({
         
         seriesWithCounts.push({
           ...seriesItem,
-          totalTests: totalTests
+          totalTests: totalTests,
+          // Ensure totalSubscribers is preserved
+          totalSubscribers: seriesItem.totalSubscribers || 0
         });
       } catch (error) {
         console.warn(`Error fetching test count for series ${seriesItem.id}:`, error);
         seriesWithCounts.push({
           ...seriesItem,
-          totalTests: seriesItem.totalTests || 0
+          totalTests: seriesItem.totalTests || 0,
+          // Ensure totalSubscribers is preserved even on error
+          totalSubscribers: seriesItem.totalSubscribers || 0
         });
       }
     }

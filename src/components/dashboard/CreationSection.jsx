@@ -1,113 +1,179 @@
 import React from 'react';
-import { FiEdit, FiZap, FiAlertCircle, FiCheck } from 'react-icons/fi';
+import { FiEdit, FiZap, FiAlertCircle, FiCheck, FiCpu, FiLayers } from 'react-icons/fi';
 import { FaRobot } from 'react-icons/fa';
 
-const TestCreationCard = ({ icon, title, description, features, buttonText, onClick, colorClass, mode }) => (
-  <div className={mode(
-    "backdrop-blur-sm border border-slate-200 rounded-lg sm:rounded-xl p-4 sm:p-5 flex flex-col h-full transition-all duration-300 bg-white shadow-sm hover:shadow-md",
-    "backdrop-blur-sm border border-gray-700/60 rounded-lg sm:rounded-xl p-4 sm:p-5 flex flex-col h-full transition-all duration-300 bg-gray-800/60 hover:bg-gray-800/80"
-  )}>
-    <div className="flex items-center gap-2 sm:gap-3 mb-3">
-      <div className={`p-2 sm:p-3 rounded-lg ${colorClass}`}>
-        {icon}
-      </div>
-      <div>
-        <h4 className={mode("text-base sm:text-lg font-bold transition-all duration-300 text-slate-800", "text-base sm:text-lg font-bold transition-all duration-300 text-white")}>{title}</h4>
-        <p className={mode("text-xs sm:text-sm transition-all duration-300 text-slate-600", "text-xs sm:text-sm transition-all duration-300 text-gray-400")}>{description}</p>
-      </div>
-    </div>
-    
-    <ul className={mode("space-y-1.5 sm:space-y-2 text-xs sm:text-sm mb-4 sm:mb-6 flex-grow transition-all duration-300 text-slate-600", "space-y-1.5 sm:space-y-2 text-xs sm:text-sm mb-4 sm:mb-6 flex-grow transition-all duration-300 text-gray-400")}>
-      {features.map((feature, index) => (
-        <li key={index} className="flex items-center gap-2">
-          {typeof feature === 'object' ? feature.icon : <FiCheck className={mode("w-3 h-3 sm:w-4 sm:h-4 text-green-600", "w-3 h-3 sm:w-4 sm:h-4 text-green-400")} />}
-          <span className="hidden sm:inline">{typeof feature === 'object' ? feature.text : feature}</span>
-          <span className="sm:hidden">{typeof feature === 'object' ? feature.text.split(' ')[0] : feature.split(' ')[0]}</span>
-        </li>
-      ))}
-    </ul>
-    
-    <button
-      onClick={onClick}
-      className={`w-full py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg font-bold transition-all flex items-center justify-center gap-2 ${colorClass} text-white hover:scale-105 text-sm sm:text-base`}
-    >
-      {typeof buttonText === 'object' ? (
-        <>
-          {buttonText.icon}
-          <span className="hidden sm:inline">{buttonText.text}</span>
-          <span className="sm:hidden">{buttonText.text.split(' ')[0]}</span>
-        </>
-      ) : (
-        <span className="hidden sm:inline">{buttonText}</span>
-      )}
-    </button>
-  </div>
+// Reusable Badge Component
+const Badge = ({ text, colorClass }) => (
+  <span className={`px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold rounded-full ${colorClass}`}>
+    {text}
+  </span>
 );
 
-const CreationSection = ({ onCreateManual, onCreateAI, mode, isDark, isAdmin }) => {
+const TestCreationCard = ({ 
+  icon: Icon, 
+  title, 
+  description, 
+  features, 
+  buttonText, 
+  onClick, 
+  theme = 'blue', 
+  isDark,
+  badge 
+}) => {
+  // Theme configurations for clean SaaS look
+  const themes = {
+    blue: {
+      iconBg: isDark ? 'bg-blue-500/20' : 'bg-blue-50',
+      iconColor: isDark ? 'text-blue-400' : 'text-blue-600',
+      button: isDark ? 'bg-blue-600 hover:bg-blue-500' : 'bg-blue-600 hover:bg-blue-700',
+      hoverBorder: isDark ? 'group-hover:border-blue-500/50' : 'group-hover:border-blue-200',
+      checkColor: isDark ? 'text-blue-400' : 'text-blue-600',
+    },
+    purple: {
+      iconBg: isDark ? 'bg-indigo-500/20' : 'bg-indigo-50',
+      iconColor: isDark ? 'text-indigo-400' : 'text-indigo-600',
+      button: isDark ? 'bg-indigo-600 hover:bg-indigo-500' : 'bg-indigo-600 hover:bg-indigo-700',
+      hoverBorder: isDark ? 'group-hover:border-indigo-500/50' : 'group-hover:border-indigo-200',
+      checkColor: isDark ? 'text-indigo-400' : 'text-indigo-600',
+    }
+  };
+
+  const currentTheme = themes[theme];
+  const cardBg = isDark ? 'bg-gray-800/40 border-gray-700' : 'bg-white border-slate-200';
+  const textColor = isDark ? 'text-gray-100' : 'text-slate-800';
+  const subTextColor = isDark ? 'text-gray-400' : 'text-slate-500';
+
+  return (
+    <div 
+      className={`
+        group relative flex flex-col h-full p-6 rounded-2xl border transition-all duration-300
+        ${cardBg} ${currentTheme.hoverBorder}
+      `}
+    >
+      {/* Optional Badge (e.g., for AI) */}
+      {badge && (
+        <div className="absolute top-4 right-4">
+          <Badge text={badge} colorClass={theme === 'purple' ? (isDark ? 'bg-indigo-500/20 text-indigo-300' : 'bg-indigo-100 text-indigo-700') : ''} />
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="flex items-start gap-4 mb-6">
+        <div className={`p-3 rounded-xl transition-colors duration-300 ${currentTheme.iconBg}`}>
+          <Icon className={`w-6 h-6 ${currentTheme.iconColor}`} />
+        </div>
+        <div>
+          <h4 className={`text-lg font-bold ${textColor}`}>{title}</h4>
+          <p className={`text-sm mt-1 leading-relaxed ${subTextColor}`}>{description}</p>
+        </div>
+      </div>
+      
+      {/* Features List */}
+      <div className={`flex-grow space-y-3 mb-8 ${isDark ? 'border-t border-gray-700' : 'border-t border-slate-100'} pt-6`}>
+        {features.map((feature, index) => (
+          <div key={index} className="flex items-start gap-3 text-sm">
+            <div className={`mt-0.5 shrink-0 ${currentTheme.checkColor}`}>
+              {typeof feature === 'object' ? feature.icon : <FiCheck className="w-4 h-4" />}
+            </div>
+            <span className={`font-medium ${isDark ? 'text-gray-300' : 'text-slate-600'}`}>
+              {typeof feature === 'object' ? feature.text : feature}
+            </span>
+          </div>
+        ))}
+      </div>
+      
+      {/* Action Button */}
+      <button
+        onClick={onClick}
+        className={`
+          w-full py-3 px-4 rounded-xl font-semibold text-white shadow-sm 
+          transition-all duration-200 flex items-center justify-center gap-2
+          active:scale-[0.98] ${currentTheme.button}
+        `}
+      >
+        {typeof buttonText === 'object' ? (
+          <>
+            {buttonText.icon}
+            <span>{buttonText.text}</span>
+          </>
+        ) : (
+          <span>{buttonText}</span>
+        )}
+      </button>
+    </div>
+  );
+};
+
+const CreationSection = ({ onCreateManual, onCreateAI, isDark, isAdmin }) => {
   if (!isAdmin) return null;
 
   return (
-    <div className={`backdrop-blur-sm border rounded-xl p-4 sm:p-5 mb-6 sm:mb-8 transition-all duration-300 ${
-      isDark 
-        ? 'bg-gray-800/60 border-gray-700/60' 
-        : 'bg-white border-slate-200 shadow-sm'
-    }`}>
-      <div className="flex items-center gap-3 mb-4 sm:mb-5">
-        <div className="p-2 bg-blue-600 rounded-lg">
-          <FiEdit className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-        </div>
-        <div>
-          <h3 className={`text-lg sm:text-xl font-bold transition-all duration-300 ${
-            isDark ? 'text-white' : 'text-slate-800'
-          }`}>Add New Test</h3>
-          <p className={`text-sm sm:text-base transition-all duration-300 ${
-            isDark ? 'text-gray-400' : 'text-slate-600'
-          }`}>Create tests for your series using manual editor or AI assistance</p>
+    <section className={`
+      rounded-3xl p-6 sm:p-8 mb-8 transition-all duration-300 border
+      ${isDark ? 'bg-gray-900/50 border-gray-800 backdrop-blur-xl' : 'bg-white border-slate-200 shadow-sm'}
+    `}>
+      
+      {/* Section Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div className="flex items-center gap-4">
+          <div className={`p-2.5 rounded-xl ${isDark ? 'bg-gray-800' : 'bg-slate-100'}`}>
+            <FiLayers className={`w-6 h-6 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
+          </div>
+          <div>
+            <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              Create Assessment
+            </h3>
+            <p className={`text-sm mt-0.5 ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
+              Choose how you want to build your next test series
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+      {/* Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 ">
+        {/* Manual Card */}
         <TestCreationCard
-          icon={<FiEdit className="w-6 h-6 text-white" />}
-          title="Manual Test Creator"
-          description="Create tests with full control"
+          isDark={isDark}
+          theme="blue"
+          icon={FiEdit}
+          title="Manual Builder"
+          description="Build precise assessments with our granular control editor."
           features={[
-            "Custom question creation",
-            "Multiple choice options", 
-            "Detailed explanations",
-            "Time limit settings"
+            "Rich text editor support",
+            "Custom scoring & negative marking",
+            "Detailed solution explanations",
+            "Time limit configuration"
           ]}
           buttonText={{
-            icon: <FiEdit className="w-5 h-5" />,
-            text: "Create Manual Test"
+            icon: <FiEdit className="w-4 h-4 " />,
+            text: "Create Manually"
           }}
           onClick={onCreateManual}
-          colorClass="bg-blue-600 hover:bg-blue-700"
-          mode={mode}
         />
 
+        {/* AI Card */}
         <TestCreationCard
-          icon={<FaRobot className="w-6 h-6 text-white" />}
-          title="AI Test Generator"
-          description="Generate tests instantly with AI"
+          isDark={isDark}
+          theme="purple"
+          icon={FaRobot}
+          badge="Recommended"
+          title="AI Generator"
+          description="Leverage AI to generate comprehensive tests in seconds."
           features={[
-            { icon: <FiZap className="w-4 h-4 text-yellow-400" />, text: "Instant question generation" },
-            { icon: <FiZap className="w-4 h-4 text-yellow-400" />, text: "Topic-based content" },
-            { icon: <FiZap className="w-4 h-4 text-yellow-400" />, text: "Difficulty customization" },
-            { icon: <FiZap className="w-4 h-4 text-yellow-400" />, text: "JSON file upload support" },
-            { icon: <FiAlertCircle className="w-4 h-4 text-red-400" />, text: "Negative marking support" }
+            { icon: <FiZap className="w-4 h-4" />, text: "Instant question generation" },
+            { icon: <FiCpu className="w-4 h-4" />, text: "Context-aware from topics" },
+            { icon: <FiAlertCircle className="w-4 h-4" />, text: "Difficulty balancing" },
+            { icon: <FiLayers className="w-4 h-4" />, text: "JSON / PDF Import" }
           ]}
           buttonText={{
-            icon: <FaRobot className="w-5 h-5" />,
+            icon: <FaRobot className="w-4 h-4" />,
             text: "Generate with AI"
           }}
           onClick={onCreateAI}
-          colorClass="bg-purple-600 hover:bg-purple-700"
-          mode={mode}
         />
       </div>
-    </div>
+    </section>
   );
 };
 

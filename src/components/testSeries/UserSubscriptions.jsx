@@ -10,8 +10,16 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { db } from "../../lib/firebase";
-import { FiBookOpen, FiArrowRight, FiCreditCard } from "react-icons/fi";
-import { FaCrown } from "react-icons/fa";
+import { 
+  FiBookOpen, 
+  FiArrowRight, 
+  FiCreditCard, 
+  FiUser, 
+  FiTrendingUp, 
+  FiAward,
+  FiGrid 
+} from "react-icons/fi";
+import { FaCrown, FaStar } from "react-icons/fa";
 
 const UserSubscriptions = ({ onViewTests, onSubscribeSeries }) => {
   const { currentUser } = useAuth();
@@ -20,6 +28,7 @@ const UserSubscriptions = ({ onViewTests, onSubscribeSeries }) => {
   const [subs, setSubs] = useState([]);
   const [series, setSeries] = useState([]);
 
+  // --- Data Loading Logic (Preserved) ---
   useEffect(() => {
     const load = async () => {
       if (!currentUser) {
@@ -45,40 +54,33 @@ const UserSubscriptions = ({ onViewTests, onSubscribeSeries }) => {
             activeSubs.map((s) => s.testSeriesId || s.seriesId).filter(Boolean)
           )
         );
-        const seriesDocs = await Promise.all(
-          ids.map((id) => getDoc(doc(db, "test-series", id)))
-        );
-        const seriesData = seriesDocs
-          .filter((s) => s.exists())
-          .map((s) => ({ id: s.id, ...s.data() }));
+        
+        if (ids.length > 0) {
+          const seriesDocs = await Promise.all(
+            ids.map((id) => getDoc(doc(db, "test-series", id)))
+          );
+          const seriesData = seriesDocs
+            .filter((s) => s.exists())
+            .map((s) => ({ id: s.id, ...s.data() }));
 
-        // Enrich with totalTests like EnhancedSeriesCard/TestSeriesList
-        const seriesWithCounts = await Promise.all(
-          seriesData.map(async (s) => {
-            try {
-              const [q1, q2] = await Promise.all([
-                getDocs(
-                  query(
-                    collection(db, "quizzes"),
-                    where("testSeriesId", "==", s.id)
-                  )
-                ),
-                getDocs(
-                  query(
-                    collection(db, "section-quizzes"),
-                    where("testSeriesId", "==", s.id)
-                  )
-                ),
-              ]);
-              return { ...s, totalTests: (q1?.size || 0) + (q2?.size || 0) };
-            } catch (e) {
-              console.error("Error counting tests for series", s.id, e);
-              return { ...s, totalTests: s.totalTests || 0 };
-            }
-          })
-        );
-
-        setSeries(seriesWithCounts);
+          // Enrich with totalTests count
+          const seriesWithCounts = await Promise.all(
+            seriesData.map(async (s) => {
+              try {
+                const [q1, q2] = await Promise.all([
+                  getDocs(query(collection(db, "quizzes"), where("testSeriesId", "==", s.id))),
+                  getDocs(query(collection(db, "section-quizzes"), where("testSeriesId", "==", s.id))),
+                ]);
+                return { ...s, totalTests: (q1?.size || 0) + (q2?.size || 0) };
+              } catch (e) {
+                return { ...s, totalTests: s.totalTests || 0 };
+              }
+            })
+          );
+          setSeries(seriesWithCounts);
+        } else {
+          setSeries([]);
+        }
       } finally {
         setLoading(false);
       }
@@ -99,143 +101,202 @@ const UserSubscriptions = ({ onViewTests, onSubscribeSeries }) => {
     }
   };
 
+  const isPremiumUser = activeSeries.some((s) => s.isPaid);
+
   if (loading) {
     return (
-      <div
-        className={`min-h-[300px] flex items-center justify-center bg-gradient-to-br from-blue-100 via-gray-50 to-blue-50 ${
-          isDark ? "text-gray-300" : "text-gray-700"
-        }`}
-      >
-        Loading your subscriptions...
+      <div className={`min-h-screen p-8 ${isDark ? "bg-gray-900" : "bg-gray-50"}`}>
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-8">
+          <div className={`lg:col-span-1 h-64 rounded-3xl animate-pulse ${isDark ? "bg-gray-800" : "bg-gray-200"}`} />
+          <div className="lg:col-span-3 space-y-6">
+            <div className={`h-32 rounded-3xl animate-pulse ${isDark ? "bg-gray-800" : "bg-gray-200"}`} />
+            <div className={`h-32 rounded-3xl animate-pulse ${isDark ? "bg-gray-800" : "bg-gray-200"}`} />
+          </div>
+        </div>
       </div>
     );
   }
 
-  // Main Dashboard Layout
   return (
-    <div
-      className={`min-h-screen w-full scroll-smooth overscroll-y-contain ${
-        isDark
-          ? "bg-gradient-to-br from-blue-950 via-blue-900 to-gray-900"
-          : "bg-gradient-to-r from-blue-100 via-gray-50 to-blue-50"
-      }`}
-    >
-      <div className="max-w-7xl mx-auto px-4 py-10 flex flex-col md:flex-row gap-12 touch-pan-y">
-        {/* Sidebar/Profile */}
-        <aside
-          className={`md:w-72 mb-10 md:mb-0 bg-gradient-to-b from-blue-500 to-blue-700 px-8 py-10 rounded-3xl sm:shadow-2xl md:sticky top-10 text-white`}
-        >
-          <div className="font-extrabold text-2xl mb-4 flex items-center gap-3">
-            Premium Student
-            <FaCrown size={26} className="text-yellow-300" />
-          </div>
-          <div className="text-lg font-semibold mb-2">
-            {currentUser?.displayName || "Your Name"}
-          </div>
-          <div className="text-xs mb-4">
-            {currentUser?.email || "your-email@example.com"}
-          </div>
-        </aside>
+    <div className={`min-h-screen w-full pb-12 ${isDark ? "bg-gray-900" : "bg-gray-50"}`}>
+      
+      {/* Header Background Decoration */}
+      <div className={`absolute top-0 left-0 right-0 h-64 ${
+        isDark ? "bg-gradient-to-b from-blue-900/20 to-transparent" : "bg-gradient-to-b from-blue-100/50 to-transparent"
+      }`} />
 
-        {/* Main content area */}
-        <main className="flex-1">
-          <div className="mb-8">
-            <h1
-              className={`text-4xl font-extrabold tracking-tight ${
-                isDark ? "text-white" : "text-blue-900"
-              }`}
-            >
-              Your Subscriptions
-            </h1>
-            <p
-              className={`${
-                isDark ? "text-gray-400" : "text-gray-600"
-              } mt-2 text-lg`}
-            >
-              View active access and upgrade to premium test series!
-            </p>
-          </div>
-
-          {/* Subscriptions */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-            {activeSeries.length === 0 ? (
-              <div
-                className={`p-12 rounded-3xl border-4 border-blue-200 text-center  ${
-                  isDark
-                    ? "bg-gray-800 border-gray-600 text-gray-300"
-                    : "bg-white border-blue-200 text-gray-700"
-                }`}
-              >
-                <span className="text-xl font-semibold">
-                  You have no active subscriptions yet.
-                </span>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 relative z-10">
+        <div className="flex flex-col lg:flex-row gap-8">
+          
+          {/* --- Sidebar: User Profile & Status --- */}
+          <aside className="lg:w-80 flex-shrink-0">
+            <div className={`sticky top-8 rounded-3xl p-6 border shadow-lg ${
+              isDark 
+                ? "bg-gray-800/50 border-gray-700 backdrop-blur-xl" 
+                : "bg-white border-white shadow-blue-100/50"
+            }`}>
+              <div className="flex items-center gap-4 mb-6">
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-inner ${
+                  isDark ? "bg-gray-700 text-gray-300" : "bg-blue-50 text-blue-600"
+                }`}>
+                  {currentUser?.photoURL ? (
+                    <img src={currentUser.photoURL} alt="Profile" className="w-full h-full object-cover rounded-2xl" />
+                  ) : (
+                    currentUser?.displayName?.charAt(0) || <FiUser />
+                  )}
+                </div>
+                <div>
+                  <h2 className={`font-bold text-lg leading-tight ${isDark ? "text-white" : "text-gray-900"}`}>
+                    {currentUser?.displayName || "Student"}
+                  </h2>
+                  <p className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+                    {currentUser?.email}
+                  </p>
+                </div>
               </div>
-            ) : (
-              activeSeries.map((s) => (
-                <div
-                  key={s.id}
-                  className={`relative p-8 rounded-3xl bg-white  border-4 border-blue-400 flex flex-col md:flex-row md:items-center gap-4 md:gap-8`}
-                >
-                  <div className="absolute -top-5 left-5 px-6 py-2 bg-blue-400 text-white font-bold rounded-xl  z-10 text-base">
-                    ACTIVE SERIES
-                  </div>
-                    <div className="flex items-center gap-4 md:gap-8 flex-1 min-w-0">
-                      <div className={`w-20 h-20 rounded-2xl overflow-hidden flex items-center justify-center bg-blue-500/10`}>
+
+              <div className={`p-4 rounded-2xl mb-6 border ${
+                isPremiumUser
+                  ? isDark ? "bg-gradient-to-br from-yellow-900/20 to-yellow-900/10 border-yellow-500/30" : "bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200"
+                  : isDark ? "bg-gray-700/30 border-gray-600" : "bg-gray-50 border-gray-100"
+              }`}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`text-xs font-bold uppercase tracking-wider ${
+                    isPremiumUser 
+                      ? isDark ? "text-yellow-400" : "text-yellow-700"
+                      : isDark ? "text-gray-400" : "text-gray-500"
+                  }`}>
+                    Current Plan
+                  </span>
+                  {isPremiumUser && <FaCrown className="text-yellow-500" />}
+                </div>
+                <div className={`text-xl font-extrabold ${
+                  isPremiumUser 
+                    ? isDark ? "text-yellow-200" : "text-yellow-800"
+                    : isDark ? "text-white" : "text-gray-900"
+                }`}>
+                  {isPremiumUser ? "Premium Scholar" : "Free Account"}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between text-sm">
+                  <span className={isDark ? "text-gray-400" : "text-gray-600"}>Active Courses</span>
+                  <span className={`font-bold ${isDark ? "text-white" : "text-gray-900"}`}>{activeSeries.length}</span>
+                </div>
+                <div className={`h-px ${isDark ? "bg-gray-700" : "bg-gray-100"}`} />
+                <div className="flex items-center justify-between text-sm">
+                  <span className={isDark ? "text-gray-400" : "text-gray-600"}>Member Since</span>
+                  <span className={`font-bold ${isDark ? "text-white" : "text-gray-900"}`}>
+                    {new Date(currentUser?.metadata?.creationTime).getFullYear()}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          {/* --- Main Content --- */}
+          <main className="flex-1 min-w-0">
+            
+            {/* Header */}
+            <div className="mb-8">
+              <h1 className={`text-3xl font-bold mb-2 ${isDark ? "text-white" : "text-gray-900"}`}>
+                My Learning
+              </h1>
+              <p className={isDark ? "text-gray-400" : "text-gray-600"}>
+                Track your progress and access your enrolled test series.
+              </p>
+            </div>
+
+            {/* Active Subscriptions Grid */}
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-12">
+              {activeSeries.length === 0 ? (
+                <div className={`col-span-full p-10 rounded-3xl border-2 border-dashed text-center ${
+                  isDark ? "border-gray-700 bg-gray-800/30 text-gray-400" : "border-gray-200 bg-white text-gray-500"
+                }`}>
+                  <FiBookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <h3 className="text-lg font-semibold mb-2">No Active Subscriptions</h3>
+                  <p className="mb-6 max-w-md mx-auto">You haven't enrolled in any test series yet. Browse our catalog to start learning.</p>
+                  <a href="/test-series" className="inline-flex items-center px-6 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors">
+                    Browse Catalog
+                  </a>
+                </div>
+              ) : (
+                activeSeries.map((s) => (
+                  <div 
+                    key={s.id}
+                    className={`group relative p-5 rounded-3xl border transition-all duration-300 hover:-translate-y-1 ${
+                      isDark 
+                        ? "bg-gray-800 border-gray-700 hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-900/20" 
+                        : "bg-white border-slate-200 hover:border-blue-300 hover:shadow-xl hover:shadow-blue-100/50"
+                    }`}
+                  >
+                    <div className="flex items-start gap-5">
+                      {/* Thumbnail */}
+                      <div className={`w-20 h-20 rounded-2xl flex-shrink-0 overflow-hidden shadow-sm ${
+                        isDark ? "bg-gray-700" : "bg-gray-100"
+                      }`}>
                         {s.coverImageUrl ? (
-                          <img
-                            src={s.coverImageUrl}
-                            alt={s.title}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                            }}
-                          />
+                          <img src={s.coverImageUrl} alt={s.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                         ) : (
-                          <FiBookOpen size={36} className="text-blue-600" />
+                          <div className="w-full h-full flex items-center justify-center text-blue-500">
+                            <FiGrid size={24} />
+                          </div>
                         )}
                       </div>
-                    <div>
-                      <div className="font-extrabold text-2xl text-blue-900 mb-1">
-                        {s.title}
-                      </div>
-                      <div className="text-base text-gray-500 mb-2">
-                        {s.totalTests || 0} tests • {s.totalSubscribers || 0}{" "}
-                        students
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        {s.isPaid && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-yellow-100 text-yellow-700 mb-2">
+                            <FaCrown size={10} /> Premium
+                          </span>
+                        )}
+                        <h3 className={`font-bold text-lg mb-1 truncate ${isDark ? "text-white" : "text-gray-900"}`}>
+                          {s.title}
+                        </h3>
+                        <div className="flex items-center gap-4 text-xs mb-4">
+                          <span className={`flex items-center gap-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+                            <FiBookOpen /> {s.totalTests || 0} Tests
+                          </span>
+                          <span className={`flex items-center gap-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+                            <FiTrendingUp /> Active
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <button
-                    className={`hover:cursor-pointer md:ml-auto mt-4 md:mt-0 w-full md:w-auto px-4 py-2 rounded-full font-extrabold flex items-center justify-center md:justify-start gap-4 bg-green-600 hover:bg-green-700 text-white  text-lg shrink-0`}
-                    onClick={() => onViewTests && onViewTests(s)}
-                  >
-                    <FiArrowRight size={22} />
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
-          {/* Premium Upgrade Suggestions */}
-          <UpgradeSuggestions
-            isDark={isDark}
-            onSubscribe={handleUpgrade}
-            activeIds={new Set(activeSeries.map((s) => s.id))}
-          />
-        </main>
-      </div>
 
-      {/* Mobile momentum scroll and smoother touch behavior */}
-      <style>
-        {`
-          @media (max-width: 768px) {
-            html, body { overscroll-behavior-y: contain; }
-            .touch-pan-y { touch-action: pan-y; }
-          }
-        `}
-      </style>
+                    {/* Action Button */}
+                    <button
+                      onClick={() => onViewTests && onViewTests(s)}
+                      className={`w-full mt-2 py-3 px-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors ${
+                        isDark 
+                          ? "bg-gray-700 hover:bg-gray-600 text-white" 
+                          : "bg-blue-50 hover:bg-blue-100 text-blue-700"
+                      }`}
+                    >
+                      Continue Learning <FiArrowRight />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Recommendations Section */}
+            <UpgradeSuggestions
+              isDark={isDark}
+              onSubscribe={handleUpgrade}
+              activeIds={new Set(activeSeries.map((s) => s.id))}
+            />
+
+          </main>
+        </div>
+      </div>
     </div>
   );
 };
 
+// --- Sub-Component for Upgrades ---
 const UpgradeSuggestions = ({ isDark, onSubscribe, activeIds }) => {
   const [loading, setLoading] = useState(true);
   const [paidSeries, setPaidSeries] = useState([]);
@@ -244,13 +305,23 @@ const UpgradeSuggestions = ({ isDark, onSubscribe, activeIds }) => {
     const load = async () => {
       try {
         setLoading(true);
-        const q = query(
-          collection(db, "test-series"),
-          where("isPublished", "==", true)
-        );
+        const q = query(collection(db, "test-series"), where("isPublished", "==", true));
         const snap = await getDocs(q);
         const all = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-        setPaidSeries(all.filter((s) => s.isPaid && !activeIds.has(s.id)));
+        
+        // Filter for paid series not already owned
+        const filtered = all.filter((s) => s.isPaid && !activeIds.has(s.id)).slice(0, 2); // Limit to 2
+        
+        // Enrich with counts
+        const enriched = await Promise.all(filtered.map(async (s) => {
+          try {
+            const q1 = await getDocs(query(collection(db, "quizzes"), where("testSeriesId", "==", s.id)));
+            const q2 = await getDocs(query(collection(db, "section-quizzes"), where("testSeriesId", "==", s.id)));
+            return { ...s, totalTests: (q1.size + q2.size) };
+          } catch { return s; }
+        }));
+        
+        setPaidSeries(enriched);
       } finally {
         setLoading(false);
       }
@@ -258,78 +329,59 @@ const UpgradeSuggestions = ({ isDark, onSubscribe, activeIds }) => {
     load();
   }, [activeIds]);
 
-  if (loading) return null;
-  if (paidSeries.length === 0) {
-    return (
-      <div
-        className={`mt-2 p-12 rounded-3xl border-4 border-yellow-200 text-center  ${
-          isDark
-            ? "bg-gray-800 border-gray-700 text-gray-300"
-            : "bg-white border-yellow-100 text-gray-700"
-        }`}
-      >
-        <div className="font-extrabold mb-2 text-2xl">
-          No upgrade options available
-        </div>
-        <div className="text-lg mb-6">
-          Explore all premium series to find more to subscribe.
-        </div>
-        <a
-          href="/test-series"
-          className={`inline-block px-8 py-4 rounded-full font-extrabold bg-blue-600 hover:bg-blue-700 text-white  text-lg`}
-        >
-          Browse Test Series
-        </a>
-      </div>
-    );
-  }
+  if (loading || paidSeries.length === 0) return null;
 
   return (
-    <div>
-      <h2
-        className={`text-3xl font-extrabold mb-8 ${
-          isDark ? "text-yellow-200" : "text-yellow-700"
-        }`}
-      >
-        Upgrade your plan
-      </h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+    <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-800">
+      <div className="flex items-center gap-2 mb-6">
+        <FiAward className="text-yellow-500 w-6 h-6" />
+        <h2 className={`text-2xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}>
+          Recommended Upgrades
+        </h2>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {paidSeries.map((s) => (
           <div
             key={s.id}
-            className={`relative rounded-3xl  border-4 border-yellow-400 bg-white pb-10 pt-12 px-10`}
+            className={`relative overflow-hidden rounded-3xl border p-6 transition-all duration-300 hover:-translate-y-1 ${
+              isDark 
+                ? "bg-gradient-to-br from-gray-800 to-gray-900 border-yellow-500/30 shadow-lg shadow-black/20" 
+                : "bg-gradient-to-br from-yellow-50 to-white border-yellow-200 shadow-xl shadow-yellow-500/10"
+            }`}
           >
-            <div className="absolute -top-6 left-10 bg-yellow-300 text-yellow-900 px-6 py-3 font-bold rounded-xl text-lg shadow-lg flex items-center gap-2 z-10">
-              <FaCrown size={28} /> Premium Series
+            {/* Background Decor */}
+            <div className="absolute -right-6 -top-6 opacity-5">
+              <FaCrown size={120} className={isDark ? "text-yellow-200" : "text-yellow-600"} />
             </div>
-            <div className="flex items-center gap-8 mb-8">
-              <div className="bg-blue-500 rounded-full w-20 h-20 flex items-center justify-center text-white shadow-xl">
-                <FiBookOpen size={36} />
+
+            <div className="relative z-10">
+              <div className="flex justify-between items-start mb-4">
+                <div className="px-3 py-1 rounded-full bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-400 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                  <FaStar size={10} /> Premium
+                </div>
+                <div className={`text-2xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}>
+                  ₹{(s.discountedPrice ?? s.price ?? 0).toLocaleString()}
+                </div>
               </div>
-              <div>
-                <div className="font-extrabold text-2xl text-blue-900 mb-1">
-                  {s.title}
-                </div>
-                <div className="text-base text-gray-500">
-                  {s.totalTests || 0} tests • {s.totalSubscribers || 0} students
-                </div>
+
+              <h3 className={`text-xl font-bold mb-2 line-clamp-1 ${isDark ? "text-white" : "text-gray-900"}`}>
+                {s.title}
+              </h3>
+              
+              <div className={`flex items-center gap-4 text-sm mb-6 ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+                <span>{s.totalTests || 0} Tests</span>
+                <span>•</span>
+                <span>{s.totalSubscribers || 0} Students</span>
               </div>
+
+              <button
+                onClick={() => onSubscribe(s)}
+                className="w-full py-3 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-white transition-all"
+              >
+                <FiCreditCard /> Unlock Access
+              </button>
             </div>
-            <div className="bg-green-200 text-green-800 px-8 py-3 rounded-xl font-bold text-2xl mb-2  inline-block">
-              ₹{(s.discountedPrice ?? s.price ?? 0).toLocaleString()}
-            </div>
-            {typeof s.originalPrice === "number" &&
-              s.originalPrice > (s.discountedPrice ?? s.price ?? 0) && (
-                <div className="text-gray-400 line-through text-lg mb-4">
-                  ₹{s.originalPrice.toLocaleString()}
-                </div>
-              )}
-            <button
-              className="absolute bottom-8 left-10 right-10 py-4 bg-blue-700 hover:bg-blue-800 text-white font-bold rounded-full text-lg w-full"
-              onClick={() => onSubscribe(s)}
-            >
-              <FiCreditCard className="mr-2" size={22} /> Upgrade Now
-            </button>
           </div>
         ))}
       </div>

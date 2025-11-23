@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useSubscription } from '../../contexts/SubscriptionContext';
 import { examCategories, getAllSubcategories } from '../../utils/constants/examCategories';
 import { 
   collection, 
@@ -31,6 +32,7 @@ const TestSeriesList = ({
   useEnhancedHomepage = false
 }) => {
   const { currentUser, isAdmin } = useAuth();
+  const { isActive, isFreePlan } = useSubscription();
   const { isDark } = useTheme();
   const [series, setSeries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -121,7 +123,9 @@ const TestSeriesList = ({
               ...seriesInfo,
               tests: tests,
               totalTests: tests.length,
-              totalQuizzes: tests.length
+              totalQuizzes: tests.length,
+              // Ensure totalSubscribers is preserved and properly handled
+              totalSubscribers: seriesInfo.totalSubscribers || 0
             });
           } catch (error) {
             console.error(`Error loading tests for series ${seriesInfo.id}:`, error);
@@ -129,7 +133,9 @@ const TestSeriesList = ({
               ...seriesInfo,
               tests: [],
               totalTests: 0,
-              totalQuizzes: 0
+              totalQuizzes: 0,
+              // Ensure totalSubscribers is preserved even on error
+              totalSubscribers: seriesInfo.totalSubscribers || 0
             });
           }
         }
@@ -169,8 +175,10 @@ const TestSeriesList = ({
   };
 
   const hasUserSubscribed = useCallback((testSeriesId) => {
+    // Global plan (any active non-free) unlocks all series
+    if (isActive && !isFreePlan) return true;
     return userSubscriptions.some(sub => sub.testSeriesId === testSeriesId);
-  }, [userSubscriptions]);
+  }, [userSubscriptions, isActive, isFreePlan]);
 
   const isCreator = useCallback((seriesItem) => {
     return !!currentUser && seriesItem.createdBy === currentUser.uid;
@@ -207,7 +215,7 @@ const TestSeriesList = ({
       if (localStorage.getItem(key)) return;
       localStorage.setItem(key, '1');
       await updateDoc(doc(db, 'test-series', series.id), {
-        totalSubscribers: increment(1),
+        // Only count a view locally; subscribers are incremented by backend upon payment
         totalViews: increment(1)
       });
     } catch (e) {

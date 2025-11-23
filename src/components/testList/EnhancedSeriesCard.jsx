@@ -156,10 +156,10 @@ const EnhancedSeriesCard = memo(
                 </div>
                 <div>
                   <div className={`${isDark?"text-gray-300 font-bold text-xs":"text-gray-800 font-bold text-xs"}`}>
-                    {series.totalSubscribers || 0}
+                    {series.totalSubscribers || series.totalViews || 0}
                   </div>
                   <div className={`${isDark?"text-gray-300 text-xs":"text-gray-800 text-xs"}`}>
-                    Students
+                    students
                   </div>
                 </div>
               </div>

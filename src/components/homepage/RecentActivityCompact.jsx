@@ -1,5 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { FiPlay, FiClock, FiTrendingUp, FiTarget, FiAward, FiBookOpen, FiRefreshCw } from 'react-icons/fi';
+import { 
+  FiPlay, 
+  FiClock, 
+  FiTrendingUp, 
+  FiTarget, 
+  FiAward, 
+  FiBookOpen, 
+  FiRefreshCw, 
+  FiLock,
+  FiChevronRight,
+  FiActivity
+} from 'react-icons/fi';
 import { 
   collection, 
   query, 
@@ -15,33 +26,27 @@ const RecentActivityCompact = ({
   isDark, 
   currentUser, 
   onViewSeries, 
-  onTakeTest,
   onViewTests,
-  isAdmin = false,
-  userAttempts = [],
-  userSubscriptions = []
+  isAdmin = false
 }) => {
   const [recentActivity, setRecentActivity] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
 
-  // Load recent activity from Firebase
+  // -- Data Fetching Logic (Kept same as original) --
   useEffect(() => {
     if (!currentUser) return;
 
     const loadRecentActivity = async () => {
       try {
         setLoading(true);
-        
-        // Load test attempts
         const attemptsQuery = query(
           collection(db, 'test-attempts'),
           where('userId', '==', currentUser.uid),
           orderBy('completedAt', 'desc'),
           limit(5)
         );
-        
         const attemptsSnapshot = await getDocs(attemptsQuery);
         const attempts = attemptsSnapshot.docs.map(doc => ({
           id: doc.id,
@@ -50,18 +55,16 @@ const RecentActivityCompact = ({
           seriesName: doc.data().testSeriesTitle,
           score: doc.data().percentage,
           completedAt: doc.data().completedAt?.toDate?.() || new Date(doc.data().completedAt),
-          timeSpent: Math.round((doc.data().timeSpent || 0) / 60), // Convert to minutes
+          timeSpent: Math.round((doc.data().timeSpent || 0) / 60),
           status: 'completed'
         }));
 
-        // Load quiz attempts
         const quizQuery = query(
           collection(db, 'quiz-attempts'),
           where('userId', '==', currentUser.uid),
           orderBy('completedAt', 'desc'),
           limit(3)
         );
-        
         const quizSnapshot = await getDocs(quizQuery);
         const quizAttempts = quizSnapshot.docs.map(doc => ({
           id: doc.id,
@@ -74,7 +77,6 @@ const RecentActivityCompact = ({
           status: 'completed'
         }));
 
-        // Combine and sort by date
         const allActivity = [...attempts, ...quizAttempts]
           .sort((a, b) => b.completedAt - a.completedAt)
           .slice(0, 5);
@@ -87,109 +89,58 @@ const RecentActivityCompact = ({
         setLoading(false);
       }
     };
-
     loadRecentActivity();
   }, [currentUser]);
 
-  // Load AI-powered recommendations
   useEffect(() => {
     if (!currentUser) return;
-
     const loadRecommendations = async () => {
       try {
         setRecommendationsLoading(true);
         const result = await generatePersonalizedRecommendations(currentUser.uid);
-        
         if (result.success) {
           setRecommendations(result.data || []);
-        } else {
-          console.error('Failed to load recommendations:', result.error);
-          setRecommendations([]);
         }
       } catch (error) {
         console.error('Error loading recommendations:', error);
-        setRecommendations([]);
       } finally {
         setRecommendationsLoading(false);
       }
     };
-
     loadRecommendations();
   }, [currentUser]);
 
+  // -- Helper Functions --
+
   const formatTimeAgo = (date) => {
+    if (!date) return '';
     const now = new Date();
     const diffInMinutes = Math.floor((now - date) / (1000 * 60));
-    
-    if (diffInMinutes < 60) {
-      return `${diffInMinutes}m ago`;
-    } else if (diffInMinutes < 1440) {
-      return `${Math.floor(diffInMinutes / 60)}h ago`;
-    } else {
-      return `${Math.floor(diffInMinutes / 1440)}d ago`;
-    }
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+    return `${Math.floor(diffInMinutes / 1440)}d ago`;
   };
 
-  const getActivityIcon = (type) => {
+  const getActivityStyle = (type) => {
     switch (type) {
       case 'test_completed':
-        return <FiTarget className="w-3 h-3 text-green-500" />;
+        return { icon: FiTarget, color: 'text-emerald-500', bg: 'bg-emerald-500/10' };
       case 'test_started':
-        return <FiPlay className="w-3 h-3 text-blue-500" />;
+        return { icon: FiPlay, color: 'text-blue-500', bg: 'bg-blue-500/10' };
       case 'series_subscribed':
-        return <FiBookOpen className="w-3 h-3 text-purple-500" />;
+        return { icon: FiBookOpen, color: 'text-violet-500', bg: 'bg-violet-500/10' };
       default:
-        return <FiClock className="w-3 h-3 text-gray-500" />;
-    }
-  };
-
-  const getActivityStatus = (activity) => {
-    switch (activity.status) {
-      case 'completed':
-        return (
-          <span className="text-green-500 text-xs font-medium">
-            {activity.score}%
-          </span>
-        );
-      case 'in_progress':
-        return (
-          <span className="text-blue-500 text-xs font-medium">
-            {activity.timeSpent}m
-          </span>
-        );
-      case 'subscribed':
-        return (
-          <span className="text-purple-500 text-xs font-medium">
-            New
-          </span>
-        );
-      default:
-        return null;
+        return { icon: FiClock, color: 'text-slate-500', bg: 'bg-slate-500/10' };
     }
   };
 
   const handleRecommendationClick = async (recommendation) => {
     try {
-      // Track user interaction
       await updateUserRecommendations(currentUser.uid, recommendation.id, 'clicked');
-      
-      // Create series data object
-      const seriesData = { 
-        id: recommendation.id, 
-        title: recommendation.title,
-        // Add other required properties if needed
-      };
-      
-      // For admin users, navigate to dashboard
-      // For non-admin users, navigate to tests page
-      if (isAdmin && onViewSeries) {
-        onViewSeries(seriesData);
-      } else if (!isAdmin && onViewTests) {
-        onViewTests(seriesData);
-      } else if (onViewSeries) {
-        // Fallback to onViewSeries if onViewTests is not available
-        onViewSeries(seriesData);
-      }
+      const seriesData = { id: recommendation.id, title: recommendation.title };
+      if (isAdmin && onViewSeries) onViewSeries(seriesData);
+      else if (!isAdmin && onViewTests) onViewTests(seriesData);
+      else if (onViewSeries) onViewSeries(seriesData);
     } catch (error) {
       console.error('Error handling recommendation click:', error);
     }
@@ -197,20 +148,10 @@ const RecentActivityCompact = ({
 
   const refreshRecommendations = async () => {
     if (!currentUser) return;
-    
     try {
       setRecommendationsLoading(true);
       const result = await generatePersonalizedRecommendations(currentUser.uid);
-      
-      if (result.success) {
-        setRecommendations(result.data || []);
-        
-        // Show a brief message if using cached recommendations
-        if (result.cached) {
-          // You could show a toast notification here if you have a toast system
-          console.log('Using cached recommendations from today');
-        }
-      }
+      if (result.success) setRecommendations(result.data || []);
     } catch (error) {
       console.error('Error refreshing recommendations:', error);
     } finally {
@@ -218,154 +159,188 @@ const RecentActivityCompact = ({
     }
   };
 
+  // -- Render States --
+
   if (!currentUser) {
-    return <>
-    <div className='flex flex-col justify-center items-center   font-bold w-full h-full text-slate-500'>
-      <h1 className='font-bold text-[45px] '>?</h1>
-      <h4 className='sm:ml-10 p-4'>Login To view Your recent activities and recommendations</h4>
-    </div>
-    </>;
+    return (
+      <div className={`w-full h-full min-h-[400px] flex flex-col items-center justify-center p-8 rounded-2xl border border-dashed ${isDark ? 'bg-slate-900/50 border-slate-700' : 'bg-white border-slate-200'}`}>
+        <div className={`p-4 rounded-full mb-4 ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-100 text-slate-500'}`}>
+          <FiLock className="w-8 h-8" />
+        </div>
+        <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>Authentication Required</h3>
+        <p className={`text-sm text-center max-w-[250px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+          Please sign in to access your recent activity and personalized insights.
+        </p>
+      </div>
+    );
   }
 
   return (
-    <div className={`w-full h-full ${isDark ? 'bg-gray-900/40' : 'bg-white'} rounded-xl   p-4`}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <FiClock className={`w-4 h-4 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
-          <h3 className={`text-base font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            Recent Activity
-          </h3>
-        </div>
-        
-      </div>
-
-      {/* Activity List */}
-      <div className="space-y-2 mb-4">
-        {recentActivity.slice(0, 3).map((activity) => (
-          <div
-            key={activity.id}
-            className={`p-3 rounded-lg cursor-pointer ${
-              isDark ? 'bg-gray-700/50 hover:bg-gray-700' : 'bg-gray-50 hover:bg-gray-100'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex-shrink-0">
-                {getActivityIcon(activity.type)}
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1">
-                  <h4 className={`text-sm font-semibold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    {activity.title}
-                  </h4>
-                  <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                    {formatTimeAgo(activity.completedAt || activity.startedAt || activity.subscribedAt)}
-                  </span>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <p className={`text-xs truncate ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                    {activity.seriesName}
-                  </p>
-                  {getActivityStatus(activity)}
-                </div>
-              </div>
+    <div className={`flex flex-col h-full ${isDark ? 'bg-slate-900/50' : 'bg-white'} rounded-2xl p-5 shadow-sm`}>
+      
+      {/* Section 1: Recent Activity */}
+      <div className="flex-1 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2.5">
+            <div className={`p-1.5 rounded-lg ${isDark ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
+              <FiClock className="w-4 h-4" />
             </div>
+            <h3 className={`text-sm font-bold tracking-wide uppercase ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+              Recent Activity
+            </h3>
           </div>
-        ))}
+        </div>
+
+        <div className="space-y-3">
+          {loading ? (
+             // Loading Skeleton
+             [1, 2, 3].map(i => (
+              <div key={i} className={`flex items-center gap-4 p-3 rounded-xl animate-pulse ${isDark ? 'bg-slate-800/50' : 'bg-slate-50'}`}>
+                <div className={`w-10 h-10 rounded-lg ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
+                <div className="flex-1 space-y-2">
+                  <div className={`h-3 w-3/4 rounded ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
+                  <div className={`h-2 w-1/2 rounded ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
+                </div>
+              </div>
+            ))
+          ) : recentActivity.length > 0 ? (
+            recentActivity.map((activity) => {
+              const style = getActivityStyle(activity.type);
+              const Icon = style.icon;
+              
+              return (
+                <div
+                  key={activity.id}
+                  className={`group relative flex items-center gap-3 p-3 rounded-xl transition-all duration-200 border border-transparent hover:border-slate-200/50 ${
+                    isDark ? 'bg-slate-800/40 hover:bg-slate-800' : 'bg-slate-50/80 hover:bg-white hover:shadow-md'
+                  }`}
+                >
+                  {/* Icon Box */}
+                  <div className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-lg ${style.bg} ${style.color}`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <h4 className={`text-sm font-medium truncate pr-2 ${isDark ? 'text-slate-200 group-hover:text-white' : 'text-slate-700 group-hover:text-slate-900'}`}>
+                        {activity.title}
+                      </h4>
+                      <span className={`text-[10px] font-medium whitespace-nowrap ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                        {formatTimeAgo(activity.completedAt)}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between mt-1">
+                      <p className={`text-xs truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                        {activity.seriesName}
+                      </p>
+                      
+                      {/* Status Badge */}
+                      {activity.status === 'completed' && (
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                          activity.score >= 70 
+                            ? (isDark ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-700')
+                            : (isDark ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-100 text-amber-700')
+                        }`}>
+                          {activity.score}% Score
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className={`flex flex-col items-center justify-center py-8 text-center ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+              <FiActivity className="w-8 h-8 mb-2 opacity-50" />
+              <p className="text-xs font-medium">No recent activity yet</p>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* AI-Powered Recommendations */}
-      <div className="border-t border-gray-200/30 pt-4">
-        <div className="flex items-center justify-between mb-3">
+      {/* Section 2: AI Recommendations */}
+      <div className={`pt-5 border-t ${isDark ? 'border-slate-700' : 'border-slate-100'}`}>
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <FiTrendingUp className={`w-3 h-3 ${isDark ? 'text-green-400' : 'text-green-600'}`} />
-            <h4 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              Recommended
+            <FiTrendingUp className={`w-4 h-4 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
+            <h4 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              Recommended for You
             </h4>
-            {recommendationsLoading && (
-              <FiRefreshCw className={`w-3 h-3 animate-spin ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
-            )}
           </div>
           <button
             onClick={refreshRecommendations}
             disabled={recommendationsLoading}
-            className={`text-xs px-2 py-1 rounded ${
+            className={`p-1.5 rounded-md transition-colors ${
               isDark 
-                ? 'text-green-400 hover:bg-gray-700 disabled:text-gray-500' 
-                : 'text-green-600 hover:bg-gray-100 disabled:text-gray-400'
+                ? 'text-slate-400 hover:text-white hover:bg-slate-700' 
+                : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
             }`}
+            title="Refresh Recommendations"
           >
-            Refresh
+            <FiRefreshCw className={`w-3.5 h-3.5 ${recommendationsLoading ? 'animate-spin' : ''}`} />
           </button>
         </div>
 
-        {recommendationsLoading ? (
-          <div className="space-y-2">
-            {[1, 2].map(i => (
-              <div key={i} className={`p-2 rounded animate-pulse ${
-                isDark ? 'bg-gray-700/50' : 'bg-gray-50'
-              }`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className={`h-3 rounded w-3/4 mb-1 ${isDark ? 'bg-gray-600' : 'bg-gray-300'}`}></div>
-                    <div className={`h-2 rounded w-1/2 ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
-                  </div>
-                  <div className={`h-5 w-12 rounded ml-2 ${isDark ? 'bg-gray-600' : 'bg-gray-200'}`}></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : recommendations.length > 0 ? (
-          <div className="space-y-2">
-            {recommendations.slice(0, 2).map((rec) => (
+        <div className="space-y-2.5">
+          {recommendationsLoading ? (
+            [1, 2].map(i => (
+              <div key={i} className={`h-16 rounded-lg animate-pulse ${isDark ? 'bg-slate-800/50' : 'bg-slate-50'}`} />
+            ))
+          ) : recommendations.length > 0 ? (
+            recommendations.slice(0, 2).map((rec) => (
               <div
                 key={rec.id}
                 onClick={() => handleRecommendationClick(rec)}
-                className={`p-4 rounded-lg cursor-pointer ${
-                  isDark ? 'bg-gray-700/50 hover:bg-gray-700' : 'bg-gray-50 hover:bg-gray-100'
+                className={`group cursor-pointer p-3 rounded-lg border transition-all duration-200 ${
+                  isDark 
+                    ? 'bg-slate-800/30 border-slate-700/50 hover:border-emerald-500/50 hover:bg-slate-800' 
+                    : 'bg-white border-slate-200 hover:border-emerald-500/50 hover:shadow-sm'
                 }`}
               >
-                <div className="flex items-center justify-between">
+                <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <h5 className={`text-xs font-medium truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    <div className="flex items-center gap-2 mb-1">
+                      {rec.difficulty && (
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded uppercase tracking-wider font-bold ${
+                          rec.difficulty === 'Easy' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' :
+                          rec.difficulty === 'Medium' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400' :
+                          'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400'
+                        }`}>
+                          {rec.difficulty}
+                        </span>
+                      )}
+                    </div>
+                    <h5 className={`text-xs font-semibold leading-tight mb-1 ${isDark ? 'text-slate-200 group-hover:text-white' : 'text-slate-800 group-hover:text-black'}`}>
                       {rec.title}
                     </h5>
-                    
-                    {rec.priority && (
-                      <div className="flex items-center gap-1 mt-1">
-                        <span className={`text-xs px-1 py-0.5 rounded ${
-                          rec.priority === 'High' ? 'bg-red-100 text-red-700' :
-                          rec.priority === 'Medium' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-green-100 text-green-700'
-                        }`}>
-                          {rec.priority}
+                    {rec.confidence && (
+                      <div className="flex items-center gap-1.5">
+                        <div className={`h-1 w-12 rounded-full overflow-hidden ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`}>
+                          <div 
+                            className="h-full bg-emerald-500 rounded-full" 
+                            style={{ width: `${rec.confidence}%` }}
+                          />
+                        </div>
+                        <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                          {rec.confidence}% Match
                         </span>
-                        {rec.confidence && (
-                          <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                            {rec.confidence}% match
-                          </span>
-                        )}
                       </div>
                     )}
                   </div>
-                  <span className={`text-xs px-2 py-2 rounded-lg ml-2 ${
-                    rec.difficulty === 'Easy' ? 'bg-green-100 text-green-600' :
-                    rec.difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-600' :
-                    'bg-red-100 text-red-600'
-                  }`}>
-                    {rec.difficulty}
-                  </span>
+                  <FiChevronRight className={`w-4 h-4 mt-1 opacity-0 -translate-x-2 transition-all group-hover:opacity-100 group-hover:translate-x-0 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
                 </div>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className={`text-center py-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-            <p className="text-xs">Complete some tests to get recommendations</p>
-          </div>
-        )}
+            ))
+          ) : (
+            <div className={`text-center py-6 rounded-lg border border-dashed ${isDark ? 'border-slate-700 bg-slate-800/20' : 'border-slate-200 bg-slate-50/50'}`}>
+              <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                Complete more tests to unlock<br />personalized insights.
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

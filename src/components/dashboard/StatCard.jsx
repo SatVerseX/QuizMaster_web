@@ -1,30 +1,50 @@
 import React from 'react';
 import { FiTrendingUp, FiTrendingDown } from 'react-icons/fi';
 
-const StatCard = ({ icon: Icon, value, label, color, trend, trendValue, mode }) => (
-  <div className={mode(
-    "bg-white backdrop-blur-sm border border-slate-200 rounded-lg sm:rounded-xl p-3 sm:p-4 hover:bg-slate-50 transition-all shadow-sm",
-    "bg-gray-800/60 backdrop-blur-sm border border-gray-700/60 rounded-lg sm:rounded-xl p-3 sm:p-4 hover:bg-gray-800/80 transition-all"
-  )}>
-    <div className="flex items-center gap-2 sm:gap-4">
-      <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${color}`}>
-        <Icon className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white" />
-      </div>
-      <div className="flex-1">
-        <div className={mode("text-lg sm:text-xl lg:text-2xl font-bold text-slate-800", "text-lg sm:text-xl lg:text-2xl font-bold text-white")}>{value}</div>
-        <div className={mode("text-xs sm:text-sm text-slate-600 flex items-center gap-1 sm:gap-2", "text-xs sm:text-sm text-gray-400 flex items-center gap-1 sm:gap-2")}>
-          <span className="hidden sm:inline">{label}</span>
-          <span className="sm:hidden">{label.split(' ')[0]}</span>
-          {trend && (
-            <span className={`flex items-center gap-1 text-xs ${trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
-              {trend === 'up' ? <FiTrendingUp className="w-3 h-3" /> : <FiTrendingDown className="w-3 h-3" />}
-              <span className="hidden sm:inline">{trendValue}</span>
-            </span>
-          )}
+const StatCard = ({ icon: Icon, value, label, color, trend, trendValue, mode }) => {
+  // Extract base color name (e.g., 'blue') from the passed color class if possible, 
+  // or default to a standard mapping. Assuming 'color' prop might be 'bg-blue-600'
+  
+  return (
+    <div className={mode(
+      "bg-white border border-slate-100 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-300",
+      "bg-gray-800/40 border border-gray-700/50 rounded-xl p-5 hover:bg-gray-800/60 transition-all duration-300"
+    )}>
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <p className={mode("text-sm font-medium text-slate-500", "text-sm font-medium text-gray-400")}>
+            {label}
+          </p>
+          <h3 className={mode("text-2xl font-bold text-slate-900 mt-1", "text-2xl font-bold text-white mt-1")}>
+            {value}
+          </h3>
+        </div>
+        <div className={mode(
+          `p-2.5 rounded-lg opacity-90 ${color.replace('bg-', 'text-').replace('600', '600')} bg-opacity-10`, 
+          `p-2.5 rounded-lg bg-gray-700/50 text-white`
+        )}>
+          {/* Note: This assumes 'color' passes a bg class. For cleaner SaaS, we usually pass a color string like 'blue' */}
+          <Icon className="w-5 h-5" />
         </div>
       </div>
+      
+      {trend && (
+        <div className="flex items-center gap-2 text-xs font-medium">
+          <span className={`
+            flex items-center gap-1 px-1.5 py-0.5 rounded-md
+            ${trend === 'up' 
+              ? (mode('text-emerald-700 bg-emerald-50', 'text-emerald-400 bg-emerald-900/20')) 
+              : (mode('text-rose-700 bg-rose-50', 'text-rose-400 bg-rose-900/20'))
+            }
+          `}>
+            {trend === 'up' ? <FiTrendingUp className="w-3 h-3" /> : <FiTrendingDown className="w-3 h-3" />}
+            {trendValue}
+          </span>
+          <span className={mode("text-slate-400", "text-gray-500")}>vs last month</span>
+        </div>
+      )}
     </div>
-  </div>
-);
+  );
+};
 
 export default StatCard;

@@ -1,14 +1,118 @@
 import React from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { 
-  FiTarget, FiClock, FiTrendingUp, FiAward, FiCheckCircle, 
-  FiXCircle, FiMinus, FiFlag, FiBarChart2, FiUsers 
+  FiClock, FiCheckCircle, FiXCircle, FiMinus, 
+  FiActivity, FiBarChart2, FiAward, FiAlertCircle 
 } from 'react-icons/fi';
+
+// --- Reusable Components ---
+
+const CircularProgress = ({ percentage, color, size = 160, strokeWidth = 12, trackColor, children }) => {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const offset = circumference - (percentage / 100) * circumference;
+
+  return (
+    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+      <svg className="transform -rotate-90 w-full h-full">
+        {/* Background Track */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="currentColor"
+          strokeWidth={strokeWidth}
+          fill="transparent"
+          className={trackColor} 
+        />
+        {/* Progress Value */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke={color}
+          strokeWidth={strokeWidth}
+          fill="transparent"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          className="transition-all duration-1000 ease-out"
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        {children}
+      </div>
+    </div>
+  );
+};
+
+const KPIBox = ({ icon: Icon, label, value, iconColor, styles, isDark }) => (
+  <div className={`flex flex-col items-center justify-center p-3 rounded-xl border border-transparent transition-all ${styles.boxBg}`}>
+    <div className={isDark ? "p-2 rounded-full mb-2 bg-black/20 shadow-sm" : "p-2 rounded-full mb-2 bg-white/80 shadow-sm"}>
+      <Icon className={`w-5 h-5 ${iconColor}`} />
+    </div>
+    <span className={`text-lg font-bold tabular-nums ${styles.textPrimary}`}>
+      {value}
+    </span>
+    <span className={`text-xs font-bold uppercase tracking-wide ${styles.textSecondary}`}>
+      {label}
+    </span>
+  </div>
+);
+
+const ProgressBar = ({ label, value, color, trackColor, styles }) => (
+  <div className="w-full">
+    <div className="flex justify-between items-end mb-2">
+      <span className={`text-sm font-bold ${styles.textSecondary}`}>{label}</span>
+      <span className={`text-sm font-bold ${styles.textPrimary}`}>{value.toFixed(0)}%</span>
+    </div>
+    <div className={`h-2.5 w-full rounded-full ${trackColor}`}>
+      <div 
+        className="h-2.5 rounded-full transition-all duration-700 ease-out"
+        style={{ width: `${value}%`, backgroundColor: color }}
+      />
+    </div>
+  </div>
+);
+
+// --- Main Component ---
 
 const PerformanceOverview = ({ attempt, questionAnalysis }) => {
   const { isDark } = useTheme();
-  
-  // Calculate overall stats
+
+  const styles = {
+    card: isDark 
+      ? 'bg-gray-800 border-gray-700' 
+      : 'bg-white border-slate-200',
+    headerBorder: isDark 
+      ? 'border-gray-700' 
+      : 'border-slate-100',
+    subSectionBg: isDark 
+      ? 'bg-gray-900/50' 
+      : 'bg-slate-50',
+    textPrimary: isDark 
+      ? 'text-white' 
+      : 'text-slate-900',
+    textSecondary: isDark 
+      ? 'text-slate-400' 
+      : 'text-slate-600',
+    progressTrack: isDark 
+      ? 'text-gray-700'  
+      : 'text-slate-200', 
+    barTrack: isDark
+      ? 'bg-gray-700'
+      : 'bg-slate-200',
+    
+    // KPI Box Backgrounds
+    kpi: {
+      correct: isDark ? 'bg-emerald-900/10' : '',
+      incorrect: isDark ? 'bg-rose-900/10' : '',
+      skipped: isDark ? 'bg-gray-700/30' : '',
+      time: isDark ? 'bg-blue-900/10' : '',
+    }
+  };
+
+  // 2. Stats Calculation
   const stats = {
     total: questionAnalysis.length,
     correct: questionAnalysis.filter(q => q.status === 'correct').length,
@@ -21,287 +125,149 @@ const PerformanceOverview = ({ attempt, questionAnalysis }) => {
   stats.accuracy = stats.attempted > 0 ? (stats.correct / stats.attempted) * 100 : 0;
   stats.completionRate = stats.total > 0 ? (stats.attempted / stats.total) * 100 : 0;
   
-  // Check if it's a section-wise quiz
-  const isSectionWise = questionAnalysis.some(q => q.sectionId);
-  const sectionCount = isSectionWise ? new Set(questionAnalysis.map(q => q.sectionId)).size : 0;
-  
-  const StatCard = ({ icon: Icon, label, value, color, subtitle, trend }) => (
-    <div className={`p-4 rounded-xl border transition-all duration-200 hover:scale-[1.02] ${
-      isDark 
-        ? 'bg-gray-800/50 border-gray-700 hover:bg-gray-800/70' 
-        : 'bg-white border-gray-200 hover:bg-gray-50 shadow-sm hover:shadow-md'
-    }`}>
-      <div className="flex items-start justify-between mb-3">
-        <div className={`p-2 rounded-lg ${color}`}>
-          <Icon className="w-4 h-4 text-white" />
-        </div>
-        {trend && (
-          <div className={`text-xs px-2 py-1 rounded-full ${
-            trend > 0 
-              ? 'text-green-600 bg-green-100' 
-              : trend < 0 
-              ? 'text-red-600 bg-red-100' 
-              : 'text-gray-600 bg-gray-100'
-          }`}>
-            {trend > 0 ? '+' : ''}{trend}%
-          </div>
-        )}
-      </div>
-      
-      <div className="space-y-1">
-        <div className={`text-2xl font-bold ${
-          isDark ? 'text-gray-100' : 'text-gray-800'
-        }`}>
-          {value}
-        </div>
-        <div className={`text-sm font-medium ${
-          isDark ? 'text-gray-300' : 'text-gray-700'
-        }`}>
-          {label}
-        </div>
-        {subtitle && (
-          <div className={`text-xs ${
-            isDark ? 'text-gray-500' : 'text-gray-500'
-          }`}>
-            {subtitle}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-  
+  const finalScore = attempt.percentage || stats.accuracy;
+
+  // 3. Helper for Grade Colors
   const getGradeInfo = (percentage) => {
-    if (isDark) {
-      if (percentage >= 90) return { grade: 'A+', color: 'text-green-400', bg: 'bg-green-500/20 border-green-500/40' };
-      if (percentage >= 80) return { grade: 'A', color: 'text-green-400', bg: 'bg-green-500/20 border-green-500/40' };
-      if (percentage >= 70) return { grade: 'B', color: 'text-blue-400', bg: 'bg-blue-500/20 border-blue-500/40' };
-      if (percentage >= 60) return { grade: 'C', color: 'text-yellow-300', bg: 'bg-yellow-500/20 border-yellow-500/40' };
-      return { grade: 'D', color: 'text-red-400', bg: 'bg-red-500/20 border-red-500/40' };
-    } else {
-      if (percentage >= 90) return { grade: 'A+', color: 'text-green-700', bg: 'bg-green-50 border-green-200' };
-      if (percentage >= 80) return { grade: 'A', color: 'text-green-700', bg: 'bg-green-50 border-green-200' };
-      if (percentage >= 70) return { grade: 'B', color: 'text-blue-700', bg: 'bg-blue-50 border-blue-200' };
-      if (percentage >= 60) return { grade: 'C', color: 'text-yellow-700', bg: 'bg-yellow-50 border-yellow-200' };
-      return { grade: 'D', color: 'text-red-700', bg: 'bg-red-50 border-red-200' };
-    }
+    if (percentage >= 90) return { grade: 'A+', label: 'Excellent', color: '#10b981', text: 'text-emerald-600' };
+    if (percentage >= 80) return { grade: 'A', label: 'Very Good', color: '#10b981', text: 'text-emerald-600' };
+    if (percentage >= 70) return { grade: 'B', label: 'Good', color: '#3b82f6', text: 'text-blue-600' };
+    if (percentage >= 60) return { grade: 'C', label: 'Average', color: '#f59e0b', text: 'text-amber-600' };
+    return { grade: 'D', label: 'Needs Improvement', color: '#ef4444', text: 'text-rose-600' };
   };
-  
-  const gradeInfo = getGradeInfo(attempt.percentage || stats.accuracy);
-  
-  const MetricRow = ({ label, value, color, icon: Icon }) => (
-    <div className="flex items-center justify-between py-2">
-      <div className="flex items-center gap-2">
-        {Icon && <Icon className={`w-4 h-4 ${
-          isDark ? 'text-gray-400' : 'text-gray-500'
-        }`} />}
-        <span className={`text-sm font-medium ${
-          isDark ? 'text-gray-300' : 'text-gray-700'
-        }`}>
-          {label}
-        </span>
-      </div>
-      <span className={`text-sm font-bold ${color}`}>
-        {value}
-      </span>
-    </div>
-  );
-  
+
+  const grade = getGradeInfo(finalScore);
+  const timeDisplay = `${Math.floor((attempt.timeSpent || 0) / 60)}m ${(attempt.timeSpent || 0) % 60}s`;
+  const avgTime = stats.total > 0 ? ((attempt.timeSpent || 0) / stats.total).toFixed(1) : 0;
+
   return (
-    <div className="space-y-4">
-      {/* Overall Performance Card */}
-      <div className={`border rounded-xl p-5 ${
-        isDark 
-          ? 'bg-gray-900 border-gray-700' 
-          : 'bg-white border-gray-200 shadow-sm'
-      }`}>
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-5">
-          <div className={`p-2 rounded-lg ${
-            isDark ? 'bg-blue-600' : 'bg-blue-600'
-          }`}>
-            <FiTarget className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h3 className={`text-xl font-bold ${
-              isDark ? 'text-gray-100' : 'text-gray-800'
-            }`}>
-              Overall Performance
-            </h3>
-            <p className={`text-sm ${
-              isDark ? 'text-gray-400' : 'text-gray-600'
-            }`}>
-              {isSectionWise ? `Section-wise quiz • ${sectionCount} sections` : 'Standard quiz format'}
-            </p>
-          </div>
+    <div className={`w-full border rounded-2xl shadow-sm overflow-hidden ${styles.card}`}>
+      
+      {/* Header */}
+      <div className={`px-6 py-5 border-b flex items-center gap-3 ${styles.headerBorder}`}>
+        <div className={`p-2 rounded-lg ${isDark ? 'bg-indigo-500/20 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}>
+          <FiBarChart2 className="w-5 h-5" />
         </div>
-        
-        {/* Grade Display */}
-        <div className="text-center mb-6">
-          <div className={`inline-flex flex-col items-center p-6 rounded-2xl border ${gradeInfo.bg}`}>
-            <div className={`text-4xl font-bold mb-2 ${gradeInfo.color}`}>
-              {gradeInfo.grade}
-            </div>
-            <div className={`text-2xl font-bold mb-1 ${gradeInfo.color}`}>
-              {(attempt.percentage || stats.accuracy).toFixed(1)}%
-            </div>
-            <div className={`text-sm ${
-              isDark ? 'text-gray-400' : 'text-gray-600'
-            }`}>
-              Overall Score
-            </div>
-          </div>
+        <div>
+          <h2 className={`text-lg font-bold leading-tight ${styles.textPrimary}`}>
+            Performance Overview
+          </h2>
+          <p className={`text-xs font-bold mt-0.5 ${styles.textSecondary}`}>
+            {stats.total} Questions • {stats.attempted} Attempted
+          </p>
         </div>
-        
-        {/* Progress Indicators */}
-        <div className="grid grid-cols-2 gap-4 mb-5">
-          {/* Accuracy Progress */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className={`text-sm font-medium ${
-                isDark ? 'text-gray-300' : 'text-gray-700'
-              }`}>
-                Accuracy
-              </span>
-              <span className={`text-sm font-bold ${
-                stats.accuracy >= 80 ? 'text-green-500' : 
-                stats.accuracy >= 60 ? 'text-yellow-500' : 'text-red-500'
-              }`}>
-                {stats.accuracy.toFixed(1)}%
-              </span>
-            </div>
-            <div className={`w-full h-2 rounded-full ${
-              isDark ? 'bg-gray-700' : 'bg-gray-200'
-            }`}>
-              <div 
-                className={`h-2 rounded-full transition-all duration-500 ${
-                  stats.accuracy >= 80 ? 'bg-green-500' : 
-                  stats.accuracy >= 60 ? 'bg-yellow-500' : 'bg-red-500'
-                }`}
-                style={{ width: `${Math.min(stats.accuracy, 100)}%` }}
-              />
-            </div>
-          </div>
+      </div>
+
+      <div className="p-6">
+        <div className="flex flex-col lg:flex-row gap-8 mb-8">
           
-          {/* Completion Progress */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className={`text-sm font-medium ${
-                isDark ? 'text-gray-300' : 'text-gray-700'
-              }`}>
-                Completion
-              </span>
-              <span className={`text-sm font-bold ${
-                stats.completionRate >= 90 ? 'text-green-500' : 
-                stats.completionRate >= 70 ? 'text-yellow-500' : 'text-red-500'
-              }`}>
-                {stats.completionRate.toFixed(1)}%
-              </span>
-            </div>
-            <div className={`w-full h-2 rounded-full ${
-              isDark ? 'bg-gray-700' : 'bg-gray-200'
-            }`}>
-              <div 
-                className={`h-2 rounded-full transition-all duration-500 ${
-                  stats.completionRate >= 90 ? 'bg-green-500' : 
-                  stats.completionRate >= 70 ? 'bg-yellow-500' : 'bg-red-500'
-                }`}
-                style={{ width: `${Math.min(stats.completionRate, 100)}%` }}
-              />
+          {/* Left: Circular Progress */}
+          <div className="flex flex-col items-center justify-center shrink-0 lg:w-1/3">
+            <CircularProgress 
+              percentage={finalScore} 
+              color={grade.color} 
+              size={150} 
+              trackColor={styles.progressTrack} // Passing dynamic style
+            >
+              <div className="flex flex-col items-center">
+                <span className={`text-4xl font-extrabold tabular-nums ${styles.textPrimary}`}>
+                  {finalScore.toFixed(0)}%
+                </span>
+                <span className={`text-sm font-bold mt-1 ${grade.text}`}>
+                  Grade {grade.grade}
+                </span>
+              </div>
+            </CircularProgress>
+            
+            <div className="mt-4 text-center">
+              <p className={`text-sm font-bold mb-1 ${styles.textSecondary}`}>Performance Status</p>
+              <p className={`text-lg font-bold ${grade.text}`}>{grade.label}</p>
             </div>
           </div>
+
+          {/* Right: KPI Grid */}
+          <div className="grid grid-cols-2 gap-4 w-full lg:w-2/3 ">
+            <KPIBox 
+              icon={FiCheckCircle} label="Correct" value={stats.correct} 
+              iconColor="text-emerald-600 "
+              styles={{ ...styles, boxBg: styles.kpi.correct }}
+              isDark={isDark}
+            />
+            <KPIBox 
+              icon={FiXCircle} label="Incorrect" value={stats.incorrect} 
+              iconColor="text-rose-600"
+              styles={{ ...styles, boxBg: styles.kpi.incorrect }}
+              isDark={isDark}
+            />
+            <KPIBox 
+              icon={FiMinus} label="Skipped" value={stats.skipped} 
+              iconColor="text-slate-500"
+              styles={{ ...styles, boxBg: styles.kpi.skipped }}
+              isDark={isDark}
+            />
+            <KPIBox 
+              icon={FiClock} label="Total Time" value={timeDisplay} 
+              iconColor="text-blue-600"
+              styles={{ ...styles, boxBg: styles.kpi.time }}
+              isDark={isDark}
+              />
+          </div>
         </div>
-        
-        {/* Quick Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatCard
-            icon={FiCheckCircle}
-            label="Correct"
-            value={stats.correct}
-            color={isDark ? "bg-green-600" : "bg-green-600"}
-            subtitle={`${((stats.correct / stats.total) * 100).toFixed(1)}%`}
+
+        {/* Progress Bars */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+          <ProgressBar 
+            label="Accuracy Rate" value={stats.accuracy} color={grade.color} 
+            trackColor={styles.barTrack}
+            styles={styles}
+            isDark={isDark}
           />
-          <StatCard
-            icon={FiXCircle}
-            label="Incorrect"
-            value={stats.incorrect}
-            color={isDark ? "bg-red-600" : "bg-red-600"}
-            subtitle={`${((stats.incorrect / stats.total) * 100).toFixed(1)}%`}
-          />
-          <StatCard
-            icon={FiMinus}
-            label="Skipped"
-            value={stats.skipped}
-            color={isDark ? "bg-gray-600" : "bg-gray-600"}
-            subtitle={`${((stats.skipped / stats.total) * 100).toFixed(1)}%`}
-          />
-          <StatCard
-            icon={FiFlag}
-            label="Flagged"
-            value={stats.flagged}
-            color={isDark ? "bg-yellow-600" : "bg-yellow-600"}
-            subtitle="Review needed"
+          <ProgressBar 
+            label="Completion Rate" value={stats.completionRate} color="#6366f1" 
+            trackColor={styles.barTrack}
+            styles={styles}
+            isDark={isDark}
           />
         </div>
       </div>
-      
-      {/* Detailed Metrics Card */}
-      <div className={`border rounded-xl p-5 ${
-        isDark 
-          ? 'bg-gray-900 border-gray-700' 
-          : 'bg-white border-gray-200 shadow-sm'
-      }`}>
-        <div className="flex items-center gap-3 mb-4">
-          <div className={`p-2 rounded-lg ${
-            isDark ? 'bg-purple-600' : 'bg-purple-600'
-          }`}>
-            <FiBarChart2 className="w-5 h-5 text-white" />
+
+      {/* Footer */}
+      <div className={`px-6 py-4 border-t ${styles.headerBorder} ${styles.subSectionBg}`}>
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-sm">
+          
+          <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-start">
+            <div>
+              <span className={`block text-xs font-bold uppercase tracking-wider mb-1 ${styles.textSecondary}`}>
+                Avg Time/Q
+              </span>
+              <div className={`font-bold flex items-center gap-1.5 ${styles.textPrimary}`}>
+                <FiActivity className="w-4 h-4 text-slate-400" />
+                {avgTime}s
+              </div>
+            </div>
+            
+            <div className={`h-8 w-px mx-2 hidden sm:block ${isDark ? 'bg-gray-700' : 'bg-slate-200'}`}></div>
+
+            <div>
+              <span className={`block text-xs font-bold uppercase tracking-wider mb-1 ${styles.textSecondary}`}>
+                Flagged
+              </span>
+              <div className={`font-bold flex items-center gap-1.5 ${styles.textPrimary}`}>
+                <FiAlertCircle className={`w-4 h-4 ${stats.flagged > 0 ? 'text-amber-500' : 'text-slate-400'}`} />
+                {stats.flagged}
+              </div>
+            </div>
           </div>
-          <h3 className={`text-lg font-bold ${
-            isDark ? 'text-gray-100' : 'text-gray-800'
+
+          {/* Badge (Logic kept inline as it depends on pass/fail AND isDark) */}
+          <div className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide border ${
+            attempt.isPassed 
+              ? isDark ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-emerald-100 text-emerald-800 border-emerald-200'
+              : isDark ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-rose-100 text-rose-800 border-rose-200'
           }`}>
-            Detailed Metrics
-          </h3>
-        </div>
-        
-        <div className={`divide-y ${
-          isDark ? 'divide-gray-700' : 'divide-gray-200'
-        }`}>
-          <MetricRow
-            icon={FiTarget}
-            label="Accuracy Rate"
-            value={`${stats.accuracy.toFixed(1)}%`}
-            color={stats.accuracy >= 80 ? 'text-green-500' : stats.accuracy >= 60 ? 'text-yellow-500' : 'text-red-500'}
-          />
-          
-          <MetricRow
-            icon={FiTrendingUp}
-            label="Completion Rate"
-            value={`${stats.completionRate.toFixed(1)}%`}
-            color={stats.completionRate >= 90 ? 'text-green-500' : stats.completionRate >= 70 ? 'text-yellow-500' : 'text-red-500'}
-          />
-          
-          <MetricRow
-            icon={FiClock}
-            label="Time Spent"
-            value={`${Math.floor((attempt.timeSpent || 0) / 60)}m ${(attempt.timeSpent || 0) % 60}s`}
-            color={isDark ? 'text-blue-400' : 'text-blue-600'}
-          />
-          
-          <MetricRow
-            icon={FiAward}
-            label="Average per Question"
-            value={`${stats.total > 0 ? ((attempt.timeSpent || 0) / stats.total).toFixed(1) : 0}s`}
-            color={isDark ? 'text-purple-400' : 'text-purple-600'}
-          />
-          
-          {isSectionWise && (
-            <MetricRow
-              icon={FiUsers}
-              label="Total Sections"
-              value={sectionCount.toString()}
-              color={isDark ? 'text-indigo-400' : 'text-indigo-600'}
-            />
-          )}
+              {attempt.isPassed ? 'Passed Exam' : 'Not Passed'}
+          </div>
+
         </div>
       </div>
     </div>

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom"; // IMPORT THIS FOR PORTAL
 import { useTheme } from "../../contexts/ThemeContext";
 import {
   FiX,
@@ -6,441 +7,210 @@ import {
   FiChevronRight,
   FiLoader,
   FiCheck,
+  FiAlertCircle,
+  FiZap,
+  FiBookOpen
 } from "react-icons/fi";
-import { Sparkle } from "lucide-react";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
+// Initialize AI
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
 
 const SectionQuestionNavigator = ({ section, onClose }) => {
   const { isDark } = useTheme();
+  
+  // --- State ---
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showExplanation, setShowExplanation] = useState(false);
   const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
   const [explanations, setExplanations] = useState({});
+  const navScrollRef = useRef(null);
 
   const currentQuestion = section.questions[currentQuestionIndex];
 
-  // Lock body scroll when popup is open
+  // --- Styles ---
+  const styles = {
+    overlay: isDark ? "bg-black/80 backdrop-blur-md" : "bg-slate-900/40 backdrop-blur-sm",
+    modal: isDark ? "bg-gray-900 border-gray-700" : "bg-white border-transparent",
+    header: isDark ? "bg-gray-800/90 border-gray-700" : "bg-white/90 border-slate-200",
+    body: isDark ? "bg-gray-900" : "bg-slate-50",
+    
+    textPrimary: isDark ? "text-gray-100" : "text-slate-900",
+    textSecondary: isDark ? "text-gray-400" : "text-slate-500",
+    
+    card: isDark 
+      ? "bg-gray-800 border-gray-700 shadow-xl" 
+      : "bg-white border-slate-200 shadow-xl shadow-slate-200/50",
+      
+    // Option styling
+    option: (status) => {
+      const base = "p-4 rounded-xl border-2 transition-all duration-200 cursor-default ";
+      if (status === 'correct') return base + (isDark ? "bg-emerald-500/10 border-emerald-500/50" : "bg-emerald-50 border-emerald-500");
+      if (status === 'wrong') return base + (isDark ? "bg-rose-500/10 border-rose-500/50" : "bg-rose-50 border-rose-500");
+      return base + (isDark ? "bg-gray-800/50 border-gray-700" : "bg-white border-slate-200");
+    },
+
+    navBtn: (isActive, status) => {
+      let base = "shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold transition-all duration-200 border ";
+      if (isActive) return base + "bg-indigo-600 text-white border-indigo-500 scale-110 shadow-lg z-10 ring-2 ring-indigo-200 dark:ring-indigo-900";
+      if (status === 'correct') return base + (isDark ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" : "bg-emerald-50 text-emerald-600 border-emerald-200");
+      if (status === 'incorrect') return base + (isDark ? "bg-rose-500/10 text-rose-400 border-rose-500/30" : "bg-rose-50 text-rose-600 border-rose-200");
+      return base + (isDark ? "bg-gray-800 text-gray-500 border-gray-700 hover:bg-gray-700" : "bg-white text-slate-400 border-slate-200 hover:bg-gray-50");
+    }
+  };
+
+  // --- Effects ---
   useEffect(() => {
-    document.body.style.overflow = showExplanation ? "hidden" : "unset";
+    // Lock scroll on mount
+    document.body.style.overflow = "hidden";
     return () => (document.body.style.overflow = "unset");
-  }, [showExplanation]);
+  }, []);
+
+  useEffect(() => {
+    if (navScrollRef.current) {
+      const activeBtn = navScrollRef.current.children[currentQuestionIndex];
+      if (activeBtn) {
+        activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+    }
+  }, [currentQuestionIndex]);
 
   // Keyboard navigation
   useEffect(() => {
-    const handleKeyPress = (e) => {
-      if (showExplanation) return;
-      if (e.key === "ArrowLeft") prevQuestion();
-      if (e.key === "ArrowRight") nextQuestion();
-      if (e.key === "Escape") setShowExplanation(false);
+    const handleKey = (e) => {
+      if (e.key === "Escape") { showExplanation ? setShowExplanation(false) : onClose(); }
+      if (!showExplanation) {
+        if (e.key === "ArrowRight") nextQ();
+        if (e.key === "ArrowLeft") prevQ();
+      }
     };
-    window.addEventListener("keydown", handleKeyPress);
-    return () => window.removeEventListener("keydown", handleKeyPress);
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
   }, [currentQuestionIndex, showExplanation]);
 
-  const nextQuestion = () => {
-    if (currentQuestionIndex < section.questions.length - 1) {
-      setCurrentQuestionIndex((i) => i + 1);
-      setShowExplanation(false);
-    }
-  };
-
-  const prevQuestion = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex((i) => i - 1);
-      setShowExplanation(false);
-    }
-  };
-
-  const jumpToQuestion = (index) => {
-    setCurrentQuestionIndex(index);
-    setShowExplanation(false);
-  };
-
-  // Optimized: Simpler data structure for API call
-  const generateQuestionData = () => {
-    const userAns = currentQuestion.userAnswer;
-    const correctAns = currentQuestion.correctAnswer;
-    
-    return {
-      q: currentQuestion.question,
-      opts: currentQuestion.options || [],
-      user: userAns !== undefined ? userAns : -1,
-      correct: correctAns,
-      isRight: userAns === correctAns,
-      exp: currentQuestion.explanation || ""
-    };
-  };
-
-  // Optimized: Much shorter, focused prompt
-  const getGeminiExplanation = async (data) => {
-    try {
-      const model = genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash", // Using lighter model for faster response
-        generationConfig: {
-          maxOutputTokens: 300, // Limit response length
-          temperature: 0.1, // More focused responses
-        }
-      });
-
-      // Optimized: Concise prompt
-      const prompt = `Question: ${data.q}
-
-Options: ${data.opts.map((opt, i) => `${String.fromCharCode(65 + i)}) ${opt}`).join(' | ')}
-
-Student chose: ${data.user >= 0 ? String.fromCharCode(65 + data.user) : 'No answer'}
-Correct: ${String.fromCharCode(65 + data.correct)}
-Result: ${data.isRight ? 'Correct ✅' : 'Wrong ❌'}
-
-Provide brief explanation (150 words max):
-📚 Why correct answer is right
-❌ Why wrong options fail  
-🔑 Key concept to remember`;
-
-      const result = await model.generateContent(prompt);
-      return result.response.text();
-    } catch (error) {
-      console.error("API Error:", error);
-      throw new Error("AI explanation failed");
-    }
-  };
+  // --- Logic ---
+  const nextQ = () => currentQuestionIndex < section.questions.length - 1 && setCurrentQuestionIndex(p => p + 1);
+  const prevQ = () => currentQuestionIndex > 0 && setCurrentQuestionIndex(p => p - 1);
 
   const handleExplanation = async () => {
-    if (showExplanation) {
-      setShowExplanation(false);
-      return;
-    }
-
-    const questionId = `${section.name}-${currentQuestionIndex}`;
-    
-    // Check cache first
-    if (explanations[questionId]) {
-      setShowExplanation(true);
-      return;
-    }
+    if (showExplanation) { setShowExplanation(false); return; }
+    const id = `${section.name}-${currentQuestionIndex}`;
+    if (explanations[id]) { setShowExplanation(true); return; }
 
     setShowExplanation(true);
     setIsLoadingExplanation(true);
-
     try {
-      const questionData = generateQuestionData();
-      
-      // Add timeout for faster failure
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Timeout')), 10000)
-      );
-      
-      const explanationPromise = getGeminiExplanation(questionData);
-      
-      const aiExplanation = await Promise.race([explanationPromise, timeoutPromise]);
-      
-      // Cache the result
-      setExplanations(prev => ({
-        ...prev,
-        [questionId]: aiExplanation
-      }));
-      
-    } catch (error) {
-      const fallback = `Quick Review:
-📚 Correct Answer: ${String.fromCharCode(65 + currentQuestion.correctAnswer)}
-❌ Your Answer: ${currentQuestion.userAnswer !== undefined ? String.fromCharCode(65 + currentQuestion.userAnswer) : 'Not answered'}
-
-${currentQuestion.explanation || 'Review the standard explanation and key concepts for this topic.'}
-
-🔑 Practice similar questions to strengthen understanding.`;
-      
-      setExplanations(prev => ({
-        ...prev,
-        [questionId]: fallback
-      }));
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+      const prompt = `Explain concisely:\nQ: "${currentQuestion.question}"\nCorrect: "${currentQuestion.options[currentQuestion.correctAnswer]}"\nWhy is this correct?`;
+      const result = await model.generateContent(prompt);
+      setExplanations(prev => ({ ...prev, [id]: result.response.text() }));
+    } catch (e) {
+      setExplanations(prev => ({ ...prev, [id]: "Explanation unavailable." }));
     } finally {
       setIsLoadingExplanation(false);
     }
   };
 
-  if (!section.questions.length) {
-    return (
-      <div
-        className={`border rounded-xl p-8 text-center max-w-md mx-auto ${
-          isDark
-            ? "bg-gray-900 text-gray-100 border-gray-700"
-            : "bg-white text-gray-800 border-gray-200"
-        }`}
-      >
-        <div className="text-2xl mb-2">🧠</div>
-        <h3 className={`text-lg font-semibold mb-1 ${
-          isDark ? "text-gray-100" : "text-gray-800"
-        }`}>
-          No Questions Available
-        </h3>
-        <p className={isDark ? "text-gray-400" : "text-gray-500"}>
-          Unable to load questions for this section.
-        </p>
-      </div>
-    );
-  }
+  if (!section.questions.length) return null;
 
-  const questionId = `${section.name}-${currentQuestionIndex}`;
-
-  return (
-    <>
-      {/* Main card - keeping all existing UI exactly the same */}
-      <div className="transition-all duration-200">
-        <div
-          className={`border rounded-xl shadow-sm overflow-hidden max-w-2xl mx-auto ${
-            isDark
-              ? "bg-gray-900 border-gray-700"
-              : "bg-white border-gray-200"
-          }`}
-        >
-          {/* Header */}
-          <div
-            className={`border-b p-3 ${
-              isDark 
-                ? "border-gray-700 bg-gray-800/50" 
-                : "border-gray-200 bg-gray-50/50"
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <h3 className={`text-base font-semibold ${
-                isDark ? "text-gray-100" : "text-gray-800"
-              }`}>
-                {section.name}
-              </h3>
-              <div className="flex items-center gap-4">
-                <div className="text-right">
-                  <div className={`text-base font-bold ${
-                    isDark ? "text-gray-100" : "text-gray-800"
-                  }`}>
-                    {currentQuestionIndex + 1}/{section.questions.length}
-                  </div>
-                  <div className={`text-[11px] ${
-                    isDark ? "text-gray-400" : "text-gray-500"
-                  }`}>
-                    Progress
-                  </div>
-                </div>
-                <button
-                  onClick={onClose}
-                  className={`p-2 rounded-lg border transition-colors ${
-                    isDark
-                      ? "border-gray-600 hover:bg-gray-700 text-gray-300 hover:text-gray-100"
-                      : "border-gray-300 hover:bg-gray-100 text-gray-600 hover:text-gray-800"
-                  }`}
-                >
-                  <FiX className="w-5 h-5" />
-                </button>
+  // --- THE PORTAL FIX ---
+  // Using createPortal pushes this entire div to document.body
+  // This ensures z-index works correctly and it covers the full screen.
+  return createPortal(
+    <div className={`fixed inset-0 z-[9999] flex items-center justify-center p-0 md:p-4 ${styles.overlay}`}>
+      
+      {/* Modal Container */}
+      <div className={`w-full h-full md:h-[90vh] md:max-w-5xl flex flex-col md:rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 fade-in duration-200 border ${styles.modal}`}>
+        
+        {/* 1. Header & Nav Strip */}
+        <div className={`shrink-0 z-20 border-b ${styles.header}`}>
+          {/* Top Bar */}
+          <div className="flex items-center justify-between px-4 py-3 md:px-6">
+            <div className="flex items-center gap-3">
+              <button onClick={onClose} className={`p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors ${styles.textSecondary}`}>
+                <FiX className="w-5 h-5" />
+              </button>
+              <div>
+                <h2 className={`text-sm md:text-base font-bold leading-tight ${styles.textPrimary}`}>{section.name}</h2>
+                <p className={`text-[10px] md:text-xs font-medium uppercase tracking-wider ${styles.textSecondary}`}>Review Mode</p>
               </div>
             </div>
-
-            {/* Progress bar */}
-            <div
-              className={`w-full h-1.5 rounded-full mt-3 ${
-                isDark ? "bg-gray-700" : "bg-gray-200"
-              }`}
+            
+            {/* AI Action */}
+            <button 
+              onClick={handleExplanation}
+              className="hidden md:flex items-center gap-2 px-3 py-3 rounded-full bg-black  text-white text-lg font-bold  hover:scale-105 transition-all"
             >
-              <div
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  isDark 
-                    ? "bg-gradient-to-r from-blue-500 to-purple-500" 
-                    : "bg-gradient-to-r from-blue-600 to-indigo-600"
-                }`}
-                style={{
-                  width: `${
-                    ((currentQuestionIndex + 1) / section.questions.length) * 100
-                  }%`,
-                }}
-              />
-            </div>
-
-            {/* Navigation dots */}
-            <div className="flex flex-wrap gap-2 justify-center mt-3">
-              {section.questions.map((q, index) => {
-                const isActive = index === currentQuestionIndex;
-                const isCorrect = q.isCorrect;
-                const isWrong = q.status === "incorrect";
-                
-                return (
-                  <button
-                    key={index}
-                    onClick={() => jumpToQuestion(index)}
-                    className={[
-                      "w-7 h-7 rounded-full text-[11px] font-semibold border-2 transition-all duration-200 hover:scale-105",
-                      isActive
-                        ? isDark
-                          ? "bg-blue-600 text-white border-blue-600 shadow-lg"
-                          : "bg-indigo-600 text-white border-indigo-600 shadow-lg"
-                        : isCorrect
-                        ? isDark
-                          ? "text-green-400 border-green-500 bg-green-500/10 hover:bg-green-500/20"
-                          : "text-green-700 border-green-500 bg-green-50 hover:bg-green-100"
-                        : isWrong
-                        ? isDark
-                          ? "text-red-400 border-red-500 bg-red-500/10 hover:bg-red-500/20"
-                          : "text-red-700 border-red-500 bg-red-50 hover:bg-red-100"
-                        : isDark
-                        ? "text-gray-400 border-gray-600 bg-gray-800 hover:bg-gray-700"
-                        : "text-gray-600 border-gray-300 bg-gray-50 hover:bg-gray-100",
-                    ].join(" ")}
-                  >
-                    {index + 1}
-                  </button>
-                );
-              })}
-            </div>
+              <FiZap />
+            </button>
           </div>
 
-          {/* Body - keeping all existing UI exactly the same */}
-          <div className="p-4">
-            {/* Question */}
-            <div
-              className={`mb-4 p-4 rounded-xl border ${
-                isDark 
-                  ? "border-gray-700 bg-gray-800/30" 
-                  : "border-gray-200 bg-gray-50/50"
-              }`}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex gap-3 flex-1">
-                  <span
-                    className={[
-                      "px-3 py-1 font-semibold text-sm rounded-lg",
-                      currentQuestion.isCorrect
-                        ? isDark
-                          ? "text-green-400 bg-green-500/20 border border-green-500/40"
-                          : "text-green-700 bg-green-100 border border-green-300"
-                        : currentQuestion.status === "incorrect"
-                        ? isDark
-                          ? "text-red-400 bg-red-500/20 border border-red-500/40"
-                          : "text-red-700 bg-red-100 border border-red-300"
-                        : isDark
-                        ? "text-gray-300 bg-gray-700 border border-gray-600"
-                        : "text-gray-600 bg-gray-100 border border-gray-300",
-                    ].join(" ")}
-                  >
-                    Q{currentQuestionIndex + 1}
-                  </span>
-                  <div className="flex-1">
-                    <span className={`text-base leading-relaxed block ${
-                      isDark ? "text-gray-100" : "text-gray-800"
-                    }`}>
-                      {currentQuestion.question}
-                    </span>
-
-                    {currentQuestion.image && (
-                      <div className="mt-4">
-                        <img
-                          src={currentQuestion.image}
-                          alt="Question"
-                          className={`max-w-full h-auto rounded-lg border ${
-                            isDark ? "border-gray-600" : "border-gray-200"
-                          }`}
-                          style={{ maxHeight: "220px", objectFit: "contain" }}
-                          onError={(e) => {
-                            e.currentTarget.style.display = "none";
-                          }}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* AI button */}
-                <button
-                  onClick={handleExplanation}
-                  disabled={isLoadingExplanation}
-                  className={`p-2.5 rounded-lg border transition-all duration-200 hover:scale-105 ${
-                    isDark
-                      ? "border-gray-600 hover:bg-gray-700 text-gray-300 hover:text-gray-100"
-                      : "border-gray-300 hover:bg-gray-100 text-gray-600 hover:text-gray-800"
-                  }`}
-                  title="AI Explanation"
-                >
-                  <Sparkle
-                    size={18}
-                    color={isDark ? "#D1D5DB" : "#374151"}
-                    className={isLoadingExplanation ? "animate-pulse" : ""}
-                  />
+          {/* Number Strip */}
+          <div className="px-4 pb-3 md:px-6 overflow-x-auto no-scrollbar" ref={navScrollRef}>
+            <div className="flex gap-2 min-w-max px-1 py-1">
+              {section.questions.map((q, idx) => (
+                <button key={idx} onClick={() => setCurrentQuestionIndex(idx)} className={styles.navBtn(idx === currentQuestionIndex, q.status)}>
+                  {idx + 1}
                 </button>
-              </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* 2. Scrollable Body */}
+        <div className={`flex-1 overflow-y-auto p-4 md:p-8 ${styles.body}`}>
+          <div className="max-w-3xl mx-auto space-y-6">
+            
+            {/* Question Card */}
+            <div className={`p-6 rounded-2xl border ${styles.card}`}>
+               <div className="flex justify-between items-start mb-4">
+                 <span className="px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-bold uppercase tracking-wider">
+                   Question {currentQuestionIndex + 1}
+                 </span>
+                 
+                 {/* Mobile AI Button */}
+                 <button onClick={handleExplanation} className="md:hidden text-indigo-500">
+                    <FiZap className="w-5 h-5" />
+                 </button>
+               </div>
+
+               <div className={`text-lg md:text-xl font-medium leading-relaxed mb-6 ${styles.textPrimary}`}>
+                 {currentQuestion.question}
+               </div>
+
+               {currentQuestion.image && (
+                 <div className="mb-6 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-black/5">
+                   <img src={currentQuestion.image} alt="Question Reference" className="w-full h-auto max-h-80 object-contain mx-auto" />
+                 </div>
+               )}
             </div>
 
-            {/* Options - keeping all existing UI exactly the same */}
-            <div className="grid grid-cols-1 gap-3 mb-5">
-              {currentQuestion.options?.map((option, optionIndex) => {
-                const isCorrect = optionIndex === currentQuestion.correctAnswer;
-                const isUserWrong =
-                  optionIndex === currentQuestion.userAnswer &&
-                  currentQuestion.userAnswer !== currentQuestion.correctAnswer;
+            {/* Options */}
+            <div className="grid grid-cols-1 gap-3">
+              {currentQuestion.options.map((opt, idx) => {
+                const isCorrect = idx === currentQuestion.correctAnswer;
+                const isSelected = idx === currentQuestion.userAnswer;
+                const status = isCorrect ? 'correct' : (isSelected && !isCorrect) ? 'wrong' : 'neutral';
 
                 return (
-                  <div
-                    key={optionIndex}
-                    className={[
-                      "p-3 rounded-xl border-2 transition-all duration-200",
-                      isCorrect
-                        ? isDark
-                          ? "border-green-500/60 bg-green-500/10"
-                          : "border-green-400 bg-green-50"
-                        : isUserWrong
-                        ? isDark
-                          ? "border-red-500/60 bg-red-500/10"
-                          : "border-red-400 bg-red-50"
-                        : isDark
-                        ? "border-gray-700 bg-gray-800/20 hover:bg-gray-800/40"
-                        : "border-gray-200 bg-white hover:bg-gray-50",
-                    ].join(" ")}
-                  >
-                    <div className="flex items-start gap-3">
-                      <span
-                        className={[
-                          "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold",
-                          isCorrect
-                            ? "bg-green-600 text-white"
-                            : isUserWrong
-                            ? "bg-red-600 text-white"
-                            : isDark
-                            ? "bg-gray-700 text-gray-300"
-                            : "bg-gray-200 text-gray-700",
-                        ].join(" ")}
-                      >
-                        {String.fromCharCode(65 + optionIndex)}
-                      </span>
+                  <div key={idx} className={styles.option(status)}>
+                    <div className="flex gap-4">
+                      <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold 
+                        ${isCorrect ? 'bg-emerald-500 text-white' : (status === 'wrong') ? 'bg-rose-500 text-white' : (isDark ? 'bg-gray-700 text-gray-300' : 'bg-slate-100 text-slate-500')}
+                      `}>
+                        {String.fromCharCode(65 + idx)}
+                      </div>
                       <div className="flex-1">
-                        <span className={`text-sm leading-relaxed ${
-                          isDark ? "text-gray-100" : "text-gray-800"
-                        }`}>
-                          {option}
-                        </span>
-
-                        {currentQuestion.optionImages &&
-                          currentQuestion.optionImages[optionIndex] && (
-                            <div className="mt-3">
-                              <img
-                                src={currentQuestion.optionImages[optionIndex]}
-                                alt={`Option ${String.fromCharCode(65 + optionIndex)}`}
-                                className={`max-w-full h-auto rounded-lg border ${
-                                  isDark ? "border-gray-600" : "border-gray-200"
-                                }`}
-                                style={{ maxHeight: "120px", objectFit: "contain" }}
-                                onError={(e) => {
-                                  e.currentTarget.style.display = "none";
-                                }}
-                              />
-                            </div>
-                          )}
-
-                        {isCorrect && (
-                          <div className="mt-2 flex items-center gap-2 text-green-600 font-semibold text-xs">
-                            <FiCheck className="w-4 h-4" />
-                            Correct Answer
-                          </div>
+                        <div className={`text-base font-medium ${isCorrect ? (isDark ? 'text-emerald-400' : 'text-emerald-700') : (status === 'wrong') ? (isDark ? 'text-rose-400' : 'text-rose-700') : styles.textPrimary}`}>
+                          {opt}
+                        </div>
+                        {currentQuestion.optionImages?.[idx] && (
+                          <img src={currentQuestion.optionImages[idx]} alt="Option" className="mt-3 h-24 rounded border object-contain" />
                         )}
-                        {isUserWrong && (
-                          <div className="mt-2 flex items-center gap-2 text-red-600 font-semibold text-xs">
-                            <FiX className="w-4 h-4" />
-                            Your Answer
+                        {(isCorrect || status === 'wrong') && (
+                          <div className={`flex items-center gap-1.5 mt-2 text-xs font-bold uppercase ${isCorrect ? 'text-emerald-500' : 'text-rose-500'}`}>
+                            {isCorrect ? <FiCheck /> : <FiAlertCircle />}
+                            {isCorrect ? "Correct Answer" : "Your Answer"}
                           </div>
                         )}
                       </div>
@@ -452,165 +222,65 @@ ${currentQuestion.explanation || 'Review the standard explanation and key concep
 
             {/* Standard Explanation */}
             {currentQuestion.explanation && (
-              <div
-                className={`mb-4 p-4 rounded-xl border ${
-                  isDark 
-                    ? "border-blue-500/30 bg-blue-500/10" 
-                    : "border-blue-200 bg-blue-50"
-                }`}
-              >
-                <h5 className={`font-semibold mb-2 text-sm flex items-center gap-2 ${
-                  isDark ? "text-blue-400" : "text-blue-700"
-                }`}>
-                  💡 Standard Explanation
-                </h5>
-                <p className={`leading-relaxed text-sm ${
-                  isDark ? "text-blue-200" : "text-blue-800"
-                }`}>
+              <div className={`p-6 rounded-xl border-l-4 ${isDark ? 'bg-blue-900/10 border-blue-500' : 'bg-blue-50 border-blue-500'}`}>
+                <h4 className={`flex items-center gap-2 font-bold text-sm mb-2 ${isDark ? 'text-blue-400' : 'text-blue-700'}`}>
+                  <FiBookOpen /> Explanation
+                </h4>
+                <p className={`text-sm leading-relaxed ${isDark ? 'text-blue-100' : 'text-blue-900'}`}>
                   {currentQuestion.explanation}
                 </p>
               </div>
             )}
-
-            {/* Controls */}
-            <div className="flex items-center justify-between">
-              <button
-                onClick={prevQuestion}
-                disabled={currentQuestionIndex === 0}
-                className={`disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-3 rounded-xl transition-all duration-200 hover:scale-105 flex items-center gap-2 ${
-                  isDark
-                    ? "bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800"
-                    : "bg-gray-700 hover:bg-gray-800 disabled:bg-gray-400"
-                }`}
-              >
-                <FiChevronLeft className="w-5 h-5" />
-                <span className="font-semibold">Previous</span>
-              </button>
-
-              <div className={`text-xs font-semibold ${
-                isDark ? "text-gray-300" : "text-gray-600"
-              }`}>
-                Question {currentQuestionIndex + 1} of {section.questions.length}
-              </div>
-
-              <button
-                onClick={nextQuestion}
-                disabled={currentQuestionIndex === section.questions.length - 1}
-                className={`disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-xl transition-all duration-200 hover:scale-105 flex items-center gap-2 ${
-                  isDark
-                    ? "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-700 disabled:to-gray-800"
-                    : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500"
-                }`}
-              >
-                <span className="font-semibold text-sm">Next</span>
-                <FiChevronRight className="w-5 h-5" />
-              </button>
-            </div>
           </div>
         </div>
+
+        {/* 3. Footer */}
+        <div className={`p-4 border-t flex justify-between items-center ${styles.header}`}>
+          <button 
+            onClick={prevQ} 
+            disabled={currentQuestionIndex === 0}
+            className={`px-5 py-2.5 rounded-xl font-medium flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${isDark ? 'bg-gray-800 hover:bg-gray-700 text-white' : 'bg-white border border-slate-200 hover:bg-slate-50 text-slate-700'}`}
+          >
+            <FiChevronLeft /> Prev
+          </button>
+          
+          <button 
+            onClick={nextQ} 
+            disabled={currentQuestionIndex === section.questions.length - 1}
+            className="px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all disabled:opacity-50 bg-blue-700 text-white shadow-lg shadow-indigo-500/20"
+          >
+            Next <FiChevronRight />
+          </button>
+        </div>
+
       </div>
 
-      {/* AI Explanation Modal - keeping all existing UI exactly the same */}
+      {/* AI Modal Overlay (Nested Portal not needed, handled by absolute) */}
       {showExplanation && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/60"
-            onClick={() => setShowExplanation(false)}
-          />
-          <div
-            className={`relative w-full max-w-3xl max-h-[75vh] rounded-2xl border shadow-2xl ${
-              isDark
-                ? "bg-gray-900 text-gray-100 border-gray-700"
-                : "bg-white text-gray-800 border-gray-200"
-            } overflow-hidden`}
-          >
-            {/* Header */}
-            <div
-              className={`flex items-center justify-between p-5 border-b ${
-                isDark 
-                  ? "border-gray-700 bg-gray-800/50" 
-                  : "border-gray-200 bg-gray-50/50"
-              }`}
-            >
+        <div className="absolute inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowExplanation(false)}>
+          <div className={`relative w-full max-w-2xl max-h-[80vh] flex flex-col rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 ${styles.modal}`} onClick={e => e.stopPropagation()}>
+            <div className="p-4 bg-black text-white flex justify-between items-center">
               <div className="flex items-center gap-3">
-                <div>
-                  <h6 className={`font-bold text-lg ${
-                    isDark ? "text-gray-100" : "text-gray-800"
-                  }`}>
-                    AI Explanation
-                  </h6>
-                  <p className={`text-sm ${
-                    isDark ? "text-gray-400" : "text-gray-600"
-                  }`}>
-                    {section.name} — Question {currentQuestionIndex + 1}
-                  </p>
-                </div>
+                <FiZap className="w-5 h-5" />
+                <h3 className="font-bold">AI Tutor</h3>
               </div>
-              <button
-                onClick={() => setShowExplanation(false)}
-                className={`p-2 rounded-lg border transition-colors ${
-                  isDark
-                    ? "border-gray-600 hover:bg-gray-700 text-gray-300 hover:text-gray-100"
-                    : "border-gray-300 hover:bg-gray-100 text-gray-600 hover:text-gray-800"
-                }`}
-              >
-                <FiX className="w-5 h-5" />
-              </button>
+              <button onClick={() => setShowExplanation(false)} className="p-1 hover:bg-white/20 rounded"><FiX /></button>
             </div>
-
-            {/* Content */}
-            <div className="p-6 overflow-y-auto max-h-[calc(75vh-140px)]">
+            <div className={`flex-1 overflow-y-auto p-6 ${styles.textPrimary}`}>
               {isLoadingExplanation ? (
-                <div className="flex flex-col items-center justify-center py-20">
-                  <FiLoader className={`w-10 h-10 animate-spin ${
-                    isDark ? "text-blue-400" : "text-blue-600"
-                  }`} />
-                  <p className={`mt-4 text-base font-medium ${
-                    isDark ? "text-gray-300" : "text-gray-700"
-                  }`}>
-                    Generating explanation...
-                  </p>
-                  <p className={`mt-2 text-sm ${
-                    isDark ? "text-gray-500" : "text-gray-500"
-                  }`}>
-                    This should be quick!
-                  </p>
+                <div className="flex flex-col items-center justify-center py-10">
+                  <FiLoader className="w-8 h-8 text-indigo-500 animate-spin mb-4" />
+                  <p>Thinking...</p>
                 </div>
               ) : (
-                <div className={`text-base leading-relaxed whitespace-pre-wrap ${
-                  isDark ? "text-gray-200" : "text-gray-800"
-                }`}>
-                  {explanations[questionId]}
-                </div>
+                <div className="whitespace-pre-wrap leading-relaxed">{explanations[`${section.name}-${currentQuestionIndex}`]}</div>
               )}
-            </div>
-
-            {/* Footer */}
-            <div
-              className={`p-4 border-t ${
-                isDark 
-                  ? "border-gray-700 bg-gray-800/30" 
-                  : "border-gray-200 bg-gray-50/50"
-              }`}
-            >
-              <div className={`flex items-center gap-3 text-sm ${
-                isDark ? "text-gray-400" : "text-gray-600"
-              }`}>
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    isDark 
-                      ? "bg-gradient-to-br from-blue-600 to-purple-600 text-white" 
-                      : "bg-gradient-to-br from-blue-600 to-indigo-600 text-white"
-                  }`}
-                >
-                  <span className="font-bold text-xs">AI</span>
-                </div>
-              </div>
             </div>
           </div>
         </div>
       )}
-    </>
+    </div>,
+    document.body // PORTAL TARGET
   );
 };
 

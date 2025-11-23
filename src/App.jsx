@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { SubscriptionProvider } from './contexts/SubscriptionContext';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import AuthForm from './components/auth/AuthForm';
@@ -93,7 +94,7 @@ const AppContent = () => {
       if (localStorage.getItem(storageKey)) return;
       localStorage.setItem(storageKey, '1');
       await updateDoc(doc(db, 'test-series', series.id), {
-        totalSubscribers: increment(1),
+        // Only increment totalViews for free series views, not totalSubscribers
         totalViews: increment(1)
       });
     } catch (error) {
@@ -1186,29 +1187,31 @@ const App = () => {
     <Router>
       <ThemeProvider>
         <AuthProvider>
-          <Routes>
-            <Route path="/admin-dashboard" element={<AdminDashboard />} />
-            <Route path="/apply-creator" element={<ApplyCreator />} />
-            <Route path="/login" element={<AuthForm />} />
-            <Route path="/" element={<AppContent />} />
-            <Route path="/welcome" element={<AppContent />} />
-            <Route path="/homepage" element={<AppContent />} />
-            <Route path="/subscriptions" element={<AppContent />} />
-            <Route path="/test-series" element={<AppContent />} />
-            <Route path="/create-series" element={<AppContent />} />
-            <Route path="/ai-generator" element={<AppContent />} />
-            <Route path="/section-quiz-creator" element={<SectionWiseQuizCreator onBack={() => window.history.back()} onQuizCreated={() => window.location.href = '/test-series'} />} />
-            <Route path="/test-history" element={<AppContent />} />
-            <Route path="/privacy" element={<PrivacyPolicy />} />
-            <Route path="/terms" element={<TermsAndConditions />} />
-            <Route path="/refunds" element={<RefundPolicy />} />
-            <Route path="/contact" element={<ContactUs />} />
-            <Route path="/series/:seriesId/*" element={<AppContent />} />
-            <Route path="/test/:testId/*" element={<AppContent />} />
-            <Route path="/attempt/:attemptId" element={<AppContent />} />
-            <Route path="/quiz/:quizId/*" element={<AppContent />} />
-            <Route path="*" element={<AppContent />} />
-          </Routes>
+          <SubscriptionProvider>
+            <Routes>
+              <Route path="/admin-dashboard" element={<AdminDashboard />} />
+              <Route path="/apply-creator" element={<ApplyCreator />} />
+              <Route path="/login" element={<AuthForm />} />
+              <Route path="/" element={<AppContent />} />
+              <Route path="/welcome" element={<AppContent />} />
+              <Route path="/homepage" element={<AppContent />} />
+              <Route path="/subscriptions" element={<AppContent />} />
+              <Route path="/test-series" element={<AppContent />} />
+              <Route path="/create-series" element={<AppContent />} />
+              <Route path="/ai-generator" element={<AppContent />} />
+              <Route path="/section-quiz-creator" element={<SectionWiseQuizCreator onBack={() => window.history.back()} onQuizCreated={() => window.location.href = '/test-series'} />} />
+              <Route path="/test-history" element={<AppContent />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/terms" element={<TermsAndConditions />} />
+              <Route path="/refunds" element={<RefundPolicy />} />
+              <Route path="/contact" element={<ContactUs />} />
+              <Route path="/series/:seriesId/*" element={<AppContent />} />
+              <Route path="/test/:testId/*" element={<AppContent />} />
+              <Route path="/attempt/:attemptId" element={<AppContent />} />
+              <Route path="/quiz/:quizId/*" element={<AppContent />} />
+              <Route path="*" element={<AppContent />} />
+            </Routes>
+          </SubscriptionProvider>
         </AuthProvider>
       </ThemeProvider>
     </Router>

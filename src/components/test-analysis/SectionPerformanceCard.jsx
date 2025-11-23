@@ -1,181 +1,165 @@
 import React from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
-import { FiTarget, FiCheckCircle, FiXCircle, FiMinus, FiChevronRight } from 'react-icons/fi';
+import { 
+  FiTarget, FiCheckCircle, FiXCircle, FiMinus, 
+  FiChevronRight, FiTrendingUp, FiAward 
+} from 'react-icons/fi';
 
 const SectionPerformanceCard = ({ section, onClick, isSelected }) => {
   const { isDark } = useTheme();
-  
-  const getAccuracyColor = (accuracy) => {
-    if (isDark) {
-      if (accuracy >= 80) return 'text-green-400';
-      if (accuracy >= 60) return 'text-yellow-300'; // Slightly lighter for dark theme
-      return 'text-red-400';
-    } else {
-      if (accuracy >= 80) return 'text-green-600';
-      if (accuracy >= 60) return 'text-yellow-600';
-      return 'text-red-600';
-    }
+
+  // 1. Color Theme Logic (Extracting complexity)
+  const getPerformanceTheme = (accuracy) => {
+    if (accuracy >= 80) return {
+      color: 'emerald',
+      text: isDark ? 'text-emerald-400' : 'text-emerald-700',
+      bg: isDark ? 'bg-emerald-500/10' : 'bg-emerald-50',
+      border: isDark ? 'border-emerald-500/20' : 'border-emerald-100',
+      bar: 'from-emerald-500 to-teal-400',
+      badge: isDark ? 'bg-emerald-500/20 text-emerald-300' : 'bg-emerald-100 text-emerald-800'
+    };
+    if (accuracy >= 60) return {
+      color: 'amber',
+      text: isDark ? 'text-amber-400' : 'text-amber-700',
+      bg: isDark ? 'bg-amber-500/10' : 'bg-amber-50',
+      border: isDark ? 'border-amber-500/20' : 'border-amber-100',
+      bar: 'from-amber-500 to-orange-400',
+      badge: isDark ? 'bg-amber-500/20 text-amber-300' : 'bg-amber-100 text-amber-800'
+    };
+    return {
+      color: 'rose',
+      text: isDark ? 'text-rose-400' : 'text-rose-700',
+      bg: isDark ? 'bg-rose-500/10' : 'bg-rose-50',
+      border: isDark ? 'border-rose-500/20' : 'border-rose-100',
+      bar: 'from-rose-500 to-red-400',
+      badge: isDark ? 'bg-rose-500/20 text-rose-300' : 'bg-rose-100 text-rose-800'
+    };
   };
-  
-  const getAccuracyBg = (accuracy) => {
-    if (isDark) {
-      if (accuracy >= 80) return 'bg-green-500/15 border-green-500/30';
-      if (accuracy >= 60) return 'bg-yellow-500/15 border-yellow-500/30';
-      return 'bg-red-500/15 border-red-500/30';
-    } else {
-      if (accuracy >= 80) return 'bg-green-50 border-green-200';
-      if (accuracy >= 60) return 'bg-yellow-50 border-yellow-200';
-      return 'bg-red-50 border-red-200';
-    }
+
+  const theme = getPerformanceTheme(section.stats.accuracy);
+
+  // 2. Structural Styles
+  const styles = {
+    card: isSelected
+      ? (isDark ? 'border-blue-500/50 bg-blue-900/10 shadow-[0_0_15px_rgba(59,130,246,0.15)]' : 'border-blue-500 bg-blue-50/50 shadow-md ring-1 ring-blue-500/20')
+      : (isDark ? 'border-gray-800 bg-gray-900/40 hover:bg-gray-800/60 hover:border-gray-700' : 'border-slate-100 bg-white hover:border-slate-300 hover:shadow-lg'),
+    
+    divider: isDark ? 'border-gray-800' : 'border-slate-100',
+    textPrimary: isDark ? 'text-gray-100' : 'text-slate-800',
+    textSecondary: isDark ? 'text-gray-400' : 'text-slate-500',
+    trackBg: isDark ? 'bg-gray-700' : 'bg-slate-100',
+    
+    // Micro-card styles for the grid
+    statCard: isDark ? 'bg-gray-800/50 border-gray-700' : 'bg-slate-50 border-slate-100'
   };
-  
-  const getProgressBarColor = (accuracy) => {
-    if (accuracy >= 80) return 'bg-green-500';
-    if (accuracy >= 60) return 'bg-yellow-500';
-    return 'bg-red-500';
-  };
-  
+
   return (
     <div 
       onClick={onClick}
-      className={`cursor-pointer transition-all duration-200 rounded-xl p-4 border-2 group ${
-        isSelected 
-          ? isDark
-            ? 'border-blue-500/60 bg-blue-500/10 shadow-lg'
-            : 'border-blue-500 bg-blue-50 shadow-lg'
-          : isDark
-          ? 'border-gray-700 bg-gray-800/30 hover:bg-gray-800/50 hover:border-gray-600'
-          : 'border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 hover:shadow-md'
-      }`}
+      className={`
+        relative group cursor-pointer transition-all duration-300 ease-out 
+        rounded-2xl border p-5 backdrop-blur-sm
+        ${styles.card}
+      `}
     >
-      {/* Header */}
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1">
-          <h4 className={`font-semibold text-base mb-1 ${
-            isDark ? 'text-gray-100' : 'text-gray-800'
-          }`}>
+      {/* Top Row: Title & Badge */}
+      <div className="flex justify-between items-start mb-5 gap-4">
+        <div>
+          <h4 className={`font-bold text-lg leading-tight mb-1 flex items-center gap-2 ${styles.textPrimary}`}>
             {section.name}
+            {section.stats.accuracy >= 90 && (
+               <FiAward className="w-4 h-4 text-yellow-500" title="Top Performer" />
+            )}
           </h4>
-          <p className={`text-sm ${
-            isDark ? 'text-gray-400' : 'text-gray-600'
-          }`}>
-            {section.stats.total} questions • {section.stats.correct + section.stats.incorrect} attempted
+          <p className={`text-xs font-medium uppercase tracking-wider ${styles.textSecondary}`}>
+            {section.stats.total} Questions
           </p>
         </div>
         
-        {/* Accuracy Badge */}
-        <div className={`px-3 py-1.5 rounded-lg border ${getAccuracyBg(section.stats.accuracy)}`}>
-          <div className="flex items-center gap-1">
-            <FiTarget className={`w-3 h-3 ${getAccuracyColor(section.stats.accuracy)}`} />
-            <span className={`text-sm font-bold ${getAccuracyColor(section.stats.accuracy)}`}>
-              {section.stats.accuracy.toFixed(1)}%
-            </span>
-          </div>
+        {/* Percentage Badge */}
+        <div className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 shadow-sm ${theme.badge} ${theme.border}`}>
+          <FiTarget className="w-3.5 h-3.5" />
+          <span>{section.stats.accuracy.toFixed(0)}%</span>
         </div>
       </div>
-      
-      {/* Progress Bar */}
-      <div className="mb-4">
-        <div className={`w-full h-2 rounded-full overflow-hidden ${
-          isDark ? 'bg-gray-700' : 'bg-gray-200'
-        }`}>
+
+      {/* Progress Bar Section */}
+      <div className="mb-6">
+        <div className="flex justify-between text-xs font-semibold mb-1.5">
+          <span className={styles.textSecondary}>Accuracy</span>
+          <span className={theme.text}>{section.stats.accuracy.toFixed(1)}%</span>
+        </div>
+        <div className={`h-2.5 w-full rounded-full overflow-hidden ${styles.trackBg}`}>
           <div 
-            className={`h-2 transition-all duration-300 ${getProgressBarColor(section.stats.accuracy)}`}
+            className={`h-full rounded-full bg-gradient-to-r transition-all duration-700 ease-out shadow-sm ${theme.bar}`}
             style={{ width: `${section.stats.accuracy}%` }}
           />
         </div>
       </div>
-      
-      {/* Stats Grid */}
-      <div className="grid grid-cols-3 gap-3 mb-4">
-        {/* Correct */}
-        <div className={`text-center p-2 rounded-lg ${
-          isDark ? 'bg-green-500/10' : 'bg-green-50'
-        }`}>
-          <div className="flex items-center justify-center gap-1 mb-1">
-            <FiCheckCircle className={`w-4 h-4 ${
-              isDark ? 'text-green-400' : 'text-green-600'
-            }`} />
-            <span className={`text-lg font-bold ${
-              isDark ? 'text-green-400' : 'text-green-600'
-            }`}>
-              {section.stats.correct}
-            </span>
-          </div>
-          <p className={`text-xs font-medium ${
-            isDark ? 'text-green-300' : 'text-green-700'
-          }`}>
-            Correct
-          </p>
+
+      {/* Stats Grid - "Micro Cards" */}
+      <div className="grid grid-cols-3 gap-3 mb-5">
+        <StatItem 
+          icon={FiCheckCircle} 
+          label="Correct" 
+          value={section.stats.correct} 
+          colorClass={isDark ? 'text-emerald-400' : 'text-emerald-600'}
+          bgClass={styles.statCard}
+          isDark={isDark}
+        />
+        <StatItem 
+          icon={FiXCircle} 
+          label="Wrong" 
+          value={section.stats.incorrect} 
+          colorClass={isDark ? 'text-rose-400' : 'text-rose-600'}
+          bgClass={styles.statCard}
+          isDark={isDark}
+        />
+        <StatItem 
+          icon={FiMinus} 
+          label="Skipped" 
+          value={section.stats.skipped} 
+          colorClass={isDark ? 'text-gray-400' : 'text-slate-500'}
+          bgClass={styles.statCard}
+          isDark={isDark}
+        />
+      </div>
+
+      {/* Footer Action */}
+      <div className={`pt-4 border-t flex items-center justify-between  transition-all ${styles.divider}`}>
+        <div className="flex items-center gap-2">
+           <div className={`p-1.5 rounded-full ${isDark ? 'bg-gray-800 text-gray-400' : 'bg-slate-100 text-slate-500'}`}>
+              <FiTrendingUp className="w-3 h-3" />
+           </div>
+           <span className={`text-xs font-bold ${styles.textSecondary}`}>
+              View Analysis
+           </span>
         </div>
-        
-        {/* Incorrect */}
-        <div className={`text-center p-2 rounded-lg ${
-          isDark ? 'bg-red-500/10' : 'bg-red-50'
-        }`}>
-          <div className="flex items-center justify-center gap-1 mb-1">
-            <FiXCircle className={`w-4 h-4 ${
-              isDark ? 'text-red-400' : 'text-red-600'
-            }`} />
-            <span className={`text-lg font-bold ${
-              isDark ? 'text-red-400' : 'text-red-600'
-            }`}>
-              {section.stats.incorrect}
-            </span>
-          </div>
-          <p className={`text-xs font-medium ${
-            isDark ? 'text-red-300' : 'text-red-700'
-          }`}>
-            Incorrect
-          </p>
-        </div>
-        
-        {/* Skipped */}
-        <div className={`text-center p-2 rounded-lg ${
-          isDark ? 'bg-gray-700/50' : 'bg-gray-100'
-        }`}>
-          <div className="flex items-center justify-center gap-1 mb-1">
-            <FiMinus className={`w-4 h-4 ${
-              isDark ? 'text-gray-400' : 'text-gray-500'
-            }`} />
-            <span className={`text-lg font-bold ${
-              isDark ? 'text-gray-400' : 'text-gray-500'
-            }`}>
-              {section.stats.skipped}
-            </span>
-          </div>
-          <p className={`text-xs font-medium ${
-            isDark ? 'text-gray-500' : 'text-gray-600'
-          }`}>
-            Skipped
-          </p>
+        <div className={`
+          w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300
+          ${isDark ? 'bg-gray-800 text-gray-300 group-hover:bg-blue-600 group-hover:text-white' : 'bg-slate-100 text-slate-400 group-hover:bg-blue-500 group-hover:text-white'}
+        `}>
+          <FiChevronRight className="w-4 h-4" />
         </div>
       </div>
-      
-      {/* Action Footer */}
-      <div className={`flex items-center justify-between pt-3 border-t ${
-        isDark ? 'border-gray-700' : 'border-gray-200'
-      }`}>
-        <span className={`text-sm font-medium ${
-          isDark ? 'text-gray-300' : 'text-gray-600'
-        }`}>
-          View Questions
-        </span>
-        <FiChevronRight className={`w-4 h-4 transition-transform duration-200 group-hover:translate-x-1 ${
-          isDark ? 'text-gray-400' : 'text-gray-500'
-        }`} />
-      </div>
-      
-      {/* Performance Indicator */}
-      {section.stats.accuracy >= 80 && (
-        <div className={`absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-          isDark ? 'bg-green-500 text-white' : 'bg-green-600 text-white'
-        }`}>
-          ★
-        </div>
-      )}
     </div>
   );
 };
+
+// --- Sub Component for Cleaner Code ---
+
+const StatItem = ({ icon: Icon, label, value, colorClass, bgClass, isDark }) => (
+  <div className={`flex flex-col items-center justify-center py-2.5 rounded-xl border ${bgClass}`}>
+    <span className={`text-lg font-bold tabular-nums mb-0.5 ${isDark ? 'text-white' : 'text-slate-800'}`}>
+      {value}
+    </span>
+    <div className="flex items-center gap-1.5">
+      <Icon className={`w-3 h-3 ${colorClass}`} />
+      <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
+        {label}
+      </span>
+    </div>
+  </div>
+);
 
 export default SectionPerformanceCard;

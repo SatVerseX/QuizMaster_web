@@ -82,11 +82,22 @@ export async function submitRating({ seriesId, userId, value }) {
       updatedAt: serverTimestamp(),
     }, { merge: true });
 
-    // Then, best-effort aggregate update (may be blocked by rules; ignore on failure)
+    // Then, poll for server-side aggregate (Cloud Function updates it). Avoid client writes.
     try {
-      await recomputeSeriesAggregate(validatedData.seriesId);
-      const agg = await getSeriesAggregate(validatedData.seriesId);
-      return { success: true, ...agg, degraded: false };
+      const maxAttempts = 5;
+      const delayMs = 500;
+      const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+
+      let aggregate = null;
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        aggregate = await getSeriesAggregate(validatedData.seriesId);
+        // If ratingsCount > 0, we likely see the updated aggregate; break early
+        if (aggregate && (aggregate.ratingsCount >= 1 || aggregate.lastUpdated)) {
+          break;
+        }
+        await sleep(delayMs);
+      }
+      return { success: true, ...(aggregate || {}), degraded: !aggregate };
     } catch (_) {
       // Not critical for user flow; UI can show user's rating immediately
       return { success: true, degraded: true };

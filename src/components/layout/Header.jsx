@@ -643,7 +643,7 @@ const Header = ({
                   >
                     <button
                       onClick={handleLogout}
-                      className={`group w-full flex items-center gap-3 px-3 py-2.5 text-xs rounded-lg transition duration-200 hover:shadow-sm font-normal hover:cursor-pointer ${
+                      className={`group w-full flex  mb-30  items-center gap-3 px-3 py-2.5 text-xs rounded-lg transition duration-200 hover:shadow-sm font-normal hover:cursor-pointer ${
                         theme === "dark"
                           ? "text-red-400 hover:bg-gray-800 border border-transparent hover:border-red-500/30"
                           : "text-red-600 hover:bg-slate-100 border border-transparent hover:border-red-200/40"
@@ -658,7 +658,7 @@ const Header = ({
                       >
                         <FiLogOut className="w-3 h-3" />
                       </div>
-                      <span>Sign Out</span>
+                      <span className="font-semibold text-[17px]  ">Sign Out</span>
                     </button>
                   </div>
                 </div>

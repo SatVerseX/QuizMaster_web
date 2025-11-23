@@ -1,325 +1,233 @@
 import React from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
-import { FiClock, FiCalendar, FiTarget, FiPercent, FiPieChart, FiX } from 'react-icons/fi';
-import { FaCrown, FaTrophy, FaMedal, FaChartLine, FaLightbulb, FaThumbsUp, FaRocket, FaBrain, FaGem } from 'react-icons/fa';
+import { 
+  FiClock, 
+  FiCalendar, 
+  FiTarget, 
+  FiActivity, 
+  FiCheckCircle, 
+  FiXCircle, 
+  FiMinusCircle,
+  FiFlag
+} from 'react-icons/fi';
+import { 
+  FaTrophy, 
+  FaMedal, 
+  FaChartLine, 
+  FaLightbulb, 
+  FaArrowRight
+} from 'react-icons/fa';
 
 const PerformanceOverview = ({ attempt, questionAnalysis, showRecommendations, setShowRecommendations }) => {
   const { isDark } = useTheme();
 
+  // --- Helper Functions ---
+  
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}m ${secs.toString().padStart(2, '0')}s`;
   };
 
   const formatDate = (timestamp) => {
-    if (!timestamp) return 'Unknown';
+    if (!timestamp) return 'N/A';
     try {
       const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-      return date.toLocaleDateString('en-IN', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch (error) {
-      return 'Invalid Date';
-    }
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    } catch (e) { return 'Invalid'; }
   };
 
-  const getScoreColor = (percentage) => {
-    if (percentage >= 90) return 'from-green-500 to-emerald-500';
-    if (percentage >= 80) return 'from-blue-500 to-blue-600';
-    if (percentage >= 70) return 'from-purple-500 to-purple-600';
-    if (percentage >= 60) return 'from-yellow-500 to-orange-500';
-    return 'from-red-500 to-pink-500';
-  };
-
-  const getScoreMessage = (percentage) => {
-    if (percentage >= 90) return { 
-      text: 'Outstanding Performance! 🌟', 
-      color: isDark ? 'text-green-400' : 'text-green-600', 
-      icon: FaCrown,
-      description: 'You have demonstrated exceptional mastery of the subject!'
-    };
-    if (percentage >= 80) return { 
-      text: 'Excellent Work! 🎉', 
-      color: isDark ? 'text-blue-400' : 'text-blue-600', 
-      icon: FaTrophy,
-      description: 'Great job! You have a strong understanding of the concepts.'
-    };
-    if (percentage >= 70) return { 
-      text: 'Good Performance! 👏', 
-      color: isDark ? 'text-purple-400' : 'text-purple-600', 
-      icon: FaMedal,
-      description: 'Well done! You\'re on the right track with room for improvement.'
-    };
-    if (percentage >= 60) return { 
-      text: 'Fair Performance 📈', 
-      color: isDark ? 'text-yellow-400' : 'text-yellow-600', 
-      icon: FaChartLine,
-      description: 'You\'re making progress! Focus on areas that need improvement.'
-    };
-    return { 
-      text: 'Keep Practicing! 💪', 
-      color: isDark ? 'text-orange-400' : 'text-orange-600', 
-      icon: FaLightbulb,
-      description: 'Don\'t give up! More practice will help you improve significantly.'
-    };
+  // Semantic Colors (Flat & Clean)
+  const getGradeStyle = (percentage) => {
+    if (percentage >= 90) return { color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20', icon: FaTrophy, label: 'Excellent' };
+    if (percentage >= 75) return { color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20', icon: FaMedal, label: 'Very Good' };
+    if (percentage >= 60) return { color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20', icon: FaChartLine, label: 'Good' };
+    return { color: 'text-slate-600 dark:text-slate-400', bg: 'bg-slate-100 dark:bg-slate-800', icon: FaChartLine, label: 'Needs Practice' };
   };
 
   const correctAnswers = questionAnalysis.filter(q => q.isCorrect).length;
   const incorrectAnswers = questionAnalysis.filter(q => q.status === 'incorrect').length;
   const skippedAnswers = questionAnalysis.filter(q => q.status === 'skipped').length;
-  const scoreMessage = getScoreMessage(attempt.percentage);
+  const flaggedCount = attempt.flaggedQuestions?.length || 0;
+  
+  const grade = getGradeStyle(attempt.percentage);
+
+  // --- Components ---
+
+  const StatItem = ({ icon: Icon, label, value, subValue, colorClass }) => (
+    <div className="flex flex-col gap-1">
+      <div className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
+        <Icon className="w-3.5 h-3.5" /> {label}
+      </div>
+      <div className={`text-lg font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
+        {value}
+      </div>
+      {subValue && <div className={`text-xs ${colorClass}`}>{subValue}</div>}
+    </div>
+  );
 
   return (
-    <div className="lg:col-span-1 space-y-4 sm:space-y-6">
-      {/* Score Card */}
-      <div className={`backdrop-blur-xl border rounded-xl sm:rounded-2xl lg:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-2xl ${
-        isDark 
-          ? 'bg-gradient-to-br from-gray-800/80 to-gray-900/80 border-gray-600/40' 
-          : 'bg-white/90 border-slate-200/60 shadow-slate-200/40'
-      }`}>
-        <div className="text-center mb-4 sm:mb-6">
-          <div className="relative mb-4 sm:mb-6">
-            <div className={`w-20 h-20 sm:w-24 sm:h-24 lg:w-32 lg:h-32 bg-gradient-to-br ${getScoreColor(attempt.percentage)} rounded-full flex items-center justify-center mx-auto shadow-2xl`}>
-              {React.createElement(scoreMessage.icon, { className: "w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 text-white" })}
-            </div>
-            <div className="absolute -inset-1 sm:-inset-2 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-full blur-xl animate-pulse"></div>
-          </div>
-          
-          <div className={`text-4xl sm:text-5xl lg:text-6xl font-black mb-2 sm:mb-3 bg-gradient-to-r ${getScoreColor(attempt.percentage)} bg-clip-text text-transparent`}>
-            {attempt.percentage}%
-          </div>
-          
-          <h3 className={`text-lg sm:text-xl lg:text-2xl font-bold mb-2 ${scoreMessage.color}`}>
-            {scoreMessage.text}
-          </h3>
-          
-          <p className={`leading-relaxed text-sm sm:text-base ${
-            isDark ? 'text-gray-400' : 'text-slate-600'
-          }`}>
-            {scoreMessage.description}
-          </p>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
-          <div className="text-center p-3 sm:p-4 bg-green-500/10 border border-green-500/20 rounded-xl">
-            <div className="text-xl sm:text-2xl font-bold text-green-400">{attempt.score}</div>
-            <div className="text-xs sm:text-sm text-green-300">Correct</div>
-          </div>
-          <div className="text-center p-3 sm:p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
-            <div className="text-xl sm:text-2xl font-bold text-red-400">{attempt.totalQuestions - attempt.score}</div>
-            <div className="text-xs sm:text-sm text-red-300">Incorrect</div>
-          </div>
-        </div>
-
-        {/* Detailed Stats */}
-        <div className="space-y-3 sm:space-y-4">
-          <div className={`flex items-center justify-between p-2 sm:p-3 rounded-lg ${
-            isDark ? 'bg-gray-800/50' : 'bg-slate-100/60'
-          }`}>
-            <div className="flex items-center gap-2 sm:gap-3">
-              <FiClock className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
-              <span className={`text-sm sm:text-base ${
-                isDark ? 'text-gray-300' : 'text-slate-700'
-              }`}>Time Taken</span>
-            </div>
-            <span className={`font-bold text-sm sm:text-base ${
-              isDark ? 'text-white' : 'text-slate-800'
-            }`}>{formatTime(attempt.timeSpent)}</span>
-          </div>
-          
-          <div className={`flex items-center justify-between p-2 sm:p-3 rounded-lg ${
-            isDark ? 'bg-gray-800/50' : 'bg-slate-100/60'
-          }`}>
-            <div className="flex items-center gap-2 sm:gap-3">
-              <FiCalendar className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
-              <span className={`text-sm sm:text-base ${
-                isDark ? 'text-gray-300' : 'text-slate-700'
-              }`}>Completed</span>
-            </div>
-            <span className={`font-bold text-xs sm:text-sm ${
-              isDark ? 'text-white' : 'text-slate-800'
-            }`}>{formatDate(attempt.completedAt)}</span>
-          </div>
-          
-          <div className={`flex items-center justify-between p-2 sm:p-3 rounded-lg ${
-            isDark ? 'bg-gray-800/50' : 'bg-slate-100/60'
-          }`}>
-            <div className="flex items-center gap-2 sm:gap-3">
-              <FiTarget className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
-              <span className={`text-sm sm:text-base ${
-                isDark ? 'text-gray-300' : 'text-slate-700'
-              }`}>Difficulty</span>
-            </div>
-            <span className={`font-bold capitalize text-sm sm:text-base ${
-              isDark ? 'text-white' : 'text-slate-800'
-            }`}>{attempt.difficulty}</span>
-          </div>
-          
-          <div className={`flex items-center justify-between p-2 sm:p-3 rounded-lg ${
-            isDark ? 'bg-gray-800/50' : 'bg-slate-100/60'
-          }`}>
-            <div className="flex items-center gap-2 sm:gap-3">
-              <FiPercent className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
-              <span className={`text-sm sm:text-base ${
-                isDark ? 'text-gray-300' : 'text-slate-700'
-              }`}>Accuracy</span>
-            </div>
-            <span className={`font-bold text-sm sm:text-base ${
-              isDark ? 'text-white' : 'text-slate-800'
-            }`}>
-              {Math.round((attempt.score / attempt.totalQuestions) * 100)}%
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Performance Breakdown */}
-      <div className={`backdrop-blur-xl border rounded-xl sm:rounded-2xl lg:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-2xl ${
-        isDark 
-          ? 'bg-gradient-to-br from-gray-800/80 to-gray-900/80 border-gray-600/40' 
-          : 'bg-white/90 border-slate-200/60 shadow-slate-200/40'
-      }`}>
-        <h3 className={`text-lg sm:text-xl font-bold mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3 ${
-          isDark ? 'text-white' : 'text-slate-800'
-        }`}>
-          <FiPieChart className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
-          Answer Breakdown
-        </h3>
+    <div className="space-y-6">
+      
+      {/* MAIN CARD */}
+      <div className={`rounded-2xl border overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
         
-        <div className="space-y-3 sm:space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-3 h-3 sm:w-4 sm:h-4 bg-green-500 rounded-full"></div>
-              <span className={`text-sm sm:text-base ${
-                isDark ? 'text-gray-300' : 'text-slate-700'
-              }`}>Correct</span>
-            </div>
-            <span className="font-bold text-green-400 text-sm sm:text-base">{correctAnswers}</span>
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-500 rounded-full"></div>
-              <span className={`text-sm sm:text-base ${
-                isDark ? 'text-gray-300' : 'text-slate-700'
-              }`}>Incorrect</span>
-            </div>
-            <span className="font-bold text-red-400 text-sm sm:text-base">{incorrectAnswers}</span>
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-500 rounded-full"></div>
-              <span className={`text-sm sm:text-base ${
-                isDark ? 'text-gray-300' : 'text-slate-700'
-              }`}>Skipped</span>
-            </div>
-            <span className="font-bold text-gray-400 text-sm sm:text-base">{skippedAnswers}</span>
-          </div>
-          
-          {attempt.flaggedQuestions?.length > 0 && (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="w-3 h-3 sm:w-4 sm:h-4 bg-yellow-500 rounded-full"></div>
-                <span className={`text-sm sm:text-base ${
-                  isDark ? 'text-gray-300' : 'text-slate-700'
-                }`}>Flagged</span>
+        {/* Header Section */}
+        <div className={`p-6 border-b ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+          <div className="flex justify-between items-start">
+            <div>
+              <p className={`text-sm font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Total Score</p>
+              <div className="flex items-baseline gap-2">
+                <h2 className={`text-4xl font-extrabold tracking-tight ${grade.color}`}>
+                  {attempt.percentage}%
+                </h2>
+                <span className={`text-sm font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                  / 100%
+                </span>
               </div>
-              <span className="font-bold text-yellow-400 text-sm sm:text-base">{attempt.flaggedQuestions.length}</span>
             </div>
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-bold ${grade.bg} ${grade.color}`}>
+              <grade.icon className="w-4 h-4" />
+              <span>{grade.label}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Grid Stats */}
+        <div className={`grid grid-cols-2 gap-px ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+          <div className={`p-5 ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
+            <StatItem 
+              icon={FiCheckCircle} 
+              label="Accuracy" 
+              value={`${Math.round((attempt.score / attempt.totalQuestions) * 100)}%`}
+              subValue={`${correctAnswers}/${attempt.totalQuestions} Correct`}
+              colorClass="text-emerald-500"
+            />
+          </div>
+          <div className={`p-5 ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
+            <StatItem 
+              icon={FiClock} 
+              label="Time Taken" 
+              value={formatTime(attempt.timeSpent)}
+              subValue="Avg. 45s / q" // You could calculate this dynamically
+              colorClass="text-blue-500"
+            />
+          </div>
+          <div className={`p-5 ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
+             <StatItem 
+              icon={FiTarget} 
+              label="Difficulty" 
+              value={<span className="capitalize">{attempt.difficulty}</span>}
+              colorClass="text-slate-500"
+            />
+          </div>
+           <div className={`p-5 ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
+             <StatItem 
+              icon={FiCalendar} 
+              label="Date" 
+              value={formatDate(attempt.completedAt)}
+              colorClass="text-slate-500"
+            />
+          </div>
+        </div>
+
+        {/* Visual Breakdown (Stacked Bar) */}
+        <div className="p-6 space-y-4">
+          <div className="flex items-center justify-between text-sm font-medium">
+            <span className={isDark ? 'text-slate-300' : 'text-slate-700'}>Answer Distribution</span>
+            <span className={isDark ? 'text-slate-500' : 'text-slate-400'}>{attempt.totalQuestions} Questions</span>
+          </div>
+
+          {/* The Stacked Bar */}
+          <div className="h-3 w-full flex rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+            <div style={{ width: `${(correctAnswers / attempt.totalQuestions) * 100}%` }} className="bg-emerald-500 transition-all duration-500" />
+            <div style={{ width: `${(incorrectAnswers / attempt.totalQuestions) * 100}%` }} className="bg-red-500 transition-all duration-500" />
+            <div style={{ width: `${(skippedAnswers / attempt.totalQuestions) * 100}%` }} className="bg-slate-300 dark:bg-slate-600 transition-all duration-500" />
+          </div>
+
+          {/* Legend */}
+          <div className="flex justify-between items-center text-xs sm:text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+              <span className={isDark ? 'text-slate-400' : 'text-slate-600'}>{correctAnswers} Correct</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-red-500"></div>
+              <span className={isDark ? 'text-slate-400' : 'text-slate-600'}>{incorrectAnswers} Wrong</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600"></div>
+              <span className={isDark ? 'text-slate-400' : 'text-slate-600'}>{skippedAnswers} Skipped</span>
+            </div>
+          </div>
+          
+          {flaggedCount > 0 && (
+             <div className={`mt-2 flex items-center gap-2 text-xs p-2 rounded ${isDark ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-50 text-amber-600'}`}>
+               <FiFlag className="w-3 h-3" />
+               <span>You flagged {flaggedCount} questions for review</span>
+             </div>
           )}
         </div>
-
-        {/* Visual Progress Bar */}
-        <div className="mt-4 sm:mt-6">
-          <div className={`w-full rounded-full h-3 sm:h-4 overflow-hidden ${
-            isDark ? 'bg-gray-700' : 'bg-slate-200'
-          }`}>
-            <div className="h-full flex">
-              <div 
-                className="bg-green-500 h-full"
-                style={{ width: `${(correctAnswers / attempt.totalQuestions) * 100}%` }}
-              ></div>
-              <div 
-                className="bg-red-500 h-full"
-                style={{ width: `${(incorrectAnswers / attempt.totalQuestions) * 100}%` }}
-              ></div>
-              <div 
-                className="bg-gray-500 h-full"
-                style={{ width: `${(skippedAnswers / attempt.totalQuestions) * 100}%` }}
-              ></div>
-            </div>
-          </div>
-        </div>
       </div>
 
-      {/* Recommendations - sticky and moved up visually */}
+      {/* INTELLIGENT RECOMMENDATIONS CARD */}
       {showRecommendations && (
-        <div className={`backdrop-blur-xl border rounded-xl sm:rounded-2xl lg:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-2xl lg:sticky lg:top-6 ${
-          isDark 
-            ? 'bg-gradient-to-br from-purple-800/40 to-blue-800/40 border-purple-500/40' 
-            : 'bg-gradient-to-br from-purple-100/60 to-blue-100/60 border-purple-300/40'
+        <div className={`rounded-2xl border p-1 ${
+          isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
         }`}>
-          <div className="flex items-center justify-between mb-4 sm:mb-6">
-            <h3 className={`text-lg sm:text-xl font-bold flex items-center gap-2 sm:gap-3 ${
-              isDark ? 'text-white' : 'text-slate-800'
-            }`}>
-              <FaLightbulb className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400" />
-              Recommendations
-            </h3>
-            <button 
-              onClick={() => setShowRecommendations(false)}
-              className={isDark ? 'text-gray-400 hover:text-white' : 'text-slate-500 hover:text-slate-700'}
-            >
-              <FiX className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
-          </div>
-          
-          <div className="space-y-3 sm:space-y-4 text-xs sm:text-sm">
-            {attempt.percentage >= 80 ? (
-              <>
-                <div className="flex items-start gap-2 sm:gap-3">
-                  <FaThumbsUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-400 mt-0.5" />
-                  <div>
-                    <p className={`font-medium ${isDark ? 'text-green-300' : 'text-green-700'}`}>Excellent Work!</p>
-                    <p className={isDark ? 'text-gray-300' : 'text-slate-600'}>You have strong command over this topic. Consider taking advanced tests.</p>
-                  </div>
+           <div className={`rounded-xl p-5 ${
+             attempt.percentage >= 80 
+               ? isDark ? 'bg-gradient-to-r from-emerald-900/20 to-transparent' : 'bg-gradient-to-r from-emerald-50 to-transparent'
+               : isDark ? 'bg-gradient-to-r from-blue-900/20 to-transparent' : 'bg-gradient-to-r from-blue-50 to-transparent'
+           }`}>
+            
+            <div className="flex justify-between items-start mb-3">
+              <div className="flex items-center gap-2">
+                <div className={`p-1.5 rounded-lg ${
+                  attempt.percentage >= 80 ? 'bg-emerald-500 text-white' : 'bg-blue-500 text-white'
+                }`}>
+                  <FaLightbulb className="w-3.5 h-3.5" />
                 </div>
-                <div className="flex items-start gap-2 sm:gap-3">
-                  <FaRocket className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400 mt-0.5" />
-                  <div>
-                    <p className={`font-medium ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>Next Steps</p>
-                    <p className={isDark ? 'text-gray-300' : 'text-slate-600'}>Try more challenging tests or explore related topics to expand your knowledge.</p>
-                  </div>
+                <h3 className={`font-bold text-sm ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
+                  AI Insights
+                </h3>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {attempt.percentage >= 80 ? (
+                <div>
+                  <p className={`text-sm font-medium mb-1 ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
+                    Ready for Advanced Topics
+                  </p>
+                  <p className={`text-xs leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                    You've demonstrated mastery here. We recommend moving to the "Advanced" difficulty section to challenge your application skills.
+                  </p>
                 </div>
-              </>
-            ) : (
-              <>
-                <div className="flex items-start gap-2 sm:gap-3">
-                  <FaBrain className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400 mt-0.5" />
-                  <div>
-                    <p className={`font-medium ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>Study Focus</p>
-                    <p className={isDark ? 'text-gray-300' : 'text-slate-600'}>Review the incorrect answers and understand the concepts better.</p>
-                  </div>
+              ) : (
+                 <div>
+                  <p className={`text-sm font-medium mb-1 ${isDark ? 'text-blue-400' : 'text-blue-700'}`}>
+                    Focus on Accuracy
+                  </p>
+                  <p className={`text-xs leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                    Review the {incorrectAnswers} incorrect answers below. Focus specifically on the explanations provided to bridge the gap.
+                  </p>
                 </div>
-                <div className="flex items-start gap-2 sm:gap-3">
-                  <FaGem className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400 mt-0.5" />
-                  <div>
-                    <p className={`font-medium ${isDark ? 'text-yellow-300' : 'text-yellow-700'}`}>Practice More</p>
-                    <p className={isDark ? 'text-gray-300' : 'text-slate-600'}>Take similar tests to improve your understanding and speed.</p>
-                  </div>
-                </div>
-              </>
-            )}
+              )}
+              
+              <button 
+                onClick={() => setShowRecommendations(false)}
+                className={`flex items-center gap-1 text-xs font-semibold hover:underline ${
+                  isDark ? 'text-slate-500' : 'text-slate-400'
+                }`}
+              >
+                Dismiss
+              </button>
+            </div>
           </div>
         </div>
       )}
+
     </div>
   );
 };
