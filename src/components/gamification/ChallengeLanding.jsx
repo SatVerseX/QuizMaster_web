@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { motion } from 'framer-motion';
 import { 
   Trophy, 
@@ -19,12 +20,26 @@ import {
 const ChallengeLanding = () => {
   const { challengeId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { isDark } = useTheme();
+  const { currentUser } = useAuth();
   const [challenge, setChallenge] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const redirectPath = `${location.pathname}${location.search || ''}`;
+
   useEffect(() => {
+    if (currentUser) return;
+    navigate('/login', {
+      replace: true,
+      state: { redirectTo: redirectPath }
+    });
+  }, [currentUser, navigate, redirectPath]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+
     const fetchChallenge = async () => {
       try {
         if (!challengeId) {
@@ -60,7 +75,7 @@ const ChallengeLanding = () => {
       }
     };
     fetchChallenge();
-  }, [challengeId]);
+  }, [challengeId, currentUser]);
 
   const handleAccept = () => {
     if (!challenge) return;

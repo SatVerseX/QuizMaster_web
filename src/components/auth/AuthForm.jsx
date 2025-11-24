@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "../../contexts/ThemeContext";
 import {
   FiMail,
@@ -31,6 +31,7 @@ const AuthForm = () => {
   const { login, signup, signInWithGoogle } = useAuth();
   const { isDark } = useTheme();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     setAnimateForm(true);
@@ -61,7 +62,11 @@ const AuthForm = () => {
         }
         await signup(formData.email, formData.password, formData.displayName);
       }
-      navigate("/homepage");
+      const destination =
+        typeof location.state?.redirectTo === "string" && location.state.redirectTo.startsWith("/")
+          ? location.state.redirectTo
+          : "/homepage";
+      navigate(destination, { replace: true });
     } catch (error) {
       setError(error.message);
     } finally {
@@ -74,7 +79,11 @@ const AuthForm = () => {
     setError("");
     try {
       await signInWithGoogle();
-      navigate("/homepage");
+      const destination =
+        typeof location.state?.redirectTo === "string" && location.state.redirectTo.startsWith("/")
+          ? location.state.redirectTo
+          : "/homepage";
+      navigate(destination, { replace: true });
     } catch (error) {
       let errorMessage = "Failed to sign in with Google";
       if (error.code === "auth/popup-closed-by-user") {
