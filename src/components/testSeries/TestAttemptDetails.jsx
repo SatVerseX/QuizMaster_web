@@ -12,11 +12,12 @@ import {
   FiDownload, 
   FiAward,
   FiChevronRight,
-  FiActivity
+  FiActivity,
+  FiLayers
 } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import Confetti from "react-confetti";
-
+import FlashcardGenerator from "../flashcards/FlashcardGenerator";
 import TestAttemptHeader from "./TestAttemptHeader";
 import PerformanceOverview from "../test-analysis/PerformanceOverview";
 import SectionWiseAnalysis from "../test-analysis/SectionWiseAnalysis";
@@ -43,6 +44,7 @@ const TestAttemptDetails = ({
   const { popupState, showError, showSuccess, hidePopup } = usePopup();
   
   // State
+  const [showFlashcardGen, setShowFlashcardGen] = useState(false);
   const [testDetails, setTestDetails] = useState(null);
   const [testSeries, setTestSeries] = useState(propTestSeries);
   const [loading, setLoading] = useState(true);
@@ -200,6 +202,7 @@ const TestAttemptDetails = ({
   };
 
   const questionAnalysis = getQuestionAnalysis();
+  const incorrectQuestions = questionAnalysis.filter(q => q.status === 'incorrect');
   const isSectionWise = questionAnalysis.some((q) => q.sectionId);
   
   // Calculate simple stats for badge
@@ -209,6 +212,20 @@ const TestAttemptDetails = ({
   const badge = getPerformanceBadge(scorePercent);
 
   // --- Render Logic ---
+  {incorrectQuestions.length > 0 && (
+   <button onClick={() => setShowFlashcardGen(true)}>
+      Review Mistakes with Flashcards
+   </button>
+)}
+
+{showFlashcardGen && (
+   <FlashcardGenerator 
+      userId={currentUser.uid}
+      mistakes={incorrectQuestions}
+      testTitle={attempt.testTitle}
+      onClose={() => setShowFlashcardGen(false)}
+   />
+)}
 
   if (error) {
     return (
@@ -250,6 +267,7 @@ const TestAttemptDetails = ({
       </div>
     );
   }
+  
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${isDark ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"}`}>
@@ -300,6 +318,19 @@ const TestAttemptDetails = ({
 
         {/* Custom Action Bar (Floating/Sticky or Standard) */}
         <div className="flex flex-wrap gap-3 mb-8">
+          {incorrectQuestions.length > 0 && (
+             <button
+               onClick={() => setShowFlashcardGen(true)}
+               className={`w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg transition-all transform hover:-translate-y-0.5 ${
+                 isDark 
+                   ? 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-900/20' 
+                   : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200'
+               }`}
+             >
+               <FiLayers className="w-4 h-4" /> 
+               Turn Mistakes to Flashcards ({incorrectQuestions.length})
+             </button>
+           )}
            
            <div className="flex-grow hidden sm:block"></div>
            <button
@@ -428,6 +459,14 @@ const TestAttemptDetails = ({
             <ShareModal
               attempt={safeAttempt}
               onClose={() => setShowShareModal(false)}
+            />
+          )}
+          {showFlashcardGen && (
+            <FlashcardGenerator 
+              userId={currentUser.uid}
+              mistakes={incorrectQuestions}
+              testTitle={safeAttempt.testTitle || "Test Mistakes"}
+              onClose={() => setShowFlashcardGen(false)}
             />
           )}
         </AnimatePresence>

@@ -1,24 +1,29 @@
 import React, { useState } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { 
-  FiTrash2, 
-  FiEdit3, 
-  FiAlertCircle,
-  FiCheck,
-  FiChevronDown,
-  FiChevronRight,
-  FiPlus,
-  FiMinus,
-  FiImage,
-  FiX
-} from 'react-icons/fi';
+  Trash2, 
+  Edit3, 
+  AlertCircle, 
+  CheckCircle2, 
+  Circle,
+  ChevronDown, 
+  ChevronRight, 
+  Plus, 
+  Minus, 
+  ImageIcon, 
+  X,
+  Settings2,
+  HelpCircle
+} from 'lucide-react';
 
 const QuestionCard = ({ question, questionIndex, onUpdate, onRemove }) => {
   const { isDark } = useTheme();
-  const mode = (light, dark) => (isDark ? dark : light);
   
   const [isExpanded, setIsExpanded] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+
+  // Helper for conditional styles
+  const cn = (...classes) => classes.filter(Boolean).join(' ');
 
   const handleOptionChange = (optionIndex, value) => {
     const newOptions = [...question.options];
@@ -28,10 +33,6 @@ const QuestionCard = ({ question, questionIndex, onUpdate, onRemove }) => {
 
   const handleCorrectAnswerChange = (optionIndex) => {
     onUpdate({ correctAnswer: optionIndex });
-  };
-
-  const toggleExpanded = () => {
-    setIsExpanded(!isExpanded);
   };
 
   const togglePositiveMarking = () => {
@@ -52,438 +53,372 @@ const QuestionCard = ({ question, questionIndex, onUpdate, onRemove }) => {
     });
   };
 
+  // Modern Toggle Switch Component
+  const ToggleSwitch = ({ enabled, onChange, colorClass = "bg-rose-600" }) => (
+    <button
+      type="button"
+      onClick={onChange}
+      className={cn(
+        "relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2",
+        enabled ? colorClass : (isDark ? "bg-zinc-700" : "bg-zinc-200")
+      )}
+    >
+      <span
+        aria-hidden="true"
+        className={cn(
+          "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+          enabled ? "translate-x-4" : "translate-x-0"
+        )}
+      />
+    </button>
+  );
+
   return (
-    <div className={`w-full max-w-full border-2 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg ${mode('bg-white/80 border-slate-200/60', 'bg-gray-800/80 border-gray-700/60')}`}>
-      {/* Question Header - Mobile Optimized */}
-      <div className="w-full flex items-center justify-between mb-4 sm:mb-6">
-        <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0 w-full">
-          <button
-            onClick={toggleExpanded}
-            className={`p-2 rounded-lg sm:rounded-xl transition-all duration-300 hover:scale-110 flex-shrink-0 ${mode('hover:bg-slate-200/50', 'hover:bg-gray-700/50')}`}
-          >
-            {isExpanded ? (
-              <FiChevronDown className={`w-4 h-4 sm:w-5 sm:h-5 ${mode('text-slate-500', 'text-gray-400')} transition-transform`} />
-            ) : (
-              <FiChevronRight className={`w-4 h-4 sm:w-5 sm:h-5 ${mode('text-slate-500', 'text-gray-400')} transition-transform`} />
-            )}
-          </button>
-          
-          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-green-600 to-blue-600 rounded-xl sm:rounded-2xl flex items-center justify-center font-bold text-white text-base sm:text-lg shadow-lg flex-shrink-0">
+    <div className={cn(
+      "group w-full rounded-xl border transition-all duration-200",
+      isDark 
+        ? "bg-zinc-900 border-zinc-800 hover:border-zinc-700" 
+        : "bg-white border-zinc-200 hover:border-zinc-300 hover:shadow-sm"
+    )}>
+      {/* --- Header --- */}
+      <div 
+        className={cn(
+          "flex items-center justify-between p-4 cursor-pointer select-none",
+          isExpanded && (isDark ? "border-b border-zinc-800" : "border-b border-zinc-100")
+        )}
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="flex items-center gap-3 overflow-hidden">
+          <div className={cn(
+            "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold shadow-sm",
+            isDark ? "bg-zinc-800 text-zinc-300" : "bg-white border border-zinc-200 text-zinc-700"
+          )}>
             {questionIndex + 1}
           </div>
           
-          <h4 className={`text-lg sm:text-xl font-bold truncate flex-1 ${mode('text-slate-800', 'text-white')}`}>
-            <span className="hidden sm:inline">Question {questionIndex + 1}</span>
-            <span className="sm:hidden">Q{questionIndex + 1}</span>
-          </h4>
+          <div className="flex flex-col min-w-0">
+            <h3 className={cn(
+              "text-sm font-medium truncate pr-4",
+              !question.question && "italic opacity-50",
+              isDark ? "text-zinc-200" : "text-zinc-900"
+            )}>
+              {question.question || "Untitled Question"}
+            </h3>
+            {!isExpanded && (
+              <p className={cn("text-xs truncate", isDark ? "text-zinc-500" : "text-zinc-400")}>
+                {question.options.length} options • Correct: {String.fromCharCode(65 + (question.correctAnswer || 0))}
+              </p>
+            )}
+          </div>
         </div>
 
-        {/* Action Buttons - Mobile Optimized */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => setIsEditing(!isEditing)}
-            className={`p-2 sm:p-3 rounded-lg sm:rounded-xl transition-all duration-300 hover:scale-110 ${mode('hover:bg-slate-200/50', 'hover:bg-gray-700/50')}`}
-            title="Edit Question"
+            onClick={(e) => { e.stopPropagation(); onRemove(); }}
+            className={cn(
+              "p-2 rounded-md opacity-0 group-hover:opacity-100 transition-opacity",
+              isDark ? "hover:bg-red-900/20 text-red-400" : "hover:bg-red-50 text-red-500"
+            )}
           >
-            <FiEdit3 className={`w-4 h-4 sm:w-5 sm:h-5 ${mode('text-slate-500', 'text-gray-400')}`} />
+            <Trash2 className="w-4 h-4" />
           </button>
-          <button
-            onClick={onRemove}
-            className={`p-2 sm:p-3 rounded-lg sm:rounded-xl transition-all duration-300 hover:scale-110 ${mode('hover:bg-red-100/50', 'hover:bg-red-600/20')}`}
-            title="Remove Question"
-          >
-            <FiTrash2 className={`w-4 h-4 sm:w-5 sm:h-5 ${mode('text-red-600', 'text-red-400')}`} />
-          </button>
+          <div className={cn("text-zinc-400", isExpanded && "rotate-180 transition-transform")}>
+            <ChevronDown className="w-5 h-5" />
+          </div>
         </div>
       </div>
 
+      {/* --- Expanded Content --- */}
       {isExpanded && (
-        <>
+        <div className="p-4 sm:p-6 space-y-6">
+          
           {/* Question Text */}
-          <div className="w-full mb-4 sm:mb-6">
-            <label className={`block text-sm font-bold mb-2 sm:mb-3 flex items-center gap-2 w-full ${mode('text-slate-700', 'text-gray-300')}`}>
-              <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
+          <div className="space-y-2">
+            <label className={cn("text-xs font-semibold uppercase tracking-wider", isDark ? "text-zinc-500" : "text-zinc-500")}>
               Question Text
             </label>
             <textarea
               value={question.question}
               onChange={(e) => onUpdate({ question: e.target.value })}
-              className={`w-full max-w-full px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl border-2 focus:outline-none focus:ring-4 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-300 min-h-[80px] sm:min-h-[100px] resize-y text-base sm:text-lg font-medium ${mode('bg-white border-slate-300 text-slate-700 placeholder-slate-500 hover:border-slate-400', 'bg-gray-800 border-gray-700 text-white placeholder-gray-500 hover:border-gray-600')}`}
-              rows="3"
-              placeholder="Enter your question here..."
+              className={cn(
+                "w-full rounded-lg px-3 py-2 text-sm min-h-[80px] focus:outline-none focus:ring-2 focus:ring-rose-500/20 transition-all resize-y",
+                isDark 
+                  ? "bg-zinc-950 border border-zinc-800 text-zinc-100 placeholder-zinc-700 focus:border-rose-500/50" 
+                  : "bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-rose-500"
+              )}
+              placeholder="What would you like to ask?"
             />
           </div>
 
-          {/* Question Image */}
-          <div className="w-full mb-4 sm:mb-6">
-            <label className={`block text-sm font-bold mb-2 sm:mb-3 flex items-center gap-2 w-full ${mode('text-slate-700', 'text-gray-300')}`}>
-              <div className="w-2 h-2 bg-purple-500 rounded-full flex-shrink-0"></div>
-              Question Image (Optional)
-            </label>
-            
-            {/* Image URL Input */}
-            <div className="w-full mb-3">
+          {/* Image URL Input (Compact) */}
+          <div className="relative group/image">
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                "p-2 rounded-md shrink-0", 
+                isDark ? "bg-zinc-800 text-zinc-400" : "bg-zinc-100 text-zinc-500"
+              )}>
+                <ImageIcon className="w-4 h-4" />
+              </div>
               <input
-                type="url"
+                type="text"
                 value={question.image || ''}
                 onChange={(e) => onUpdate({ image: e.target.value })}
-                className={`w-full max-w-full px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl border-2 focus:outline-none focus:ring-4 focus:ring-purple-500/30 focus:border-purple-500 transition-all duration-300 text-sm sm:text-base font-medium ${mode('bg-white border-slate-300 text-slate-700 placeholder-slate-500 hover:border-slate-400', 'bg-gray-800 border-gray-700 text-white placeholder-gray-500 hover:border-gray-600')}`}
-                placeholder="Enter image URL (optional)"
+                className={cn(
+                  "flex-1 bg-transparent border-b text-sm py-2 focus:outline-none focus:border-rose-500 transition-colors",
+                  isDark 
+                    ? "border-zinc-800 text-zinc-300 placeholder-zinc-700" 
+                    : "border-zinc-200 text-zinc-700 placeholder-zinc-400"
+                )}
+                placeholder="Paste image URL here (optional)..."
               />
             </div>
-
-            {/* Image Preview */}
             {question.image && (
-              <div className="relative w-full max-w-sm mx-auto">
-                <div className="relative rounded-xl sm:rounded-2xl overflow-hidden border-2 border-gray-200 dark:border-gray-700">
-                  <img
-                    src={question.image}
-                    alt="Question illustration"
-                    className="w-full h-auto object-contain bg-gray-50 dark:bg-gray-800"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'flex';
-                    }}
+               <div className="mt-3 relative rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900/50">
+                  <img 
+                    src={question.image} 
+                    alt="Preview" 
+                    className="h-32 object-contain mx-auto"
+                    onError={(e) => e.currentTarget.style.display = 'none'} 
                   />
-                  <div className="hidden w-full h-24 sm:h-28 bg-gray-100 dark:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl sm:rounded-2xl items-center justify-center">
-                    <div className="text-center">
-                      <FiImage className="w-6 h-6 text-gray-400 mx-auto mb-1" />
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Failed to load image</p>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Remove Image Button */}
-                <button
-                  type="button"
-                  onClick={() => onUpdate({ image: '' })}
-                  className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors duration-200 shadow-lg"
-                  title="Remove image"
-                >
-                  <FiX className="w-4 h-4" />
-                </button>
-              </div>
+                  <button 
+                    onClick={() => onUpdate({ image: '' })}
+                    className="absolute top-2 right-2 p-1 bg-zinc-900/80 text-white rounded-full hover:bg-red-600 transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+               </div>
             )}
-
-            {/* Image Help Text */}
-            <div className={`w-full mt-2 text-xs sm:text-sm ${mode('text-slate-500', 'text-gray-500')}`}>
-              <div className="flex items-center gap-2">
-                <FiImage className="w-4 h-4" />
-                <span>Enter a Cloudinary image URL to add visual context to your question</span>
-              </div>
-            </div>
           </div>
 
-          {/* Answer Options - Mobile Optimized */}
-          <div className="w-full mb-4 sm:mb-6">
-            <label className={`block text-sm font-bold mb-3 sm:mb-4 flex items-center gap-2 w-full ${mode('text-slate-700', 'text-gray-300')}`}>
-              <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
-              Answer Options
-            </label>
-            <div className="w-full space-y-3 sm:space-y-4">
-              {question.options.map((option, optionIndex) => (
-                <div key={optionIndex} className={`w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 transition-all duration-300 ${question.correctAnswer === optionIndex ? mode('bg-green-50 border-green-300', 'bg-green-900/20 border-green-600') : mode('bg-slate-50 border-slate-200', 'bg-gray-800/50 border-gray-700')}`}>
-                  <button
-                    type="button"
-                    onClick={() => handleCorrectAnswerChange(optionIndex)}
-                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl border-2 flex items-center justify-center font-bold text-sm sm:text-lg transition-all duration-300 flex-shrink-0 ${question.correctAnswer === optionIndex ? mode('bg-green-600 border-green-600 text-white', 'bg-green-600 border-green-600 text-white') : mode('bg-white border-slate-300 text-slate-700 hover:border-slate-400', 'bg-gray-800 border-gray-600 text-gray-300 hover:border-gray-500')}`}
+          {/* Options Grid */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className={cn("text-xs font-semibold uppercase tracking-wider", isDark ? "text-zinc-500" : "text-zinc-500")}>
+                Answer Options
+              </label>
+              <span className={cn("text-xs", isDark ? "text-zinc-600" : "text-zinc-400")}>
+                Select the correct answer
+              </span>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {question.options.map((option, idx) => {
+                const isCorrect = question.correctAnswer === idx;
+                return (
+                  <div 
+                    key={idx}
+                    className={cn(
+                      "flex items-start gap-3 p-3 rounded-lg border transition-all duration-200",
+                      isCorrect 
+                        ? (isDark ? "bg-emerald-900/10 border-emerald-500/50" : "bg-emerald-50 border-emerald-200")
+                        : (isDark ? "bg-zinc-800/30 border-zinc-800 hover:border-zinc-700" : "bg-white border-zinc-200 hover:border-zinc-300")
+                    )}
                   >
-                    {String.fromCharCode(65 + optionIndex)}
-                  </button>
-                  <div className="flex-1 min-w-0 w-full">
-                    <input
-                      type="text"
-                      value={option}
-                      onChange={(e) => handleOptionChange(optionIndex, e.target.value)}
-                      className={`w-full max-w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl border-2 focus:outline-none focus:ring-4 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-300 text-sm sm:text-base font-medium ${mode('bg-white border-slate-300 text-slate-700 placeholder-slate-500 hover:border-slate-400', 'bg-gray-800 border-gray-700 text-white placeholder-gray-500 hover:border-gray-600')}`}
-                      placeholder={`Option ${String.fromCharCode(65 + optionIndex)}`}
-                    />
-                    
-                    {/* Option Image Input */}
-                    <div className="mt-2">
-                      <input
-                        type="url"
-                        placeholder={`Option ${String.fromCharCode(65 + optionIndex)} image URL (optional)`}
-                        value={question.optionImages?.[optionIndex] || ''}
-                        onChange={(e) => {
-                          const currentOptionImages = question.optionImages || ['', '', '', ''];
-                          const newOptionImages = [...currentOptionImages];
-                          newOptionImages[optionIndex] = e.target.value;
-                          onUpdate({ optionImages: newOptionImages });
-                        }}
-                        className={`w-full px-3 py-2 text-xs rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-300 ${mode('bg-white border-slate-300 text-slate-700 placeholder-slate-500', 'bg-gray-800 border-gray-700 text-white placeholder-gray-500')}`}
-                      />
-                      
-                      {/* Option Image Preview */}
-                      {question.optionImages?.[optionIndex] && (
-                        <div className="mt-2">
-                          <div className="relative rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600 max-w-xs">
-                            <img
-                              src={question.optionImages[optionIndex]}
-                              alt={`Option ${String.fromCharCode(65 + optionIndex)} illustration`}
-                              className="w-full h-auto object-contain bg-gray-50 dark:bg-gray-800"
-                              style={{ maxHeight: '120px' }}
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                                e.target.nextSibling.style.display = 'flex';
-                              }}
-                            />
-                            <div className="hidden w-full h-16 bg-gray-100 dark:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg items-center justify-center">
-                              <div className="text-center">
-                                <div className="w-3 h-3 text-gray-400 mx-auto mb-1">📷</div>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Failed to load</p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                    <button
+                      onClick={() => handleCorrectAnswerChange(idx)}
+                      className={cn(
+                        "mt-1 shrink-0 transition-colors duration-200",
+                        isCorrect 
+                          ? "text-emerald-500" 
+                          : (isDark ? "text-zinc-600 hover:text-zinc-400" : "text-zinc-300 hover:text-zinc-400")
                       )}
+                    >
+                      {isCorrect ? <CheckCircle2 className="w-5 h-5 fill-current" /> : <Circle className="w-5 h-5" />}
+                    </button>
+
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className={cn(
+                          "text-xs font-bold w-4", 
+                          isCorrect ? "text-emerald-600 dark:text-emerald-400" : "text-zinc-400"
+                        )}>
+                          {String.fromCharCode(65 + idx)}
+                        </span>
+                        <input
+                          type="text"
+                          value={option}
+                          onChange={(e) => handleOptionChange(idx, e.target.value)}
+                          className={cn(
+                            "w-full bg-transparent text-sm font-medium focus:outline-none placeholder-zinc-400 dark:placeholder-zinc-600",
+                            isDark ? "text-zinc-200" : "text-zinc-800"
+                          )}
+                          placeholder={`Option ${idx + 1}`}
+                        />
+                      </div>
+                      
+                      {/* Option Image Trigger/Input */}
+                      <div className="pl-6">
+                        <input
+                          type="text"
+                          value={question.optionImages?.[idx] || ''}
+                          onChange={(e) => {
+                            const imgs = question.optionImages || ['', '', '', ''];
+                            imgs[idx] = e.target.value;
+                            onUpdate({ optionImages: imgs });
+                          }}
+                          className={cn(
+                            "w-full text-xs bg-transparent focus:outline-none border-b border-dashed border-transparent focus:border-zinc-300 dark:focus:border-zinc-700 transition-colors truncate",
+                            isDark ? "text-zinc-500 hover:text-zinc-400" : "text-zinc-400 hover:text-zinc-500"
+                          )}
+                          placeholder="+ Add image URL (optional)"
+                        />
+                      </div>
                     </div>
                   </div>
-                  {question.correctAnswer === optionIndex && (
-                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-green-600 rounded-full flex items-center justify-center shadow-lg flex-shrink-0">
-                      <FiCheck className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-                    </div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
           {/* Explanation */}
-          <div className="w-full mb-4 sm:mb-6">
-            <label className={`block text-sm font-bold mb-2 sm:mb-3 flex items-center gap-2 w-full ${mode('text-slate-700', 'text-gray-300')}`}>
-              <div className="w-2 h-2 bg-purple-500 rounded-full flex-shrink-0"></div>
-              Explanation
-            </label>
+          <div className="space-y-2 pt-2">
+            <div className="flex items-center gap-2">
+               <HelpCircle className={cn("w-3 h-3", isDark ? "text-zinc-600" : "text-zinc-400")} />
+               <label className={cn("text-xs font-medium", isDark ? "text-zinc-500" : "text-zinc-500")}>
+                 Explanation (Optional)
+               </label>
+            </div>
             <textarea
               value={question.explanation || ''}
               onChange={(e) => onUpdate({ explanation: e.target.value })}
-              className={`w-full max-w-full px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl border-2 focus:outline-none focus:ring-4 focus:ring-purple-500/30 focus:border-purple-500 transition-all duration-300 min-h-[60px] sm:min-h-[80px] resize-y text-sm sm:text-base font-medium ${mode('bg-white border-slate-300 text-slate-700 placeholder-slate-500 hover:border-slate-400', 'bg-gray-800 border-gray-700 text-white placeholder-gray-500 hover:border-gray-600')}`}
-              rows="2"
-              placeholder="Explain why this is the correct answer..."
+              className={cn(
+                "w-full rounded-lg px-3 py-2 text-sm h-16 resize-none focus:outline-none focus:ring-1 focus:ring-rose-500/20 transition-all",
+                isDark 
+                  ? "bg-zinc-900/50 border border-zinc-800 text-zinc-300 focus:border-rose-500/50" 
+                  : "bg-zinc-50 border border-zinc-200 text-zinc-700 focus:border-rose-500"
+              )}
+              placeholder="Explain the correct answer..."
             />
           </div>
 
-          {/* Question-Specific Marking Settings - Mobile Optimized */}
-          <div className={`w-full border-t-2 pt-4 sm:pt-6 ${mode('border-slate-300/60', 'border-gray-700/60')}`}>
-            <div className="w-full space-y-6 sm:space-y-8">
-              {/* Marking Buttons Row - Mobile Stack */}
-              <div className="w-full">
-                <label className={`block text-sm font-bold mb-3 sm:mb-4 flex items-center gap-2 sm:gap-3 w-full ${mode('text-slate-700', 'text-gray-300')}`}>
-                  <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <FiAlertCircle className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />
-                  </div>
-                  <span className="text-sm sm:text-base">Question-Specific Marking</span>
-                </label>
-                
-                {/* Mobile: Stack buttons, Desktop: Side by side */}
-                <div className="w-full flex flex-col sm:flex-row items-stretch gap-3 sm:gap-4">
-                  {/* Positive Marking Button */}
-                  <button
-                    type="button"
-                    onClick={togglePositiveMarking}
-                    className={`w-full flex items-center justify-start sm:justify-center gap-3 p-4 sm:p-6 rounded-xl sm:rounded-2xl border-2 transition-all duration-300 hover:scale-[1.02] ${
-                      question.positiveMarking?.enabled
-                        ? mode('bg-green-100/50 border-green-300 text-green-600 shadow-lg', 'bg-green-500/20 border-green-400 text-green-300 shadow-lg')
-                        : mode('bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200', 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700')
-                    }`}
-                  >
-                    <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0 ${
-                      question.positiveMarking?.enabled 
-                        ? 'bg-green-500 text-white' 
-                        : mode('bg-green-100 text-green-500', 'bg-green-500/20 text-green-400')
-                    }`}>
-                      <FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />
-                    </div>
-                    <div className="text-left flex-1">
-                      <div className="font-bold text-sm sm:text-base">Positive Marking</div>
-                      <div className="text-xs sm:text-sm opacity-75">
-                        {question.positiveMarking?.enabled ? 'Enabled' : 'Click to enable'}
-                      </div>
-                    </div>
-                  </button>
-
-                  {/* Negative Marking Button */}
-                  <button
-                    type="button"
-                    onClick={toggleNegativeMarking}
-                    className={`w-full flex items-center justify-start sm:justify-center gap-3 p-4 sm:p-6 rounded-xl sm:rounded-2xl border-2 transition-all duration-300 hover:scale-[1.02] ${
-                      question.negativeMarking?.enabled
-                        ? mode('bg-red-100/50 border-red-300 text-red-600 shadow-lg', 'bg-red-500/20 border-red-400 text-red-300 shadow-lg')
-                        : mode('bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200', 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700')
-                    }`}
-                  >
-                    <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0 ${
-                      question.negativeMarking?.enabled 
-                        ? 'bg-red-500 text-white' 
-                        : mode('bg-red-100 text-red-500', 'bg-red-500/20 text-red-400')
-                    }`}>
-                      <FiMinus className="w-4 h-4 sm:w-5 sm:h-5" />
-                    </div>
-                    <div className="text-left flex-1">
-                      <div className="font-bold text-sm sm:text-base">Negative Marking</div>
-                      <div className="text-xs sm:text-sm opacity-75">
-                        {question.negativeMarking?.enabled ? 'Enabled' : 'Click to enable'}
-                      </div>
-                    </div>
-                  </button>
-                </div>
+          {/* Settings Section */}
+          <div className={cn(
+            "rounded-lg overflow-hidden border",
+            isDark ? "border-zinc-800 bg-zinc-900/30" : "border-zinc-200 bg-zinc-50/50"
+          )}>
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className={cn(
+                "w-full flex items-center justify-between p-3 text-xs font-medium uppercase tracking-wider transition-colors",
+                isDark ? "text-zinc-400 hover:bg-zinc-800/50" : "text-zinc-500 hover:bg-zinc-100"
+              )}
+            >
+              <div className="flex items-center gap-2">
+                <Settings2 className="w-3.5 h-3.5" />
+                <span>Marking Rules</span>
               </div>
+              <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", showSettings && "rotate-180")} />
+            </button>
 
-              {/* Positive Marking Settings - Mobile Optimized */}
-              {question.positiveMarking?.enabled && (
-                <div className={`w-full space-y-4 sm:space-y-6 p-4 sm:p-6 rounded-xl sm:rounded-2xl border-2 ${mode('border-green-300/30 bg-green-50/10', 'border-green-500/30 bg-green-500/10')}`}>
-                  <div className="w-full flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <FiPlus className="w-3 h-3 sm:w-4 sm:h-4 text-green-600" />
+            {showSettings && (
+              <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-6 border-t dark:border-zinc-800 border-zinc-200">
+                
+                {/* Positive Marking */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-md bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
+                        <Plus className="w-3.5 h-3.5" />
+                      </div>
+                      <span className={cn("text-sm font-medium", isDark ? "text-zinc-200" : "text-zinc-700")}>Correct Answer</span>
                     </div>
-                    <h4 className={`text-base sm:text-lg font-bold flex-1 ${mode('text-green-700', 'text-green-300')}`}>
-                      Positive Marking Config
-                    </h4>
+                    <ToggleSwitch 
+                      enabled={question.positiveMarking?.enabled} 
+                      onChange={togglePositiveMarking}
+                      colorClass="bg-emerald-600"
+                    />
                   </div>
-
-                  {/* Type Selection - Mobile Stack */}
-                  <div className="w-full">
-                    <label className={`block text-sm font-bold mb-3 sm:mb-4 w-full ${mode('text-slate-700', 'text-gray-300')}`}>
-                      Marking Type
-                    </label>
-                    <div className="w-full flex flex-col sm:grid sm:grid-cols-2 gap-3 sm:gap-4">
-                      {[
-                        { value: 'fractional', label: 'Fractional', description: '1.0 mark bonus' },
-                        { value: 'fixed', label: 'Fixed', description: 'Fixed mark bonus' }
-                      ].map(type => (
-                        <button
-                          key={type.value}
-                          type="button"
-                          onClick={() => onUpdate({
-                            positiveMarking: {
-                              ...question.positiveMarking,
-                              type: type.value
-                            }
-                          })}
-                          className={`w-full p-3 sm:p-4 rounded-lg sm:rounded-xl border-2 transition-all duration-300 text-left hover:scale-[1.02] ${
-                            question.positiveMarking?.type === type.value
-                              ? mode('bg-green-100/20 border-green-300 text-green-600 shadow-lg', 'bg-green-500/20 border-green-400 text-green-300 shadow-lg')
-                              : mode('bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200', 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700')
-                          }`}
-                        >
-                          <div className="font-bold text-sm sm:text-base">{type.label}</div>
-                          <div className="text-xs sm:text-sm opacity-75">{type.description}</div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Value Input */}
-                  <div className="w-full">
-                    <label className={`block text-sm font-bold mb-2 sm:mb-3 w-full ${mode('text-slate-700', 'text-gray-300')}`}>
-                      {question.positiveMarking?.type === 'fractional' ? 'Fraction Value' : 'Mark Bonus'}
-                    </label>
-                    <div className="w-full relative">
-                      <input
-                        type="number"
-                        min="0.1"
-                        max="5"
-                        step="0.1"
-                        value={question.positiveMarking?.value || 1.0}
-                        onChange={(e) => onUpdate({
-                          positiveMarking: {
-                            ...question.positiveMarking,
-                            value: parseFloat(e.target.value) || 1.0
-                          }
-                        })}
-                        className={`w-full max-w-full px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl border-2 text-sm sm:text-base font-medium focus:outline-none focus:ring-4 focus:ring-green-500/30 focus:border-green-500 transition-all duration-300 ${mode('bg-white border-slate-300 text-slate-700 placeholder-slate-500 hover:border-slate-400', 'bg-gray-800 border-gray-600 text-white placeholder-gray-500 hover:border-gray-500')}`}
-                        placeholder="1.0"
-                      />
-                      <div className={`absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 text-xs sm:text-sm font-medium ${mode('text-slate-500', 'text-gray-500')}`}>
-                        {question.positiveMarking?.type === 'fractional' ? 'fraction' : 'marks'}
+                  
+                  {question.positiveMarking?.enabled && (
+                    <div className="pl-9 space-y-3 animate-in slide-in-from-top-2 fade-in duration-200">
+                      <div className="flex gap-2 p-1 rounded-lg border dark:border-zinc-700 border-zinc-200 bg-white dark:bg-zinc-950">
+                        {['fractional', 'fixed'].map(type => (
+                          <button
+                            key={type}
+                            onClick={() => onUpdate({ positiveMarking: { ...question.positiveMarking, type } })}
+                            className={cn(
+                              "flex-1 py-1 px-2 text-xs font-medium rounded-md capitalize transition-all",
+                              question.positiveMarking?.type === type
+                                ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 shadow-sm"
+                                : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                            )}
+                          >
+                            {type}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={question.positiveMarking?.value || 1.0}
+                          onChange={(e) => onUpdate({ positiveMarking: { ...question.positiveMarking, value: parseFloat(e.target.value) } })}
+                          className={cn(
+                            "w-20 rounded-md py-1.5 px-2 text-sm border focus:ring-2 focus:ring-emerald-500/20 focus:outline-none",
+                            isDark ? "bg-zinc-950 border-zinc-700 text-white" : "bg-white border-zinc-300 text-zinc-900"
+                          )}
+                        />
+                        <span className={cn("text-xs", isDark ? "text-zinc-500" : "text-zinc-400")}>marks awarded</span>
                       </div>
                     </div>
-                    <div className={`w-full mt-2 sm:mt-3 text-xs sm:text-sm ${mode('text-slate-500', 'text-gray-500')}`}>
-                      For this question, {question.positiveMarking?.value || 1.0} marks will be awarded for correct answers
-                    </div>
-                  </div>
+                  )}
                 </div>
-              )}
 
-              {/* Negative Marking Settings - Mobile Optimized */}
-              {question.negativeMarking?.enabled && (
-                <div className={`w-full space-y-4 sm:space-y-6 p-4 sm:p-6 rounded-xl sm:rounded-2xl border-2 ${mode('border-red-300/30 bg-red-50/10', 'border-red-500/30 bg-red-500/10')}`}>
-                  <div className="w-full flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <FiMinus className="w-3 h-3 sm:w-4 sm:h-4 text-red-600" />
+                {/* Negative Marking */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-md bg-orange-100 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400">
+                        <Minus className="w-3.5 h-3.5" />
+                      </div>
+                      <span className={cn("text-sm font-medium", isDark ? "text-zinc-200" : "text-zinc-700")}>Wrong Answer</span>
                     </div>
-                    <h4 className={`text-base sm:text-lg font-bold flex-1 ${mode('text-red-700', 'text-red-300')}`}>
-                      Negative Marking Config
-                    </h4>
+                    <ToggleSwitch 
+                      enabled={question.negativeMarking?.enabled} 
+                      onChange={toggleNegativeMarking}
+                      colorClass="bg-orange-600"
+                    />
                   </div>
 
-                  {/* Type Selection - Mobile Stack */}
-                  <div className="w-full">
-                    <label className={`block text-sm font-bold mb-3 sm:mb-4 w-full ${mode('text-slate-700', 'text-gray-300')}`}>
-                      Marking Type
-                    </label>
-                    <div className="w-full flex flex-col sm:grid sm:grid-cols-2 gap-3 sm:gap-4">
-                      {[
-                        { value: 'fractional', label: 'Fractional', description: '1/4th mark deduction' },
-                        { value: 'fixed', label: 'Fixed', description: 'Fixed mark deduction' }
-                      ].map(type => (
-                        <button
-                          key={type.value}
-                          type="button"
-                          onClick={() => onUpdate({
-                            negativeMarking: {
-                              ...question.negativeMarking,
-                              type: type.value
-                            }
-                          })}
-                          className={`w-full p-3 sm:p-4 rounded-lg sm:rounded-xl border-2 transition-all duration-300 text-left hover:scale-[1.02] ${
-                            question.negativeMarking?.type === type.value
-                              ? mode('bg-red-100/20 border-red-300 text-red-600 shadow-lg', 'bg-red-500/20 border-red-400 text-red-300 shadow-lg')
-                              : mode('bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200', 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700')
-                          }`}
-                        >
-                          <div className="font-bold text-sm sm:text-base">{type.label}</div>
-                          <div className="text-xs sm:text-sm opacity-75">{type.description}</div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Value Input */}
-                  <div className="w-full">
-                    <label className={`block text-sm font-bold mb-2 sm:mb-3 w-full ${mode('text-slate-700', 'text-gray-300')}`}>
-                      {question.negativeMarking?.type === 'fractional' ? 'Fraction Value' : 'Mark Deduction'}
-                    </label>
-                    <div className="w-full relative">
-                      <input
-                        type="number"
-                        min="0.1"
-                        max="1"
-                        step="0.05"
-                        value={question.negativeMarking?.value || 0.25}
-                        onChange={(e) => onUpdate({
-                          negativeMarking: {
-                            ...question.negativeMarking,
-                            value: parseFloat(e.target.value) || 0.25
-                          }
-                        })}
-                        className={`w-full max-w-full px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl border-2 text-sm sm:text-base font-medium focus:outline-none focus:ring-4 focus:ring-red-500/30 focus:border-red-500 transition-all duration-300 ${mode('bg-white border-slate-300 text-slate-700 placeholder-slate-500 hover:border-slate-400', 'bg-gray-800 border-gray-600 text-white placeholder-gray-500 hover:border-gray-500')}`}
-                        placeholder="0.25"
-                      />
-                      <div className={`absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 text-xs sm:text-sm font-medium ${mode('text-slate-500', 'text-gray-500')}`}>
-                        {question.negativeMarking?.type === 'fractional' ? 'fraction' : 'marks'}
+                  {question.negativeMarking?.enabled && (
+                    <div className="pl-9 space-y-3 animate-in slide-in-from-top-2 fade-in duration-200">
+                      <div className="flex gap-2 p-1 rounded-lg border dark:border-zinc-700 border-zinc-200 bg-white dark:bg-zinc-950">
+                        {['fractional', 'fixed'].map(type => (
+                          <button
+                            key={type}
+                            onClick={() => onUpdate({ negativeMarking: { ...question.negativeMarking, type } })}
+                            className={cn(
+                              "flex-1 py-1 px-2 text-xs font-medium rounded-md capitalize transition-all",
+                              question.negativeMarking?.type === type
+                                ? "bg-orange-50 text-orange-700 dark:bg-orange-500/20 dark:text-orange-300 shadow-sm"
+                                : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                            )}
+                          >
+                            {type}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          step="0.05"
+                          value={question.negativeMarking?.value || 0.25}
+                          onChange={(e) => onUpdate({ negativeMarking: { ...question.negativeMarking, value: parseFloat(e.target.value) } })}
+                          className={cn(
+                            "w-20 rounded-md py-1.5 px-2 text-sm border focus:ring-2 focus:ring-orange-500/20 focus:outline-none",
+                            isDark ? "bg-zinc-950 border-zinc-700 text-white" : "bg-white border-zinc-300 text-zinc-900"
+                          )}
+                        />
+                        <span className={cn("text-xs", isDark ? "text-zinc-500" : "text-zinc-400")}>deducted</span>
                       </div>
                     </div>
-                    <div className={`w-full mt-2 sm:mt-3 text-xs sm:text-sm ${mode('text-slate-500', 'text-gray-500')}`}>
-                      For this question, {question.negativeMarking?.value || 0.25} marks will be deducted for wrong answers
-                    </div>
-                  </div>
+                  )}
                 </div>
-              )}
-            </div>
+
+              </div>
+            )}
           </div>
-        </>
+        </div>
       )}
     </div>
   );

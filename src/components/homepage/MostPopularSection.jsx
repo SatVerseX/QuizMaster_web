@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { FiUsers, FiStar, FiPlay, FiEye, FiAward, FiBookOpen, FiCheck } from "react-icons/fi";
-import { FaCrown, FaTrophy, FaMedal } from "react-icons/fa";
+import { FiUsers, FiStar, FiPlay, FiEye, FiAward, FiBookOpen, FiCheck, FiArrowRight } from "react-icons/fi";
+import { FaCrown, FaTrophy, FaMedal, FaFire } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../lib/firebase";
@@ -89,29 +89,35 @@ const MostPopularSection = ({
       else navigate(`/series/${seriesItem.id}/dashboard`);
   };
 
-  // -- Styling Helpers --
-  const getRankStyle = (index) => {
+  // -- Visual Helpers --
+  const getRankConfig = (index) => {
     switch(index) {
       case 0: return { 
-        gradient: 'from-yellow-400 to-yellow-600', 
-        shadow: 'shadow-yellow-500/40',
-        border: 'border-yellow-500/50',
+        color: 'text-amber-500', 
+        bg: 'bg-amber-500',
+        lightBg: 'bg-amber-50',
+        darkBg: 'bg-amber-500/10',
+        border: 'border-amber-200',
         icon: FaTrophy,
-        label: 'Best Seller'
+        label: '1st Place'
       };
       case 1: return { 
-        gradient: 'from-slate-300 to-slate-500', 
-        shadow: 'shadow-slate-500/40',
-        border: 'border-slate-400/50',
+        color: 'text-slate-400', 
+        bg: 'bg-slate-400',
+        lightBg: 'bg-slate-100',
+        darkBg: 'bg-slate-400/10',
+        border: 'border-slate-200',
         icon: FaMedal,
-        label: 'Top Rated'
+        label: '2nd Place'
       };
       case 2: return { 
-        gradient: 'from-orange-400 to-orange-600', 
-        shadow: 'shadow-orange-500/40',
-        border: 'border-orange-500/50',
+        color: 'text-orange-400', 
+        bg: 'bg-orange-400',
+        lightBg: 'bg-orange-50',
+        darkBg: 'bg-orange-400/10',
+        border: 'border-orange-200',
         icon: FaMedal,
-        label: 'Student Choice'
+        label: '3rd Place'
       };
       default: return null;
     }
@@ -120,193 +126,183 @@ const MostPopularSection = ({
   if (popularSeries.length === 0) return null;
 
   return (
-    <section className={`py-16 relative ${isDark ? "bg-gray-900/20" : "bg-white"}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        
-        {/* Header */}
-        <div className="text-center mb-12">
-          <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold mb-4 ${
-            isDark ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20' : 'bg-yellow-50 text-yellow-600 border border-yellow-200'
-          }`}>
-            <FaCrown className="w-3.5 h-3.5" />
-            <span>Market Leaders</span>
+    <section className={`py-12 ${isDark ? "bg-transparent" : "bg-transparent"}`}>
+      <div className="max-w-7xl mx-auto">
+        <h2 className={`text-center text-3xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+          Most Popular
+        </h2>
+        <p className={`text-center text-sm mb-10 mt-2 ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
+          Explore the most popular series on our platform.
+        </p>
+        {/* Section Header */}
+        {/* Note: The parent typically handles headers, but we include a clean one just in case */}
+        {/* <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 px-1">
+          <div>
+            <div className="flex items-center gap-2 text-amber-500 mb-2">
+              <FaCrown size={16} />
+              <span className="text-xs font-bold uppercase tracking-wider">Market Leaders</span>
+            </div>
+            <h2 className={`text-3xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+              Most Popular Series
+            </h2>
           </div>
-          
-          <h2 className={`text-3xl md:text-4xl font-bold mb-4 tracking-tight ${
-            isDark ? "text-white" : "text-slate-900"
-          }`}>
-            Most Popular Series
-          </h2>
-          <p className={`text-base max-w-2xl mx-auto ${
-            isDark ? "text-slate-400" : "text-slate-600"
-          }`}>
-            The highest-rated and most subscribed content, curated by our community.
-          </p>
-        </div>
+          <button onClick={() => navigate("/test-series")} className={`hidden md:flex items-center gap-2 text-sm font-medium ${isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`}>
+            View Leaderboard <FiArrowRight />
+          </button>
+        </div> */}
 
-        {/* Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {/* Card Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
           {popularSeries.map((seriesItem, index) => {
             const isSubscribed = hasUserSubscribed(seriesItem.id);
             const userIsCreator = isCreator(seriesItem);
-            const rankStyle = getRankStyle(index);
-            const RankIcon = rankStyle?.icon;
+            const rankConfig = getRankConfig(index);
+            const RankIcon = rankConfig?.icon;
 
             return (
               <div
                 key={seriesItem.id}
                 onClick={() => handleViewDetails(seriesItem)}
-                className={`group relative flex flex-col rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 cursor-pointer border ${
+                className={`group relative flex flex-col rounded-2xl border transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer overflow-hidden ${
                   isDark 
-                    ? `bg-slate-800/40 hover:bg-slate-800 ${rankStyle ? rankStyle.border : 'border-slate-700 hover:border-slate-600'}`
-                    : `bg-white shadow-sm hover:shadow-xl ${rankStyle ? rankStyle.border : 'border-slate-100 hover:border-slate-200'}`
+                    ? 'bg-zinc-900 border-zinc-800 hover:border-zinc-700' 
+                    : 'bg-white border-zinc-200 hover:border-emerald-200 shadow-sm'
                 }`}
               >
-                {/* Glow Effect for Top 3 */}
-                {rankStyle && (
-                  <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${rankStyle.gradient}`} />
-                )}
-
-                {/* Cover Image Area */}
-                <div className="aspect-video relative overflow-hidden bg-gray-900">
-                  {/* Rank Badge (Top Left) */}
-                  {rankStyle && (
-                    <div className={`absolute top-3 left-3 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-lg shadow-lg bg-gradient-to-r ${rankStyle.gradient} text-white text-xs font-bold`}>
-                      <RankIcon className="w-3 h-3" />
-                      {rankStyle.label}
-                    </div>
-                  )}
-
-                  {/* Status Badge (Top Right) */}
-                  <div className="absolute top-3 right-3 z-20">
-                    {seriesItem.isPaid ? (
-                      isSubscribed ? (
-                        <span className="flex items-center gap-1 bg-emerald-500/90 backdrop-blur-sm text-white text-xs font-bold px-2.5 py-1 rounded-md shadow-lg">
-                          <FiCheck className="w-3 h-3" /> Purchased
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1 bg-white/90 backdrop-blur-sm text-slate-900 text-xs font-bold px-2.5 py-1 rounded-md shadow-lg">
-                          <FaCrown className="w-3 h-3 text-yellow-500" /> Premium
-                        </span>
-                      )
-                    ) : (
-                      <span className="bg-emerald-500/90 backdrop-blur-sm text-white text-xs font-bold px-2.5 py-1 rounded-md shadow-lg">
-                        Free
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Image */}
+                {/* 1. Image Section */}
+                <div className="aspect-[16/9] relative overflow-hidden bg-zinc-100 dark:bg-zinc-800">
                   {seriesItem.coverImageUrl ? (
                     <img
                       src={seriesItem.coverImageUrl}
                       alt={seriesItem.title}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      onError={(e) => {
-                        e.target.style.display = "none";
-                        e.target.nextSibling.style.display = "flex";
-                      }}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      loading="lazy"
                     />
-                  ) : null}
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center flex-col opacity-50">
+                      <FaCrown className={`w-12 h-12 mb-2 ${isDark ? 'text-zinc-700' : 'text-zinc-300'}`} />
+                    </div>
+                  )}
                   
-                  {/* Fallback Image Pattern */}
-                  <div className={`absolute inset-0 items-center justify-center flex-col p-4 ${seriesItem.coverImageUrl ? 'hidden' : 'flex'} ${
-                    isDark ? 'bg-slate-800' : 'bg-slate-100'
-                  }`}>
-                    <div className={`w-full h-full absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-gray-400 via-gray-900 to-black`} />
-                    <FaCrown className={`w-12 h-12 mb-3 relative z-10 ${isDark ? 'text-slate-600' : 'text-slate-300'}`} />
-                    <span className={`text-xs font-medium relative z-10 uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                      {seriesItem.title}
-                    </span>
-                  </div>
+                  {/* Gradient Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/60 via-transparent to-transparent opacity-60" />
 
-                  {/* Hover Overlay */}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
+                  {/* Rank Badge (Top Left - Specialized) */}
+                  {rankConfig && (
+                    <div className="absolute top-0 left-4">
+                      <div className={`w-10 h-12 ${rankConfig.bg} text-white flex flex-col items-center justify-center rounded-b-lg shadow-lg`}>
+                        <RankIcon className="w-4 h-4 mb-0.5" />
+                        <span className="text-sm font-bold leading-none">{index + 1}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Status Badge (Top Right - Minimal) */}
+                  <div className="absolute top-3 right-3">
+                    {isSubscribed ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500 text-white text-xs font-bold shadow-sm backdrop-blur-md">
+                        <FiCheck size={12} /> Purchased
+                      </span>
+                    ) : seriesItem.isPaid ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/90 text-zinc-900 text-xs font-bold shadow-sm backdrop-blur-md">
+                        <FaCrown size={10} className="text-amber-500" /> Premium
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500 text-white text-xs font-bold shadow-sm backdrop-blur-md">
+                        Free
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                {/* Content Body */}
+                {/* 2. Content Section */}
                 <div className="flex-1 p-5 flex flex-col">
-                  <div className="flex items-start justify-between gap-2 mb-3">
-                    <h3 className={`text-lg font-bold line-clamp-2 leading-tight ${
-                      isDark ? "text-white group-hover:text-yellow-400" : "text-slate-900 group-hover:text-blue-600"
-                    } transition-colors`}>
+                  
+                  {/* Title & Rating */}
+                  <div className="mb-4">
+                    <h3 className={`text-lg font-bold leading-snug line-clamp-2 mb-2 group-hover:text-emerald-600 transition-colors ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>
                       {seriesItem.title}
                     </h3>
-                  </div>
-
-                  {/* Metadata Row */}
-                  <div className={`flex items-center gap-4 text-xs mb-4 pb-4 border-b ${
-                    isDark ? 'text-slate-400 border-slate-700' : 'text-slate-500 border-slate-100'
-                  }`}>
-                    <div className="flex items-center gap-1.5">
-                      <FiStar className="w-3.5 h-3.5 text-yellow-400 fill-current" />
-                      <span className={isDark ? "text-slate-200" : "text-slate-700"}>
-                        {seriesItem.rating || 0}
-                      </span>
-                      <span className="opacity-60">({seriesItem.reviewCount || 0})</span>
-                    </div>
-                    <div className="w-1 h-1 rounded-full bg-current opacity-30" />
-                    <div className="flex items-center gap-1.5">
-                      <FiUsers className="w-3.5 h-3.5" />
-                      <span>{seriesItem.totalSubscribers || 0}</span>
-                    </div>
-                    <div className="w-1 h-1 rounded-full bg-current opacity-30" />
-                    <div className="flex items-center gap-1.5">
-                      <FiBookOpen className="w-3.5 h-3.5" />
-                      <span>{seriesItem.totalTests || 0} Tests</span>
+                    
+                    <div className="flex items-center gap-4 text-xs font-medium">
+                      <div className="flex items-center gap-1 text-amber-400">
+                        <FiStar className="fill-current" />
+                        <span className={isDark ? 'text-zinc-300' : 'text-zinc-700'}>{seriesItem.rating || 4.5}</span>
+                      </div>
+                      <div className={`flex items-center gap-1 ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                        <div className="w-1 h-1 rounded-full bg-current" />
+                        <span>{seriesItem.reviewCount || 12} reviews</span>
+                      </div>
                     </div>
                   </div>
 
-                  <p className={`text-sm line-clamp-2 mb-5 flex-1 ${
-                    isDark ? "text-slate-400" : "text-slate-600"
-                  }`}>
-                    {seriesItem.description || "No description available for this series."}
+                  {/* Stats Grid */}
+                  <div className={`grid grid-cols-2 gap-2 mb-5 pb-5 border-b border-dashed ${isDark ? 'border-zinc-800' : 'border-zinc-100'}`}>
+                    <div className={`flex items-center gap-2 p-2 rounded-lg ${isDark ? 'bg-zinc-800/50' : 'bg-zinc-50'}`}>
+                      <FiUsers className={`w-4 h-4 ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`} />
+                      <div className="flex flex-col">
+                        <span className={`text-xs font-bold ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
+                          {seriesItem.totalSubscribers || 0}
+                        </span>
+                        <span className="text-[10px] text-zinc-500 uppercase tracking-wide">Students</span>
+                      </div>
+                    </div>
+                    <div className={`flex items-center gap-2 p-2 rounded-lg ${isDark ? 'bg-zinc-800/50' : 'bg-zinc-50'}`}>
+                      <FiBookOpen className={`w-4 h-4 ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`} />
+                      <div className="flex flex-col">
+                        <span className={`text-xs font-bold ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
+                          {seriesItem.totalTests || 0}
+                        </span>
+                        <span className="text-[10px] text-zinc-500 uppercase tracking-wide">Tests</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Description (Hidden on mobile to save space, visible on desktop) */}
+                  <p className={`text-sm line-clamp-2 mb-4 flex-1 hidden sm:block ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                    {seriesItem.description || "Comprehensive test series designed to boost your exam preparation."}
                   </p>
 
-                  {/* Action Button */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleMainAction(seriesItem);
-                    }}
-                    className={`w-full py-2.5 px-4 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 ${
-                      userIsCreator
-                        ? "bg-blue-600 text-white hover:bg-blue-700 hover:shadow-blue-500/25 shadow-lg"
-                        : isSubscribed
-                        ? "bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-emerald-500/25 shadow-lg"
-                        : !seriesItem.isPaid
-                        ? "bg-slate-800 text-white hover:bg-black dark:bg-slate-700 dark:hover:bg-slate-600"
-                        : isDark
-                          ? "bg-yellow-500 text-slate-900 hover:bg-yellow-400 shadow-lg shadow-yellow-900/20"
-                          : "bg-yellow-500 text-white hover:bg-yellow-600 shadow-lg shadow-yellow-500/20"
-                    }`}
-                  >
-                    <FiPlay className="w-4 h-4" />
-                    {userIsCreator ? "Manage Series" : 
-                     isSubscribed ? "Continue Learning" : 
-                     !seriesItem.isPaid ? "Start for Free" : 
-                     "Subscribe Now"}
-                  </button>
+                  {/* 3. Action Footer */}
+                  <div className="mt-auto">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleMainAction(seriesItem);
+                      }}
+                      className={`w-full py-2.5 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-all ${
+                        userIsCreator
+                          ?isDark ? " bg-zinc-800 text-white hover:bg-zinc-700" : "bg-zinc-800 text-white hover:bg-zinc-700"
+                          : isSubscribed
+                          ? isDark ? "bg-emerald-900/20 text-emerald-400 hover:bg-emerald-900/30" : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 "
+                          : seriesItem.isPaid
+                          ? isDark ? " bg-white text-zinc-900 hover:bg-zinc-100 shadow-sm" : "bg-zinc-900 text-white hover:bg-zinc-800  shadow-sm"
+                          : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-500/20"
+                      }`}
+                    >
+                      {userIsCreator ? (
+                         <>Manage Series</>
+                      ) : isSubscribed ? (
+                         <><FiPlay className="w-4 h-4" /> Continue</>
+                      ) : (
+                         <>{seriesItem.isPaid ? 'Subscribe Now' : 'Start Free'}</>
+                      )}
+                    </button>
+                  </div>
+
                 </div>
               </div>
             );
           })}
         </div>
 
-        {/* Footer Action */}
-        <div className="mt-12 text-center">
-          <button
-            onClick={() => navigate("/test-series")}
-            className={`group inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all ${
-              isDark
-                ? "text-slate-300 hover:text-white border border-slate-700 hover:border-slate-500 hover:bg-slate-800"
-                : "text-slate-600 hover:text-slate-900 border border-slate-200 hover:border-slate-300 hover:bg-white shadow-sm"
-            }`}
-          >
-            <span>View Full Catalog</span>
-            <FiAward className="w-4 h-4 transition-transform group-hover:scale-110" />
+        {/* Mobile View All */}
+        <div className="mt-8 text-center md:hidden">
+          <button onClick={() => navigate("/test-series")} className="text-sm font-medium text-emerald-600">
+            View All Series
           </button>
         </div>
+
       </div>
     </section>
   );

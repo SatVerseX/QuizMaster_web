@@ -8,7 +8,7 @@ import Footer from './components/layout/Footer';
 import AuthForm from './components/auth/AuthForm';
 import LoginPopup from './components/auth/LoginPopup';
 import WelcomePage from './components/layout/WelcomePage';
-
+import FlashcardReview from './components/flashcards/FlashCardReview';
 // Homepage components - Remove unused direct imports since they're used within EnhancedHomepage
 import EnhancedHomepage from './components/homepage/EnhancedHomepage';  
 import HomepageDemo from './components/homepage/HomepageDemo';
@@ -1182,6 +1182,12 @@ const ApplyCreator = () => {
   );
 };
 
+
+const FlashcardRoute = () => {
+  const navigate = useNavigate();
+  return <FlashcardReview onBack={() => navigate('/')} />;
+};
+
 const App = () => {
   return (
     <Router>
@@ -1189,6 +1195,7 @@ const App = () => {
         <AuthProvider>
           <SubscriptionProvider>
             <Routes>
+              <Route path="/flashcards" element={<FlashcardRoute />} />
               <Route path="/admin-dashboard" element={<AdminDashboard />} />
               <Route path="/apply-creator" element={<ApplyCreator />} />
               <Route path="/login" element={<AuthForm />} />

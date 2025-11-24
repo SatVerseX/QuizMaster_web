@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { FiStar, FiArrowLeft, FiArrowRight, FiAward, FiTrendingUp, FiClock } from 'react-icons/fi';
-import { FaQuoteLeft, FaTrophy, FaMedal } from 'react-icons/fa';
+import { FiStar, FiArrowLeft, FiArrowRight, FiAward, FiTrendingUp, FiClock, FiCheckCircle } from 'react-icons/fi';
+import { FaQuoteLeft, FaTrophy, FaMedal, FaUniversity } from 'react-icons/fa';
 
-// High-quality mock data to ensure the component renders beautifully immediately
+// High-quality mock data
 const DEFAULT_STORIES = [
   {
     id: 1,
@@ -51,213 +51,217 @@ const DEFAULT_STORIES = [
 const SuccessStoriesSection = ({ isDark, stories = [] }) => {
   const [currentStory, setCurrentStory] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const [animating, setAnimating] = useState(false);
 
-  // Use props if available, otherwise fallback to default data
   const displayStories = stories.length > 0 ? stories : DEFAULT_STORIES;
   const currentData = displayStories[currentStory];
 
   useEffect(() => {
     if (!isAutoPlaying) return;
     const interval = setInterval(() => {
-      setCurrentStory((prev) => (prev + 1) % displayStories.length);
-    }, 6000); // Slightly slower for better reading time
+      handleNext();
+    }, 8000); 
     return () => clearInterval(interval);
-  }, [isAutoPlaying, displayStories.length]);
+  }, [isAutoPlaying, currentStory]);
+
+  const triggerAnimation = (callback) => {
+    setAnimating(true);
+    setTimeout(() => {
+      callback();
+      setAnimating(false);
+    }, 300);
+  };
 
   const handleNext = () => {
-    setCurrentStory((prev) => (prev + 1) % displayStories.length);
+    triggerAnimation(() => {
+      setCurrentStory((prev) => (prev + 1) % displayStories.length);
+    });
     setIsAutoPlaying(false);
   };
 
   const handlePrev = () => {
-    setCurrentStory((prev) => (prev - 1 + displayStories.length) % displayStories.length);
+    triggerAnimation(() => {
+      setCurrentStory((prev) => (prev - 1 + displayStories.length) % displayStories.length);
+    });
     setIsAutoPlaying(false);
   };
 
   if (displayStories.length === 0) return null;
 
   return (
-    <section className={`py-20 relative overflow-hidden ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
+    <section className={`py-24 relative overflow-hidden ${isDark ? 'bg-zinc-950' : 'bg-zinc-50'}`}>
       
+      {/* Ambient Background Elements */}
+      <div className={`absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none opacity-40`}>
+        <div className={`absolute -top-24 -right-24 w-96 h-96 rounded-full blur-3xl ${isDark ? 'bg-emerald-900/20' : 'bg-emerald-100/60'}`} />
+        <div className={`absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t ${isDark ? 'from-zinc-950 via-zinc-950 to-transparent' : 'from-zinc-50 via-zinc-50 to-transparent'}`} />
+      </div>
 
       <div className="container mx-auto px-4 relative z-10">
-        {/* Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium mb-4 ${
-            isDark ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20' : 'bg-yellow-100 text-yellow-700 border border-yellow-200'
+        
+        {/* Section Header */}
+        <div className="flex flex-col items-center text-center max-w-3xl mx-auto mb-16">
+          <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest mb-6 ${
+            isDark ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-amber-50 text-amber-700 border border-amber-200'
           }`}>
-            <FaTrophy className="w-3.5 h-3.5" />
+            <FaTrophy className="w-3 h-3" />
             <span>Hall of Fame</span>
           </div>
-          <h2 className={`text-3xl md:text-4xl font-bold mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+          <h2 className={`text-3xl md:text-5xl font-bold mb-6 tracking-tight ${isDark ? 'text-white' : 'text-zinc-900'}`}>
             Success Stories that Inspire
           </h2>
-          <p className={`text-lg ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-            Join thousands of students who achieved their dream ranks using our analytics-driven platform.
+          <p className={`text-lg max-w-2xl ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
+            Join thousands of students who transformed their preparation and achieved their dream ranks using our analytics-driven platform.
           </p>
         </div>
 
-        {/* Main Card */}
+        {/* Main Feature Card */}
         <div className="max-w-6xl mx-auto">
-          <div className={`relative rounded-3xl shadow-2xl overflow-hidden transition-all duration-500 ${
-            isDark ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-slate-100'
+          <div className={`relative rounded-3xl overflow-hidden border shadow-2xl transition-all duration-300 ${
+            isDark ? 'bg-zinc-900 border-zinc-800 shadow-black/40' : 'bg-white border-zinc-200 shadow-zinc-200/50'
           }`}>
             
-            {/* Inner Content with Key for Animation */}
-            <div key={currentStory} className="flex flex-col lg:flex-row animate-fadeIn">
+            <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[500px]">
               
-              {/* Left Side: Visual Identity */}
-              <div className={`relative lg:w-2/5 p-8 lg:p-12 flex flex-col items-center justify-center text-center ${
-                isDark ? 'bg-slate-800/50' : 'bg-slate-50'
+              {/* LEFT: Profile Column (4/12) */}
+              <div className={`lg:col-span-5 relative p-8 lg:p-10 flex flex-col items-center justify-center text-center border-b lg:border-b-0 lg:border-r ${
+                isDark ? 'bg-zinc-800/30 border-zinc-800' : 'bg-zinc-50/80 border-zinc-100'
               }`}>
-                {/* Background Pattern */}
-                <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-current to-transparent" />
-                
-                {/* Photo Ring */}
-                <div className="relative mb-6">
-                  <div className={`w-40 h-40 rounded-full p-1.5 ${
-                    isDark 
-                      ? 'bg-gradient-to-br from-yellow-400 to-orange-500' 
-                      : 'bg-gradient-to-br from-yellow-400 to-orange-500'
-                  }`}>
-                    <img
+                {/* Decorative Grid Pattern */}
+                <div className={`absolute inset-0 opacity-[0.03] ${isDark ? 'bg-[radial-gradient(#fff_1px,transparent_1px)]' : 'bg-[radial-gradient(#000_1px,transparent_1px)]'} [background-size:16px_16px]`} />
+
+                {/* Profile Image with Animated Ring */}
+                <div className={`relative mb-8 transition-opacity duration-300 ${animating ? 'opacity-50 scale-95' : 'opacity-100 scale-100'}`}>
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-amber-400 to-emerald-500 blur-md opacity-40 animate-pulse" />
+                  <div className={`relative w-36 h-36 rounded-full p-1.5 bg-gradient-to-tr from-amber-300 via-yellow-400 to-orange-500`}>
+                     <img
                       src={currentData.photo}
                       alt={currentData.name}
-                      className={`w-full h-full rounded-full object-cover border-4 ${isDark ? 'border-slate-800' : 'border-white'}`}
+                      className={`w-full h-full rounded-full object-cover border-4 ${isDark ? 'border-zinc-900' : 'border-white'}`}
                     />
                   </div>
-                  <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
-                    <span className="bg-slate-900 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg border border-slate-700 flex items-center gap-1.5">
-                       <FaMedal className="text-yellow-400" /> {currentData.rank}
-                    </span>
+                  
+                  {/* Floating Rank Badge */}
+                  <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 whitespace-nowrap z-10">
+                    <div className={`flex items-center gap-2 px-4 py-1.5 rounded-full shadow-lg text-xs font-bold uppercase tracking-wide border ${
+                      isDark ? 'bg-zinc-900 text-white border-zinc-700' : 'bg-white text-zinc-900 border-zinc-200'
+                    }`}>
+                      <FaMedal className="text-amber-400" />
+                      {currentData.rank}
+                    </div>
                   </div>
                 </div>
 
-                <h3 className={`text-2xl font-bold mb-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                  {currentData.name}
-                </h3>
-                <p className={`text-sm font-medium mb-6 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  {currentData.location}
-                </p>
+                {/* Name & Info */}
+                <div className={`transition-all duration-300 ${animating ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'}`}>
+                  <h3 className={`text-2xl font-bold mb-1 ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+                    {currentData.name}
+                  </h3>
+                  <p className={`text-sm font-medium mb-6 flex items-center justify-center gap-2 ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>
+                    <span className={`w-2 h-2 rounded-full ${isDark ? 'bg-emerald-500' : 'bg-emerald-500'}`} />
+                    {currentData.location}
+                  </p>
 
-                {/* Achievement Box */}
-                <div className={`w-full p-4 rounded-xl border ${
-                  isDark 
-                    ? 'bg-slate-900/50 border-slate-700' 
-                    : 'bg-white border-slate-200 shadow-sm'
-                }`}>
-                  <p className={`text-xs uppercase tracking-wider font-semibold mb-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                    Cracked {currentData.exam}
-                  </p>
-                  <p className={`text-lg font-bold bg-gradient-to-r from-yellow-500 to-orange-500 bg-clip-text text-transparent`}>
-                    {currentData.achievement}
-                  </p>
+                  {/* Key Achievement */}
+                  <div className={`inline-flex items-center gap-3 px-5 py-3 rounded-xl border ${
+                    isDark ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-zinc-200 shadow-sm'
+                  }`}>
+                    <div className={`p-2 rounded-lg ${isDark ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-50 text-amber-600'}`}>
+                      <FaUniversity size={16} />
+                    </div>
+                    <div className="text-left">
+                      <p className={`text-[10px] uppercase tracking-wider font-semibold ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                        Selected In
+                      </p>
+                      <p className={`text-sm font-bold ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+                        {currentData.achievement}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Right Side: Narrative & Stats */}
-              <div className="lg:w-3/5 p-8 lg:p-12 flex flex-col justify-center relative">
-                <FaQuoteLeft className={`absolute top-8 left-8 text-6xl opacity-10 ${isDark ? 'text-white' : 'text-slate-900'}`} />
+              {/* RIGHT: Content Column (7/12) */}
+              <div className="lg:col-span-7 p-8 lg:p-12 flex flex-col justify-center relative">
                 
-                <blockquote className={`relative z-10 text-xl md:text-2xl leading-relaxed italic mb-8 ${
-                  isDark ? 'text-slate-200' : 'text-slate-700'
-                }`}>
-                  "{currentData.testimonial}"
-                </blockquote>
-
-                <div className={`grid grid-cols-3 gap-4 p-6 rounded-2xl mb-8 ${
-                  isDark ? 'bg-slate-900/50' : 'bg-slate-50'
-                }`}>
-                  <div className="text-center">
-                    <div className={`flex items-center justify-center mb-1 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
-                      <FiAward className="w-5 h-5" />
-                    </div>
-                    <div className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{currentData.score}</div>
-                    <div className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>Final Score</div>
-                  </div>
-                  <div className="text-center border-x border-slate-200 dark:border-slate-700">
-                    <div className={`flex items-center justify-center mb-1 ${isDark ? 'text-purple-400' : 'text-purple-600'}`}>
-                      <FiTrendingUp className="w-5 h-5" />
-                    </div>
-                    <div className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{currentData.testsCompleted}</div>
-                    <div className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>Tests Taken</div>
-                  </div>
-                  <div className="text-center">
-                    <div className={`flex items-center justify-center mb-1 ${isDark ? 'text-green-400' : 'text-green-600'}`}>
-                      <FiClock className="w-5 h-5" />
-                    </div>
-                    <div className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{currentData.studyHours}</div>
-                    <div className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>Hours Studied</div>
-                  </div>
+                {/* Quote Icon Watermark */}
+                <FaQuoteLeft className={`absolute top-10 left-10 text-8xl opacity-5 pointer-events-none ${isDark ? 'text-white' : 'text-black'}`} />
+                
+                {/* Navigation (Top Right) */}
+                <div className="absolute top-8 right-8 flex gap-2">
+                  <button onClick={handlePrev} className={`p-2 rounded-full border transition-colors ${isDark ? 'border-zinc-700 text-zinc-400 hover:text-white hover:bg-zinc-800' : 'border-zinc-200 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50'}`}>
+                    <FiArrowLeft size={18} />
+                  </button>
+                  <button onClick={handleNext} className={`p-2 rounded-full border transition-colors ${isDark ? 'border-zinc-700 text-zinc-400 hover:text-white hover:bg-zinc-800' : 'border-zinc-200 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50'}`}>
+                    <FiArrowRight size={18} />
+                  </button>
                 </div>
 
-                <div className="flex items-center justify-between">
-                   {/* Stars */}
-                  <div className="flex gap-1">
-                    {[...Array(5)].map((_, i) => (
-                      <FiStar 
-                        key={i} 
-                        className={`w-5 h-5 ${i < currentData.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
-                      />
-                    ))}
+                <div className={`relative z-10 flex flex-col h-full justify-center transition-all duration-500 ${animating ? 'opacity-0 translate-x-8' : 'opacity-100 translate-x-0'}`}>
+                  
+                  {/* Testimonial Text */}
+                  <blockquote className={`text-xl md:text-2xl leading-relaxed font-serif mb-8 ${isDark ? 'text-zinc-200' : 'text-zinc-700'}`}>
+                    "{currentData.testimonial}"
+                  </blockquote>
+
+                  {/* Verification Badge */}
+                  <div className="flex items-center gap-2 mb-10">
+                    <FiCheckCircle className="text-emerald-500" />
+                    <span className={`text-sm font-medium ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Verified Student • {currentData.exam} Aspirant</span>
                   </div>
 
-                  {/* Navigation Buttons */}
-                  <div className="flex gap-3">
-                    <button 
-                      onClick={handlePrev}
-                      className={`p-3 rounded-full border transition-all hover:scale-105 active:scale-95 ${
-                        isDark 
-                          ? 'border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white' 
-                          : 'border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                      }`}
-                    >
-                      <FiArrowLeft className="w-5 h-5" />
-                    </button>
-                    <button 
-                      onClick={handleNext}
-                      className={`p-3 rounded-full border transition-all hover:scale-105 active:scale-95 ${
-                        isDark 
-                          ? 'border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white' 
-                          : 'border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                      }`}
-                    >
-                      <FiArrowRight className="w-5 h-5" />
-                    </button>
+                  {/* Stats Row */}
+                  <div className={`grid grid-cols-3 gap-4 lg:gap-8 pt-8 border-t ${isDark ? 'border-zinc-800' : 'border-zinc-100'}`}>
+                    <div>
+                      <div className={`flex items-center gap-2 mb-1 text-sm font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                        <FiAward className="text-emerald-500" /> Score
+                      </div>
+                      <div className={`text-2xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+                        {currentData.score}
+                      </div>
+                    </div>
+                    <div className={`border-l pl-4 lg:pl-8 ${isDark ? 'border-zinc-800' : 'border-zinc-200'}`}>
+                      <div className={`flex items-center gap-2 mb-1 text-sm font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                        <FiTrendingUp className="text-blue-500" /> Tests
+                      </div>
+                      <div className={`text-2xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+                        {currentData.testsCompleted}
+                      </div>
+                    </div>
+                    <div className={`border-l pl-4 lg:pl-8 ${isDark ? 'border-zinc-800' : 'border-zinc-200'}`}>
+                      <div className={`flex items-center gap-2 mb-1 text-sm font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                        <FiClock className="text-purple-500" /> Hours
+                      </div>
+                      <div className={`text-2xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+                        {currentData.studyHours}
+                      </div>
+                    </div>
                   </div>
+
                 </div>
               </div>
+
             </div>
           </div>
           
           {/* Pagination Dots */}
-          <div className="flex justify-center gap-2 mt-8">
+          <div className="flex justify-center gap-2 mt-10">
             {displayStories.map((_, idx) => (
               <button
                 key={idx}
                 onClick={() => {
-                  setCurrentStory(idx);
+                  triggerAnimation(() => setCurrentStory(idx));
                   setIsAutoPlaying(false);
                 }}
-                className={`h-2 rounded-full transition-all duration-300 ${
+                className={`h-1.5 rounded-full transition-all duration-300 ${
                   idx === currentStory 
-                    ? 'w-8 bg-yellow-500' 
-                    : `w-2 ${isDark ? 'bg-slate-700' : 'bg-slate-300'}`
+                    ? 'w-8 bg-emerald-500' 
+                    : `w-2 ${isDark ? 'bg-zinc-700' : 'bg-zinc-300 hover:bg-zinc-400'}`
                 }`}
               />
             ))}
           </div>
 
-          {/* Bottom CTA */}
-          <div className="text-center mt-12">
-            <button className={`px-8 py-3.5 rounded-xl font-bold text-sm transition-all transform hover:scale-105 ${
-              isDark
-                ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg shadow-orange-900/20'
-                : 'bg-gradient-to-r from-slate-900 to-slate-800 text-white shadow-xl hover:shadow-2xl'
-            }`}>
-              Start Your Journey Today
-            </button>
-          </div>
         </div>
       </div>
     </section>

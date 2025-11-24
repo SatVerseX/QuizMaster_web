@@ -3,50 +3,58 @@ import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  FiPlus, 
-  FiEdit2, 
-  FiTrash2, 
-  FiSave, 
-  FiX, 
-  FiUpload,
-  FiBook,
-  FiAlertCircle
-} from 'react-icons/fi';
+  Plus, 
+  Edit2, 
+  Trash2, 
+  Save, 
+  X, 
+  Globe, 
+  Image as ImageIcon, 
+  Search, 
+  AlertCircle,
+  CheckCircle2,
+  Loader2,
+  ExternalLink
+} from 'lucide-react';
+
+// --- Configuration ---
+const EXAMINATION_WEBSITES = [
+  { value: 'upsc', label: 'UPSC - Union Public Service Commission', url: 'https://upsc.gov.in' },
+  { value: 'jee', label: 'JEE - Joint Entrance Examination', url: 'https://jeemain.nta.nic.in' },
+  { value: 'neet', label: 'NEET - National Eligibility cum Entrance Test', url: 'https://neet.nta.nic.in' },
+  { value: 'cat', label: 'CAT - Common Admission Test', url: 'https://iimcat.ac.in' },
+  { value: 'gate', label: 'GATE - Graduate Aptitude Test in Engineering', url: 'https://gate.iitk.ac.in' },
+  { value: 'ssc', label: 'SSC - Staff Selection Commission', url: 'https://ssc.nic.in' },
+  { value: 'banking', label: 'Banking Examinations (IBPS, SBI)', url: 'https://www.ibps.in' },
+  { value: 'teaching', label: 'Teaching Eligibility Tests (CTET, TET)', url: 'https://ctet.nic.in' },
+  { value: 'clat', label: 'CLAT - Common Law Admission Test', url: 'https://consortiumofnlus.ac.in' },
+  { value: 'custom', label: 'Custom Examination / Other', url: '' }
+];
 
 const ExaminationLogosManager = () => {
   const { currentUser } = useAuth();
-  const { isDark } = useTheme();
+  const { isDark } = useTheme(); // Assuming this returns boolean
+  
+  // State
   const [logos, setLogos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  
   const [formData, setFormData] = useState({
     name: '',
-    imageUrl: ''
+    imageUrl: '',
+    customLabel: '' // Added to handle custom names better
   });
 
-  // Predefined examination websites
-  const examinationWebsites = [
-    { value: 'upsc', label: 'UPSC - Union Public Service Commission', url: 'https://upsc.gov.in' },
-    { value: 'jee', label: 'JEE - Joint Entrance Examination', url: 'https://jeemain.nta.nic.in' },
-    { value: 'neet', label: 'NEET - National Eligibility cum Entrance Test', url: 'https://neet.nta.nic.in' },
-    { value: 'cat', label: 'CAT - Common Admission Test', url: 'https://iimcat.ac.in' },
-    { value: 'gate', label: 'GATE - Graduate Aptitude Test in Engineering', url: 'https://gate.iitk.ac.in' },
-    { value: 'ssc', label: 'SSC - Staff Selection Commission', url: 'https://ssc.nic.in' },
-    { value: 'banking', label: 'Banking Examinations (IBPS, SBI)', url: 'https://www.ibps.in' },
-    { value: 'teaching', label: 'Teaching Eligibility Tests (CTET, TET)', url: 'https://ctet.nic.in' },
-    { value: 'clat', label: 'CLAT - Common Law Admission Test', url: 'https://consortiumofnlus.ac.in' },
-    { value: 'aieee', label: 'AIEEE - All India Engineering Entrance Examination', url: 'https://jeemain.nta.nic.in' },
-    { value: 'aipmt', label: 'AIPMT - All India Pre Medical Test', url: 'https://neet.nta.nic.in' },
-    { value: 'iit', label: 'IIT - Indian Institutes of Technology', url: 'https://iit.ac.in' },
-    { value: 'nit', label: 'NIT - National Institutes of Technology', url: 'https://nit.ac.in' },
-    { value: 'iim', label: 'IIM - Indian Institutes of Management', url: 'https://iim.ac.in' },
-    { value: 'custom', label: 'Custom Examination', url: '' }
-  ];
-
+  // --- Helpers ---
   const mode = (light, dark) => (isDark ? dark : light);
 
+  // --- Effects ---
   useEffect(() => {
     fetchLogos();
   }, []);
@@ -66,333 +74,398 @@ const ExaminationLogosManager = () => {
     }
   };
 
+  // --- Handlers ---
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.imageUrl) {
-      alert('Please fill in all required fields');
-      return;
-    }
-
+    if (!formData.name || !formData.imageUrl) return;
+    
+    setIsSubmitting(true);
     try {
-      // Get the selected examination details
-      const selectedExam = examinationWebsites.find(exam => exam.value === formData.name);
+      const selectedExam = EXAMINATION_WEBSITES.find(exam => exam.value === formData.name);
+      
       const logoData = {
-        name: selectedExam ? selectedExam.label : formData.name,
+        name: selectedExam?.value === 'custom' ? formData.customLabel : (selectedExam?.label || formData.name),
         imageUrl: formData.imageUrl,
-        websiteUrl: selectedExam ? selectedExam.url : '',
-        examCode: formData.name
+        websiteUrl: selectedExam?.url || '',
+        examCode: formData.name,
+        updatedAt: new Date()
       };
 
       if (editingId) {
-        // Update existing logo
         await updateDoc(doc(db, 'examinationLogos', editingId), logoData);
-        setLogos(prev => prev.map(logo => 
-          logo.id === editingId ? { ...logo, ...logoData } : logo
-        ));
+        setLogos(prev => prev.map(item => item.id === editingId ? { ...item, ...logoData } : item));
         setEditingId(null);
       } else {
-        // Add new logo
         const docRef = await addDoc(collection(db, 'examinationLogos'), {
           ...logoData,
           createdAt: new Date(),
           createdBy: currentUser.uid
         });
         setLogos(prev => [...prev, { id: docRef.id, ...logoData }]);
-        setShowAddForm(false);
       }
       
-      setFormData({ name: '', imageUrl: '' });
+      resetForm();
     } catch (error) {
       console.error('Error saving logo:', error);
-      alert('Error saving logo. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleEdit = (logo) => {
     setEditingId(logo.id);
     setFormData({
-      name: logo.examCode || logo.name,
-      imageUrl: logo.imageUrl
+      name: logo.examCode || 'custom',
+      imageUrl: logo.imageUrl,
+      customLabel: logo.name
     });
+    setShowAddForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this logo?')) {
+    if (window.confirm('Are you sure you want to remove this examination entry?')) {
       try {
         await deleteDoc(doc(db, 'examinationLogos', id));
         setLogos(prev => prev.filter(logo => logo.id !== id));
       } catch (error) {
-        console.error('Error deleting logo:', error);
-        alert('Error deleting logo. Please try again.');
+        console.error('Error deleting:', error);
       }
     }
   };
 
-  const handleCancel = () => {
-    setEditingId(null);
+  const resetForm = () => {
     setShowAddForm(false);
-    setFormData({ name: '', imageUrl: '' });
+    setEditingId(null);
+    setFormData({ name: '', imageUrl: '', customLabel: '' });
   };
+
+  // Filter logos based on search
+  const filteredLogos = logos.filter(logo => 
+    logo.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // --- Components ---
+
+  // 1. Skeleton Loader
+  const LoadingSkeleton = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {[1, 2, 3, 4].map((i) => (
+        <div key={i} className={`h-64 rounded-xl animate-pulse ${mode("bg-slate-200", "bg-zinc-800")}`} />
+      ))}
+    </div>
+  );
+
+  // 2. Checkered Pattern for Transparency
+  const TransparencyGrid = () => (
+    <div className="absolute inset-0 opacity-20" 
+         style={{ 
+           backgroundImage: `conic-gradient(${isDark ? '#3f3f46' : '#cbd5e1'} 90deg, transparent 90deg)`, 
+           backgroundSize: '16px 16px' 
+         }} 
+    />
+  );
 
   if (loading) {
     return (
-      <div className={`flex items-center justify-center p-8 ${mode("bg-white", "bg-gray-900")}`}>
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className={`min-h-screen p-8 flex items-center justify-center ${mode("bg-slate-50", "bg-zinc-950")}`}>
+        <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
       </div>
     );
   }
 
   return (
-    <div className={`p-6 ${mode("bg-white", "bg-gray-900")}`}>
-      <div className="max-w-6xl mx-auto">
+    <div className={`min-h-screen w-full font-sans selection:bg-emerald-500/20 ${mode("bg-slate-50 text-slate-900", "bg-zinc-950 text-zinc-100")}`}>
+      
+      {/* Top Gradient Line */}
+      <div className="h-1 w-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-rose-500" />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
           <div>
-            <h1 className={`text-3xl font-bold mb-2 ${mode("text-slate-800", "text-white")}`}>
-              Examination Logos Manager
+            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+              Examination Assets
+              <span className={`text-xs px-2.5 py-1 rounded-full font-medium border ${mode(
+                "bg-emerald-50 text-emerald-700 border-emerald-200",
+                "bg-emerald-950/30 text-emerald-400 border-emerald-900"
+              )}`}>
+                {logos.length} Active
+              </span>
             </h1>
-            <p className={`${mode("text-slate-600", "text-gray-400")}`}>
-              Manage examination logos displayed on the welcome page
+            <p className={`mt-2 text-sm ${mode("text-slate-500", "text-zinc-400")}`}>
+              Manage logos and identities for examination portals.
             </p>
           </div>
-          <button
-            onClick={() => setShowAddForm(true)}
-            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${mode(
-              "bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl",
-              "bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl"
-            )}`}
-          >
-            <FiPlus className="w-5 h-5" />
-            Add Logo
-          </button>
+
+          <div className="flex items-center gap-3">
+            <div className="relative group">
+              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${mode("text-slate-400", "text-zinc-500")}`} />
+              <input 
+                type="text" 
+                placeholder="Search logos..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className={`pl-9 pr-4 py-2.5 rounded-lg text-sm outline-none border transition-all w-full md:w-64 ${mode(
+                  "bg-white border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10",
+                  "bg-zinc-900 border-zinc-800 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-900/20"
+                )}`}
+              />
+            </div>
+
+            <button
+              onClick={() => {
+                setShowAddForm(!showAddForm);
+                if (!showAddForm) setEditingId(null);
+              }}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all active:scale-95 shadow-sm ${
+                showAddForm 
+                  ? mode("bg-slate-200 text-slate-700 hover:bg-slate-300", "bg-zinc-800 text-zinc-300 hover:bg-zinc-700")
+                  : "bg-emerald-600 text-white hover:bg-emerald-500 shadow-emerald-500/20 shadow-lg"
+              }`}
+            >
+              {showAddForm ? <X className="w-4 h-4"/> : <Plus className="w-4 h-4" />}
+              {showAddForm ? 'Close' : 'Add Asset'}
+            </button>
+          </div>
         </div>
 
-        {/* Add/Edit Form */}
-        {(showAddForm || editingId) && (
-          <div className={`mb-8 p-6 rounded-2xl border-2 shadow-xl ${mode(
-            "bg-slate-50 border-slate-200 hover:border-slate-300",
-            "bg-gray-800/80 backdrop-blur-xl border-gray-700/50 hover:border-gray-600/50"
-          )}`}>
-            <h3 className={`text-xl font-semibold mb-4 ${mode("text-slate-800", "text-white")}`}>
-              {editingId ? 'Edit Logo' : 'Add New Logo'}
-            </h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className={`block text-sm font-medium mb-2 ${mode("text-slate-700", "text-gray-300")}`}>
-                    Examination Website *
-                  </label>
-                                                <select
-                                value={formData.name}
-                                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                                className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500/50 ${mode(
-                                  "bg-white border-slate-300 text-slate-800 hover:border-slate-400",
-                                  "bg-gray-700/80 backdrop-blur-xl border-gray-600/50 text-white hover:border-gray-500/50"
-                                )}`}
-                                required
-                              >
-                    <option value="">Select an examination website</option>
-                    {examinationWebsites.map((exam) => (
-                      <option key={exam.value} value={exam.value}>
-                        {exam.label}
-                      </option>
-                    ))}
-                  </select>
+        {/* Form Section */}
+        <AnimatePresence>
+          {showAddForm && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden mb-10"
+            >
+              <div className={`p-6 md:p-8 rounded-2xl border border-dashed ${mode(
+                "bg-white border-slate-300 shadow-sm",
+                "bg-zinc-900/50 border-zinc-700"
+              )}`}>
+                <div className="flex items-center gap-2 mb-6">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${mode("bg-emerald-100 text-emerald-600", "bg-emerald-900/30 text-emerald-400")}`}>
+                    {editingId ? <Edit2 className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                  </div>
+                  <h3 className="text-lg font-semibold">
+                    {editingId ? 'Edit Configuration' : 'New Entry'}
+                  </h3>
                 </div>
-                <div>
-                  <label className={`block text-sm font-medium mb-2 ${mode("text-slate-700", "text-gray-300")}`}>
-                    Cloudinary Image URL *
-                  </label>
-                                                <input
-                                type="url"
-                                value={formData.imageUrl}
-                                onChange={(e) => setFormData(prev => ({ ...prev, imageUrl: e.target.value }))}
-                                className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500/50 ${mode(
-                                  "bg-white border-slate-300 text-slate-800 hover:border-slate-400 placeholder-slate-500",
-                                  "bg-gray-700/80 backdrop-blur-xl border-gray-600/50 text-white hover:border-gray-500/50 placeholder-gray-400"
-                                )}`}
-                                placeholder="https://res.cloudinary.com/.../logo.png"
-                                required
-                              />
-                </div>
-              </div>
-              
-              {/* Preview */}
-              {formData.imageUrl && (
-                <div className={`p-4 rounded-xl border-2 shadow-lg ${mode("bg-white border-slate-200", "bg-gray-700/80 backdrop-blur-xl border-gray-600/50")}`}>
-                  <label className={`block text-sm font-medium mb-2 ${mode("text-slate-700", "text-gray-300")}`}>
-                    Preview:
-                  </label>
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 flex items-center justify-center">
-                      <img
-                        src={formData.imageUrl}
-                        alt={formData.name}
-                        className="w-16 h-16 object-contain"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          e.target.nextSibling.style.display = 'flex';
-                        }}
-                      />
-                                                        <div className={`hidden w-16 h-16 rounded-full flex items-center justify-center ${mode(
-                                    "bg-slate-100 border-2 border-slate-200",
-                                    "bg-gray-600/80 backdrop-blur-xl border-2 border-gray-500/50"
-                                  )}`}>
-                                    <FiBook className={`w-8 h-8 ${mode("text-slate-400", "text-gray-400")}`} />
-                                  </div>
+
+                <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  {/* Inputs */}
+                  <div className="lg:col-span-8 space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-xs font-semibold uppercase tracking-wider opacity-70">Examination</label>
+                        <div className="relative">
+                          <Globe className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${mode("text-slate-400", "text-zinc-500")}`} />
+                          <select
+                            value={formData.name}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            className={`w-full pl-10 pr-4 py-3 rounded-lg text-sm outline-none border transition-all appearance-none ${mode(
+                              "bg-slate-50 border-slate-200 focus:border-emerald-500 focus:bg-white",
+                              "bg-zinc-800 border-zinc-700 focus:border-emerald-500 focus:bg-zinc-900"
+                            )}`}
+                            required
+                          >
+                            <option value="" disabled>Select Authority</option>
+                            {EXAMINATION_WEBSITES.map(exam => (
+                              <option key={exam.value} value={exam.value}>{exam.label}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-semibold uppercase tracking-wider opacity-70">Asset URL</label>
+                        <div className="relative">
+                          <ImageIcon className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${mode("text-slate-400", "text-zinc-500")}`} />
+                          <input
+                            type="url"
+                            value={formData.imageUrl}
+                            onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                            placeholder="https://cloudinary..."
+                            className={`w-full pl-10 pr-4 py-3 rounded-lg text-sm outline-none border transition-all ${mode(
+                              "bg-slate-50 border-slate-200 focus:border-emerald-500 focus:bg-white",
+                              "bg-zinc-800 border-zinc-700 focus:border-emerald-500 focus:bg-zinc-900"
+                            )}`}
+                            required
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <p className={`font-medium ${mode("text-slate-800", "text-white")}`}>
-                        {examinationWebsites.find(exam => exam.value === formData.name)?.label || formData.name}
-                      </p>
-                      {formData.name && examinationWebsites.find(exam => exam.value === formData.name)?.url && (
-                        <p className={`text-sm ${mode("text-slate-600", "text-gray-400")}`}>
-                          {examinationWebsites.find(exam => exam.value === formData.name)?.url}
-                        </p>
+
+                    {formData.name === 'custom' && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="space-y-2"
+                      >
+                        <label className="text-xs font-semibold uppercase tracking-wider opacity-70 text-rose-500">Custom Display Name</label>
+                        <input
+                          type="text"
+                          value={formData.customLabel}
+                          onChange={(e) => setFormData({ ...formData, customLabel: e.target.value })}
+                          placeholder="e.g., State Board Exam"
+                          className={`w-full px-4 py-3 rounded-lg text-sm outline-none border transition-all ${mode(
+                            "bg-rose-50/50 border-rose-200 focus:border-rose-500",
+                            "bg-rose-950/10 border-rose-900/50 focus:border-rose-500"
+                          )}`}
+                          required
+                        />
+                      </motion.div>
+                    )}
+
+                    <div className="flex gap-3 pt-2">
+                      <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="flex-1 md:flex-none bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-colors"
+                      >
+                        {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                        {editingId ? 'Update Asset' : 'Create Asset'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={resetForm}
+                        className={`px-6 py-3 rounded-lg font-medium text-sm transition-colors ${mode("hover:bg-slate-100 text-slate-600", "hover:bg-zinc-800 text-zinc-400")}`}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Live Preview */}
+                  <div className="lg:col-span-4">
+                    <div className={`h-full rounded-xl border p-6 flex flex-col items-center justify-center text-center relative overflow-hidden ${mode(
+                      "bg-slate-50 border-slate-200",
+                      "bg-black/20 border-zinc-800"
+                    )}`}>
+                      <span className="absolute top-4 left-4 text-[10px] font-mono uppercase tracking-widest opacity-50">Live Preview</span>
+                      {formData.imageUrl ? (
+                        <>
+                          <div className="relative w-32 h-32 mb-4 group">
+                            <div className={`absolute inset-0 rounded-xl ${mode("bg-white shadow-sm", "bg-zinc-800 shadow-inner")}`} />
+                            <TransparencyGrid />
+                            <img 
+                              src={formData.imageUrl} 
+                              alt="Preview" 
+                              className="relative z-10 w-full h-full object-contain p-4"
+                              onError={(e) => e.target.src = 'https://placehold.co/200x200?text=Error'}
+                            />
+                          </div>
+                          <h4 className="font-bold text-sm">{formData.name === 'custom' ? (formData.customLabel || 'Custom Name') : (EXAMINATION_WEBSITES.find(e => e.value === formData.name)?.label || 'Select Exam')}</h4>
+                          <span className="text-xs text-emerald-500 mt-1 flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" /> Ready to deploy
+                          </span>
+                        </>
+                      ) : (
+                        <div className="opacity-30 flex flex-col items-center">
+                          <ImageIcon className="w-12 h-12 mb-2" />
+                          <p className="text-sm">Enter URL to preview</p>
+                        </div>
                       )}
                     </div>
                   </div>
-                </div>
-              )}
-
-                                        <div className="flex gap-3">
-                            <button
-                              type="submit"
-                              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl ${mode(
-                                "bg-blue-600 text-white hover:bg-blue-700 border-2 border-blue-500/30",
-                                "bg-blue-600 text-white hover:bg-blue-700 border-2 border-blue-400/30"
-                              )}`}
-                            >
-                              <FiSave className="w-5 h-5" />
-                              {editingId ? 'Update Logo' : 'Add Logo'}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={handleCancel}
-                              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl ${mode(
-                                "bg-slate-200 text-slate-700 hover:bg-slate-300 border-2 border-slate-300/50",
-                                "bg-gray-700/80 backdrop-blur-xl text-gray-300 hover:bg-gray-600/80 border-2 border-gray-600/50"
-                              )}`}
-                            >
-                              <FiX className="w-5 h-5" />
-                              Cancel
-                            </button>
-                          </div>
-            </form>
-          </div>
-        )}
-
-        {/* Logos Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {logos.map((logo) => (
-            <div
-              key={logo.id}
-              className={`p-6 rounded-2xl border-2 transition-all duration-300 hover:shadow-xl hover:scale-105 ${mode(
-                "bg-white border-slate-200 hover:border-blue-300 shadow-lg",
-                "bg-gray-800/80 backdrop-blur-xl border-gray-700/50 hover:border-blue-500/50 shadow-xl"
-              )}`}
-            >
-              <div className="flex items-center justify-center mb-4">
-                <div className="w-20 h-20 flex items-center justify-center">
-                  <img
-                    src={logo.imageUrl}
-                    alt={logo.alt || logo.name}
-                    className="w-20 h-20 object-contain"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'flex';
-                    }}
-                  />
-                                                <div className={`hidden w-20 h-20 rounded-full flex items-center justify-center ${mode(
-                                "bg-slate-100 border-2 border-slate-200",
-                                "bg-gray-600/80 backdrop-blur-xl border-2 border-gray-500/50"
-                              )}`}>
-                                <FiBook className={`w-12 h-12 ${mode("text-slate-400", "text-gray-400")}`} />
-                              </div>
-                </div>
+                </form>
               </div>
-              
-              <div className="text-center mb-4">
-                <h3 className={`text-lg font-semibold mb-2 ${mode("text-slate-800", "text-white")}`}>
-                  {logo.name}
-                </h3>
-                {logo.websiteUrl && (
-                  <p className={`text-sm ${mode("text-slate-600", "text-gray-400")}`}>
-                    {logo.websiteUrl}
-                  </p>
-                )}
-              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-                                        <div className="flex gap-2">
-                            <button
-                              onClick={() => handleEdit(logo)}
-                              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 shadow-md hover:shadow-lg ${mode(
-                                "bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-200",
-                                "bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 border border-blue-500/30"
-                              )}`}
-                            >
-                              <FiEdit2 className="w-4 h-4" />
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDelete(logo.id)}
-                              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 shadow-md hover:shadow-lg ${mode(
-                                "bg-red-100 text-red-700 hover:bg-red-200 border border-red-200",
-                                "bg-red-600/20 text-red-400 hover:bg-red-600/30 border border-red-500/30"
-                              )}`}
-                            >
-                              <FiTrash2 className="w-4 h-4" />
-                              Delete
-                            </button>
-                          </div>
+        {/* Grid */}
+        {logos.length === 0 ? (
+          <div className={`text-center py-24 rounded-2xl border border-dashed ${mode("border-slate-300 bg-slate-50", "border-zinc-800 bg-zinc-900/50")}`}>
+            <div className="w-16 h-16 mx-auto rounded-full bg-emerald-500/10 flex items-center justify-center mb-4">
+              <AlertCircle className="w-8 h-8 text-emerald-500" />
             </div>
-          ))}
-        </div>
-
-        {/* Empty State */}
-        {logos.length === 0 && !showAddForm && (
-          <div className={`text-center py-12 ${mode("bg-slate-50", "bg-gray-800/80 backdrop-blur-xl")} rounded-2xl border-2 shadow-xl ${mode("border-slate-200", "border-gray-700/50")}`}>
-            <FiBook className={`w-16 h-16 mx-auto mb-4 ${mode("text-slate-400", "text-gray-500")}`} />
-            <h3 className={`text-xl font-semibold mb-2 ${mode("text-slate-800", "text-white")}`}>
-              No Logos Added Yet
-            </h3>
-            <p className={`mb-4 ${mode("text-slate-600", "text-gray-400")}`}>
-              Start by adding your first examination logo to display on the welcome page.
+            <h3 className="text-lg font-bold">No Assets Found</h3>
+            <p className={`max-w-sm mx-auto mt-2 text-sm ${mode("text-slate-500", "text-zinc-400")}`}>
+              Get started by adding your first examination logo to the database.
             </p>
-            <button
-              onClick={() => setShowAddForm(true)}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl ${mode(
-                "bg-blue-600 text-white hover:bg-blue-700 border-2 border-blue-500/30",
-                "bg-blue-600 text-white hover:bg-blue-700 border-2 border-blue-400/30"
-              )}`}
-            >
-              <FiPlus className="w-5 h-5" />
-              Add Your First Logo
-            </button>
           </div>
-        )}
+        ) : (
+          <motion.div 
+            layout
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
+          >
+            <AnimatePresence mode='popLayout'>
+              {filteredLogos.map((logo) => (
+                <motion.div
+                  layout
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  key={logo.id}
+                  className={`group relative flex flex-col rounded-xl border transition-all duration-200 overflow-hidden ${mode(
+                    "bg-white border-zinc-200 hover:shadow-xl hover:shadow-zinc-200/50 hover:-translate-y-1",
+                    "bg-zinc-900/40 border-zinc-800 hover:border-emerald-500/30 hover:shadow-xl hover:shadow-black/50 hover:-translate-y-1"
+                  )}`}
+                >
+                  {/* Image Area */}
+                  <div className={`relative h-40 w-full flex items-center justify-center p-6 border-b ${mode("bg-slate-50 border-zinc-100", "bg-black/40 border-zinc-800")}`}>
+                    <TransparencyGrid />
+                    <img
+                      src={logo.imageUrl}
+                      alt={logo.name}
+                      className="relative z-10 w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
+                      loading="lazy"
+                    />
+                  </div>
 
-                {/* Instructions */}
-        <div className={`mt-8 p-6 rounded-2xl border-2 shadow-xl ${mode(
-          "bg-blue-50 border-blue-200",
-          "bg-blue-900/20 backdrop-blur-xl border-blue-700/50"
-        )}`}>
-          <div className="flex items-start gap-3">
-            <FiAlertCircle className={`w-6 h-6 mt-1 ${mode("text-blue-600", "text-blue-400")}`} />
-            <div>
-              <h4 className={`font-semibold mb-2 ${mode("text-blue-800", "text-blue-300")}`}>
-                How to Add Logos
-              </h4>
-                              <ul className={`space-y-1 text-sm ${mode("text-blue-700", "text-blue-400")}`}>
-                  <li>• Select an examination website from the dropdown menu</li>
-                  <li>• Upload your logo image to Cloudinary first</li>
-                  <li>• Copy the Cloudinary URL and paste it in the Image URL field</li>
-                  <li>• Logos will automatically appear on the welcome page in rotating animation</li>
-                  <li>• Recommended image size: 200x200px PNG with transparent background</li>
-                </ul>
-            </div>
-          </div>
-        </div>
+                  {/* Content Area */}
+                  <div className="p-5 flex flex-col flex-grow">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-bold text-sm line-clamp-2 leading-tight pr-2" title={logo.name}>
+                        {logo.name}
+                      </h3>
+                      {logo.websiteUrl && (
+                        <a 
+                          href={logo.websiteUrl} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className={`p-1 rounded-md hover:bg-emerald-500/10 hover:text-emerald-500 transition-colors ${mode("text-slate-400", "text-zinc-600")}`}
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+                    </div>
+                    
+                    <p className={`text-xs font-mono mt-auto pt-4 border-t border-dashed ${mode("text-slate-400 border-slate-200", "text-zinc-600 border-zinc-800")}`}>
+                      ID: {logo.examCode || 'Custom'}
+                    </p>
+                  </div>
+
+                  {/* Action Overlay (Visible on hover/focus) */}
+                  <div className={`absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200`}>
+                     <button
+                      onClick={() => handleEdit(logo)}
+                      className={`p-2 rounded-lg backdrop-blur-md shadow-sm transition-all ${mode(
+                        "bg-white/90 text-slate-700 hover:text-emerald-600 hover:bg-emerald-50",
+                        "bg-zinc-800/90 text-zinc-300 hover:text-emerald-400 hover:bg-emerald-900/30"
+                      )}`}
+                      aria-label="Edit"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(logo.id)}
+                      className={`p-2 rounded-lg backdrop-blur-md shadow-sm transition-all ${mode(
+                        "bg-white/90 text-rose-600 hover:bg-rose-50",
+                        "bg-zinc-800/90 text-rose-400 hover:bg-rose-900/30"
+                      )}`}
+                      aria-label="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
+        )}
       </div>
     </div>
   );

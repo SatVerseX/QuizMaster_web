@@ -17,6 +17,7 @@ import {
   FiLogIn,
   FiPlus,
 } from "react-icons/fi";
+import { FiLayers } from "react-icons/fi"; 
 import { FaPuzzlePiece } from "react-icons/fa";
 
 const Header = ({
@@ -225,6 +226,18 @@ const Header = ({
                     <FiTarget className="icon-responsive" />
                     <span className="text-xs font-normal">My Progress</span>
                   </button>
+                  <Link
+                    to="/flashcards"
+                    className={`flex items-center gap-2 px-3 py-2 rounded-md transition duration-200 hover:cursor-pointer ${
+                      theme === "dark"
+                        ? "text-gray-400 hover:bg-gray-600 hover:shadow-xs"
+                        : "text-slate-600 hover:bg-slate-100 hover:shadow-xs"
+                    }`}
+                    title="Smart Flashcards"
+                  >
+                    <FiLayers className="icon-responsive" />
+                    <span className="text-xs font-normal">Flashcards</span>
+                  </Link>
                 </div>
               </nav>
             )}

@@ -3,46 +3,57 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(API_KEY);
 
+/**
+ * Helper to extract JSON from a potential Markdown response
+ */
+const cleanAndParseJSON = (text) => {
+  try {
+    // 1. Try direct parse
+    return JSON.parse(text);
+  } catch (e) {
+    // 2. Find the first '{' and last '}' to isolate the JSON object
+    const firstOpen = text.indexOf('{');
+    const lastClose = text.lastIndexOf('}');
+    
+    if (firstOpen !== -1 && lastClose !== -1) {
+      const cleaned = text.substring(firstOpen, lastClose + 1);
+      try {
+        return JSON.parse(cleaned);
+      } catch (innerError) {
+        // 3. Cleanup common invalid characters if extraction fails
+        const strictClean = cleaned
+          .replace(/\\n/g, "\\n")  
+          .replace(/\\'/g, "\\'")
+          .replace(/\\"/g, '\\"')
+          .replace(/\\&/g, "\\&")
+          .replace(/\\r/g, "\\r")
+          .replace(/\\t/g, "\\t")
+          .replace(/\\b/g, "\\b")
+          .replace(/\\f/g, "\\f");
+        // Remove non-printable characters
+        const finalClean = strictClean.replace(/[\u0000-\u0019]+/g,"");
+        return JSON.parse(finalClean);
+      }
+    }
+    throw new Error("Failed to extract valid JSON from response");
+  }
+};
+
 // JSON Schema for Quiz Questions
 const quizSchema = {
   type: "object",
   properties: {
-    title: {
-      type: "string",
-      description: "Quiz title"
-    },
-    description: {
-      type: "string",
-      description: "Quiz description"
-    },
+    title: { type: "string" },
+    description: { type: "string" },
     questions: {
       type: "array",
       items: {
         type: "object",
         properties: {
-          question: {
-            type: "string",
-            description: "The quiz question"
-          },
-          options: {
-            type: "array",
-            items: {
-              type: "string"
-            },
-            minItems: 4,
-            maxItems: 4,
-            description: "Four multiple choice options"
-          },
-          correctAnswer: {
-            type: "integer",
-            minimum: 0,
-            maximum: 3,
-            description: "Index of correct answer (0-3)"
-          },
-          explanation: {
-            type: "string",
-            description: "Explanation for the correct answer"
-          }
+          question: { type: "string" },
+          options: { type: "array", items: { type: "string" }, minItems: 4, maxItems: 4 },
+          correctAnswer: { type: "integer", minimum: 0, maximum: 3 },
+          explanation: { type: "string" }
         },
         required: ["question", "options", "correctAnswer"]
       }
@@ -63,32 +74,20 @@ export const generateQuizWithAI = async (topic, numberOfQuestions = 5, difficult
 
     const prompt = `Create a comprehensive quiz about "${topic}" with exactly ${numberOfQuestions} questions. 
     Difficulty level: ${difficulty}.
-    
     Requirements:
     - Each question should have exactly 4 multiple choice options
-    - Include varied question types (factual, conceptual, analytical)
-    - Provide clear explanations for correct answers
-    - Make questions challenging but fair
-    - Ensure options are plausible and well-distributed
-    
-    Topic: ${topic}
-    Number of questions: ${numberOfQuestions}
-    Difficulty: ${difficulty}`;
+    - Include varied question types
+    - Provide clear explanations
+    - Return strictly valid JSON`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    const quizData = JSON.parse(response.text());
+    const quizData = cleanAndParseJSON(response.text());
     
-    return {
-      success: true,
-      data: quizData
-    };
+    return { success: true, data: quizData };
   } catch (error) {
     console.error('Error generating quiz with AI:', error);
-    return {
-      success: false,
-      error: error.message
-    };
+    return { success: false, error: error.message };
   }
 };
 
@@ -129,58 +128,68 @@ export const generateTestSeriesRecommendations = async (userProfile) => {
       }
     });
 
-    const prompt = `You are an AI tutor specializing in competitive exam preparation. Based on the user's learning profile, generate personalized test series recommendations.
-
-User Profile:
-- Recent Attempts: ${JSON.stringify(userProfile.recentAttempts || [])}
-- Subscribed Series: ${JSON.stringify(userProfile.subscribedSeries || [])}
-- Performance History: ${JSON.stringify(userProfile.performanceHistory || [])}
-- Weak Areas: ${JSON.stringify(userProfile.weakAreas || [])}
-- Strong Areas: ${JSON.stringify(userProfile.strongAreas || [])}
-- Exam Goals: ${JSON.stringify(userProfile.examGoals || [])}
-- Study Time Available: ${userProfile.studyTimeAvailable || 'Not specified'}
-
-Generate 3-5 personalized test series recommendations that:
-1. Address the user's weak areas and build on their strengths
-2. Match their exam goals and preparation timeline
-3. Are appropriate for their current skill level
-4. Provide clear reasoning for each recommendation
-5. Include realistic time estimates and difficulty levels
-6. Consider their recent activity patterns
-
-Focus on:
-- Competitive exams (UPSC, SSC, Banking, JEE, NEET, etc.)
-- Skill-based improvements
-- Progressive difficulty levels
-- Time management and efficiency
-- Comprehensive coverage of exam patterns
-
-Return recommendations in the specified JSON format.`;
+    const prompt = `Based on the user's learning profile, generate 3-5 personalized test series recommendations.
+    User Profile: ${JSON.stringify(userProfile)}`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    const recommendationData = JSON.parse(response.text());
+    const recommendationData = cleanAndParseJSON(response.text());
     
-    return {
-      success: true,
-      data: recommendationData.recommendations
-    };
+    return { success: true, data: recommendationData.recommendations };
   } catch (error) {
-    console.error('Error generating recommendations with AI:', error);
-    
-    // Check if it's a quota exceeded error
+    console.error('Error generating recommendations:', error);
     if (error.message.includes('429') || error.message.includes('quota')) {
-      console.warn('Gemini API quota exceeded, using fallback recommendations');
-      return {
-        success: true,
-        data: getFallbackRecommendations(userProfile)
-      };
+      return { success: true, data: getFallbackRecommendations(userProfile) };
     }
+    return { success: false, error: error.message, data: [] };
+  }
+};
+
+// Schema for Flashcards to ensure structural integrity
+const flashcardSchema = {
+  type: "object",
+  properties: {
+    front: { type: "string" },
+    back: { type: "string" }
+  },
+  required: ["front", "back"]
+};
+
+export const generateFlashcardContent = async (questionData) => {
+  try {
+    // 1. Enforce JSON schema in configuration
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-2.5-flash",
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: flashcardSchema
+      }
+    });
+
+    const prompt = `
+      Convert the following Multiple Choice Question into a concise Flashcard (Front/Back) format.
+      Question: "${questionData.question}"
+      Correct Answer: "${questionData.options[questionData.correctAnswer]}"
+      Explanation: "${questionData.explanation}"
+      
+      Rules:
+      1. Front: Short question/concept (< 20 words).
+      2. Back: Core answer/explanation (< 40 words).
+      3. NO Markdown formatting.
+    `;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
     
+    // 2. Use robust parser
+    return cleanAndParseJSON(response.text());
+
+  } catch (error) {
+    console.error("Flashcard generation error:", error);
+    // Fallback if AI fails
     return {
-      success: false,
-      error: error.message,
-      data: []
+      front: questionData.question.substring(0, 100) + (questionData.question.length > 100 ? "..." : ""),
+      back: questionData.options[questionData.correctAnswer]
     };
   }
 };
@@ -189,126 +198,55 @@ export const analyzeUserPerformance = async (userAttempts) => {
   try {
     const model = genAI.getGenerativeModel({ 
       model: "gemini-2.5-flash",
-      generationConfig: {
-        responseMimeType: "application/json"
-      }
+      generationConfig: { responseMimeType: "application/json" }
     });
 
-    const prompt = `Analyze the following user test attempt data and provide insights about their performance patterns, strengths, and areas for improvement.
-
-User Attempts Data:
-${JSON.stringify(userAttempts, null, 2)}
-
-Please analyze:
-1. Performance trends over time
-2. Strong subject areas (where they consistently score well)
-3. Weak subject areas (where they struggle)
-4. Time management patterns
-5. Difficulty level preferences
-6. Exam category performance
-7. Improvement suggestions
-8. Recommended focus areas
-
-Return a structured analysis in JSON format with the following structure:
-{
-  "performanceTrends": {
-    "overall": "improving/stable/declining",
-    "recentScores": [array of recent scores],
-    "averageScore": number,
-    "consistency": "high/medium/low"
-  },
-  "strengths": [
-    {
-      "subject": "string",
-      "averageScore": number,
-      "confidence": "high/medium/low"
-    }
-  ],
-  "weakAreas": [
-    {
-      "subject": "string",
-      "averageScore": number,
-      "priority": "high/medium/low",
-      "suggestions": ["string"]
-    }
-  ],
-  "timeManagement": {
-    "averageTimePerQuestion": number,
-    "completionRate": number,
-    "efficiency": "high/medium/low"
-  },
-  "recommendations": {
-    "focusAreas": ["string"],
-    "difficultyLevel": "easy/medium/hard",
-    "studyStrategy": "string"
-  }
-}`;
+    const prompt = `Analyze the following user test attempt data.
+    User Attempts Data: ${JSON.stringify(userAttempts, null, 2)}
+    Return structured JSON with performanceTrends, strengths, weakAreas, timeManagement, and recommendations.`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    const analysis = JSON.parse(response.text());
+    const analysis = cleanAndParseJSON(response.text());
     
-    return {
-      success: true,
-      data: analysis
-    };
+    return { success: true, data: analysis };
   } catch (error) {
     console.error('Error analyzing user performance:', error);
-    return {
-      success: false,
-      error: error.message,
-      data: null
-    };
+    return { success: false, error: error.message, data: null };
   }
 };
 
 export const validateQuizJSON = (jsonData) => {
   try {
-    // Basic validation
     if (!jsonData.title || !jsonData.questions || !Array.isArray(jsonData.questions)) {
       return { valid: false, error: 'Invalid JSON structure. Must have title and questions array.' };
     }
-
     if (jsonData.questions.length === 0) {
       return { valid: false, error: 'Quiz must have at least one question.' };
     }
 
-    // Validate each question
     for (let i = 0; i < jsonData.questions.length; i++) {
       const question = jsonData.questions[i];
       
       if (!question.question || typeof question.question !== 'string') {
         return { valid: false, error: `Question ${i + 1}: Missing or invalid question text.` };
       }
-
       if (!Array.isArray(question.options) || question.options.length !== 4) {
         return { valid: false, error: `Question ${i + 1}: Must have exactly 4 options.` };
       }
-
-      if (typeof question.correctAnswer !== 'number' || 
-          question.correctAnswer < 0 || 
-          question.correctAnswer > 3) {
+      if (typeof question.correctAnswer !== 'number' || question.correctAnswer < 0 || question.correctAnswer > 3) {
         return { valid: false, error: `Question ${i + 1}: correctAnswer must be 0, 1, 2, or 3.` };
       }
-
-      // Check for empty options
       if (question.options.some(option => !option || typeof option !== 'string')) {
         return { valid: false, error: `Question ${i + 1}: All options must be non-empty strings.` };
       }
-
-      // Validate image field (optional)
-      if (question.image !== undefined && question.image !== null && typeof question.image !== 'string') {
-        return { valid: false, error: `Question ${i + 1}: Image field must be a string URL or null.` };
-      }
     }
-
     return { valid: true };
   } catch (error) {
     return { valid: false, error: 'Invalid JSON format.' };
   }
 };
 
-// Fallback recommendations when Gemini API quota is exceeded
 const getFallbackRecommendations = (userProfile) => {
   const baseRecommendations = [
     {
@@ -319,6 +257,7 @@ const getFallbackRecommendations = (userProfile) => {
       difficulty: 'Intermediate',
       estimatedDuration: '30 days',
       price: 2999,
+      questions: 50,
       discount: 20,
       reason: 'Based on your recent activity and performance trends',
       tags: ['Practice Tests', 'Mock Exams', 'Comprehensive']
@@ -331,39 +270,17 @@ const getFallbackRecommendations = (userProfile) => {
       difficulty: 'Advanced',
       estimatedDuration: '45 days',
       price: 3999,
+      questions: 40,
       discount: 15,
       reason: 'Recommended for improving your problem-solving skills',
       tags: ['Advanced', 'Problem Solving', 'Conceptual']
-    },
-    {
-      id: 'fallback-3',
-      title: 'Quick Revision Series',
-      description: 'Fast-paced revision covering all important topics',
-      category: 'Revision',
-      difficulty: 'Easy',
-      estimatedDuration: '15 days',
-      price: 1999,
-      discount: 25,
-      reason: 'Perfect for last-minute preparation and quick review',
-      tags: ['Revision', 'Quick', 'Summary']
     }
   ];
 
-  // Customize based on user profile if available
-  if (userProfile && userProfile.preferredCategories && userProfile.preferredCategories.length > 0) {
+  if (userProfile?.preferredCategories?.length > 0) {
     const category = userProfile.preferredCategories[0];
     baseRecommendations[0].category = category;
     baseRecommendations[0].title = `${category} Complete Package`;
-  }
-
-  if (userProfile && userProfile.averageScore) {
-    if (userProfile.averageScore > 80) {
-      baseRecommendations[0].difficulty = 'Advanced';
-      baseRecommendations[1].difficulty = 'Expert';
-    } else if (userProfile.averageScore < 50) {
-      baseRecommendations[0].difficulty = 'Beginner';
-      baseRecommendations[1].difficulty = 'Intermediate';
-    }
   }
 
   return baseRecommendations;

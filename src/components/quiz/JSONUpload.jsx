@@ -1,49 +1,67 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { 
-  FiUpload, 
-  FiX, 
-  FiFile,
-  FiAlertCircle,
-  FiCheck,
-  FiClock
-} from 'react-icons/fi';
+  UploadCloud, 
+  X, 
+  FileJson, 
+  AlertCircle, 
+  CheckCircle2, 
+  Clock,
+  Code2,
+  File
+} from 'lucide-react';
 
 const JSONUpload = ({ onQuestionsUploaded, onClose }) => {
   const { isDark } = useTheme();
-  const mode = (light, dark) => (isDark ? dark : light);
-  
   const [file, setFile] = useState(null);
   const [timeLimit, setTimeLimit] = useState(30);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
+  
+  // Ref for the hidden file input
+  const fileInputRef = useRef(null);
+
+  // Helper for conditional styles
+  const cn = (...classes) => classes.filter(Boolean).join(' ');
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
-    if (selectedFile) {
-      if (selectedFile.type === 'application/json') {
-        setFile(selectedFile);
-        setError('');
-      } else {
-        setError('Please select a valid JSON file');
-      }
-    }
+    validateAndSetFile(selectedFile);
+  };
+
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
   };
 
   const handleDrop = (e) => {
     e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
     const droppedFile = e.dataTransfer.files[0];
-    if (droppedFile && droppedFile.type === 'application/json') {
-      setFile(droppedFile);
-      setError('');
-    } else {
-      setError('Please drop a valid JSON file');
-    }
+    validateAndSetFile(droppedFile);
   };
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
+  const validateAndSetFile = (selectedFile) => {
+    if (selectedFile) {
+      if (selectedFile.type === 'application/json' || selectedFile.name.endsWith('.json')) {
+        setFile(selectedFile);
+        setError('');
+        setSuccess('');
+      } else {
+        setError('Please upload a valid .json file');
+        setFile(null);
+      }
+    }
   };
 
   const processFile = async () => {
@@ -58,211 +76,268 @@ const JSONUpload = ({ onQuestionsUploaded, onClose }) => {
 
     try {
       const text = await file.text();
-      const data = JSON.parse(text);
-      
-      // Validate JSON structure
-      if (Array.isArray(data)) {
-        // Array of questions
-        const questions = data.map((q, index) => ({
-          id: `uploaded-${Date.now()}-${index}`,
-          question: q.question || '',
-          options: q.options || ['', '', '', ''],
-          correctAnswer: q.correctAnswer || 0,
-          explanation: q.explanation || '',
-          image: q.image || null,
-          negativeMarking: {
-            enabled: q.negativeMarking?.enabled || false,
-            type: q.negativeMarking?.type || 'fractional',
-            value: q.negativeMarking?.value || 0.25
-          }
-        }));
-        
-        setSuccess(`Successfully uploaded ${questions.length} questions!`);
-        onQuestionsUploaded(questions);
-      } else if (data.questions && Array.isArray(data.questions)) {
-        // Object with questions array
-        const questions = data.questions.map((q, index) => ({
-          id: `uploaded-${Date.now()}-${index}`,
-          question: q.question || '',
-          options: q.options || ['', '', '', ''],
-          correctAnswer: q.correctAnswer || 0,
-          explanation: q.explanation || '',
-          image: q.image || null,
-          negativeMarking: {
-            enabled: q.negativeMarking?.enabled || false,
-            type: q.negativeMarking?.type || 'fractional',
-            value: q.negativeMarking?.value || 0.25
-          }
-        }));
-        
-        setSuccess(`Successfully uploaded ${questions.length} questions!`);
-        onQuestionsUploaded(questions);
-      } else {
-        setError('Invalid JSON format. Please ensure the file contains an array of questions or an object with a questions array.');
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        throw new Error("Invalid JSON syntax");
       }
-    } catch (error) {
-      console.error('Error processing file:', error);
-      setError('Failed to process JSON file. Please check the file format and try again.');
+      
+      let rawQuestions = [];
+      
+      // Handle different JSON structures
+      if (Array.isArray(data)) {
+        rawQuestions = data;
+      } else if (data.questions && Array.isArray(data.questions)) {
+        rawQuestions = data.questions;
+      } else {
+        throw new Error('JSON must contain an array of questions or an object with a "questions" array.');
+      }
+
+      // Map and validate structure
+      const processedQuestions = rawQuestions.map((q, index) => ({
+        id: `uploaded-${Date.now()}-${index}`,
+        question: q.question || 'Untitled Question',
+        options: Array.isArray(q.options) && q.options.length >= 2 ? q.options : ['Option A', 'Option B', 'Option C', 'Option D'],
+        correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
+        explanation: q.explanation || '',
+        image: q.image || null,
+        negativeMarking: {
+          enabled: q.negativeMarking?.enabled || false,
+          type: q.negativeMarking?.type || 'fractional',
+          value: q.negativeMarking?.value || 0.25
+        }
+      }));
+      
+      // Simulate a small delay for UX
+      await new Promise(r => setTimeout(r, 600));
+
+      setSuccess(`Successfully processed ${processedQuestions.length} questions.`);
+      
+      // Pass data back up (including timeLimit if parent needs it)
+      onQuestionsUploaded(processedQuestions, timeLimit);
+      
+    } catch (err) {
+      console.error('Error processing file:', err);
+      setError(err.message || 'Failed to process file.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className={`fixed  inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto`}>
-      <div className={`backdrop-blur-xl border rounded-2xl shadow-2xl overflow-hidden max-w-2xl w-full max-h-[45vh] flex flex-col my-8 ${mode('bg-white/95 border-slate-200/60', 'bg-gray-800/95 border-gray-700/60')}`}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm transition-opacity" 
+        onClick={onClose}
+      />
+
+      {/* Modal Window */}
+      <div className={cn(
+        "relative w-full max-w-xl rounded-2xl border shadow-2xl flex flex-col max-h-[90vh] overflow-hidden transform transition-all",
+        isDark ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200"
+      )}>
+        
         {/* Header */}
-        <div className={`p-6 border-b ${mode('border-slate-200/60', 'border-gray-700/60')}`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-green-600 to-blue-600 rounded-xl flex items-center justify-center">
-                <FiUpload className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h2 className={`text-xl font-bold ${mode('text-slate-800', 'text-white')}`}>JSON Upload</h2>
-                <p className={`text-sm ${mode('text-slate-600', 'text-gray-300')}`}>Upload questions from JSON file</p>
-              </div>
+        <div className={cn(
+          "flex items-center justify-between px-6 py-4 border-b",
+          isDark ? "border-zinc-800" : "border-zinc-100"
+        )}>
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              "p-2 rounded-lg",
+              isDark ? "bg-zinc-800 text-zinc-300" : "bg-zinc-100 text-zinc-600"
+            )}>
+              <FileJson className="w-5 h-5" />
             </div>
-            <button
-              onClick={onClose}
-              className={`p-2 rounded-lg transition-colors ${mode('hover:bg-slate-200/50', 'hover:bg-gray-700/50')}`}
-            >
-              <FiX className={`w-5 h-5 ${mode('text-slate-500', 'text-gray-400')}`} />
-            </button>
+            <div>
+              <h2 className={cn("text-lg font-bold", isDark ? "text-white" : "text-zinc-900")}>
+                Import Questions
+              </h2>
+              <p className={cn("text-xs", isDark ? "text-zinc-500" : "text-zinc-500")}>
+                Upload a JSON file to bulk add questions
+              </p>
+            </div>
           </div>
+          <button
+            onClick={onClose}
+            className={cn(
+              "p-2 rounded-full transition-colors",
+              isDark ? "hover:bg-zinc-800 text-zinc-500 hover:text-white" : "hover:bg-zinc-100 text-zinc-400 hover:text-zinc-900"
+            )}
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
-        {/* Content */}
-        <div className="p-6 space-y-6 overflow-y-auto flex-1 pb-6 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200">
-          {/* Messages */}
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          
+          {/* Status Messages */}
           {error && (
-            <div className={`p-4 rounded-lg ${mode('bg-red-50 border-red-200 text-red-700', 'bg-red-900/20 border-red-800/50 text-red-400')} border`}>
-              <div className="flex items-center gap-2">
-                <FiAlertCircle className="w-4 h-4" />
-                {error}
-              </div>
+            <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 flex items-start gap-3 text-sm">
+              <AlertCircle className="w-5 h-5 shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 
           {success && (
-            <div className={`p-4 rounded-lg ${mode('bg-green-50 border-green-200 text-green-700', 'bg-green-900/20 border-green-800/50 text-green-400')} border`}>
-              <div className="flex items-center gap-2">
-                <FiCheck className="w-4 h-4" />
-                {success}
-              </div>
+            <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-start gap-3 text-sm">
+              <CheckCircle2 className="w-5 h-5 shrink-0" />
+              <span>{success}</span>
             </div>
           )}
 
-          {/* File Upload Area */}
-          <div>
-            <label className={`block text-sm font-semibold mb-2 ${mode('text-slate-700', 'text-gray-300')}`}>
-              Select JSON File *
-            </label>
-            <div
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              className={`relative border-2 border-dashed rounded-2xl p-8 text-center hover:border-green-500/60 transition-all duration-300 group ${mode('border-slate-400/60 hover:bg-green-50/30', 'border-gray-600/60 hover:bg-green-900/10')}`}
-            >
-              <input
-                type="file"
-                accept=".json"
-                onChange={handleFileChange}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              />
-              
-              {file ? (
-                <div className="flex items-center justify-center gap-3">
-                  <FiFile className={`w-8 h-8 ${mode('text-green-600', 'text-green-400')}`} />
-                  <div>
-                    <p className={`font-medium ${mode('text-slate-800', 'text-white')}`}>{file.name}</p>
-                    <p className={`text-sm ${mode('text-slate-600', 'text-gray-400')}`}>
-                      {(file.size / 1024).toFixed(1)} KB
-                    </p>
-                  </div>
+          {/* Upload Zone */}
+          <div
+            onDragEnter={handleDragEnter}
+            onDragOver={handleDragEnter} // Essential for drop to work
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+            className={cn(
+              "relative border-2 border-dashed rounded-xl p-8 transition-all duration-200 cursor-pointer group flex flex-col items-center justify-center text-center",
+              isDragging
+                ? "border-rose-500 bg-rose-500/5" 
+                : (isDark 
+                    ? "border-zinc-700 hover:border-zinc-600 hover:bg-zinc-800/50" 
+                    : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"),
+              file && !error ? (isDark ? "bg-zinc-800/30 border-zinc-700" : "bg-zinc-50 border-zinc-200") : ""
+            )}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+            
+            {file ? (
+              <div className="space-y-2 animate-in fade-in zoom-in duration-300">
+                <div className="w-12 h-12 rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto">
+                  <File className="w-6 h-6" />
                 </div>
-              ) : (
-                <div className="text-center">
-                  <FiUpload className={`w-12 h-12 group-hover:text-green-400 transition-colors duration-300 mx-auto ${mode('text-slate-500', 'text-gray-500')}`} />
-                  <p className={`text-base mt-4 ${mode('text-slate-600', 'text-gray-400')}`}>
-                    Drag and drop or click to select a JSON file
+                <div>
+                  <p className={cn("font-medium", isDark ? "text-zinc-200" : "text-zinc-900")}>
+                    {file.name}
                   </p>
-                  <p className={`text-sm mt-2 ${mode('text-slate-500', 'text-gray-500')}`}>
-                    Supports standard quiz JSON format
+                  <p className={cn("text-xs", isDark ? "text-zinc-500" : "text-zinc-500")}>
+                    {(file.size / 1024).toFixed(1)} KB • Click to change
                   </p>
                 </div>
-              )}
+              </div>
+            ) : (
+              <div className="space-y-3 pointer-events-none">
+                <div className={cn(
+                  "w-12 h-12 rounded-full flex items-center justify-center mx-auto transition-colors",
+                  isDragging 
+                    ? "bg-rose-100 text-rose-600" 
+                    : (isDark ? "bg-zinc-800 text-zinc-400" : "bg-zinc-100 text-zinc-400 group-hover:text-zinc-600")
+                )}>
+                  <UploadCloud className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className={cn("text-sm font-medium", isDark ? "text-zinc-300" : "text-zinc-700")}>
+                    {isDragging ? "Drop file here" : "Click to upload or drag and drop"}
+                  </p>
+                  <p className={cn("text-xs mt-1", isDark ? "text-zinc-500" : "text-zinc-400")}>
+                    JSON files only (max 5MB)
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Settings Grid */}
+          <div className="grid grid-cols-1 gap-6">
+            <div className="space-y-2">
+              <label className={cn("flex items-center gap-2 text-xs font-semibold uppercase tracking-wider", isDark ? "text-zinc-500" : "text-zinc-500")}>
+                <Clock className="w-3.5 h-3.5" />
+                Default Time Limit
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="5"
+                  max="180"
+                  value={timeLimit}
+                  onChange={(e) => setTimeLimit(parseInt(e.target.value) || 30)}
+                  className={cn(
+                    "w-full rounded-lg px-4 py-2.5 text-sm border focus:ring-2 focus:ring-rose-500/20 focus:outline-none transition-all",
+                    isDark 
+                      ? "bg-zinc-950 border-zinc-800 text-zinc-200 focus:border-rose-500/50" 
+                      : "bg-white border-zinc-200 text-zinc-900 focus:border-rose-500"
+                  )}
+                />
+                <span className={cn("absolute right-4 top-1/2 -translate-y-1/2 text-xs font-medium", isDark ? "text-zinc-600" : "text-zinc-400")}>
+                  minutes
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Time Limit Setting */}
-          <div>
-            <label className={`block text-sm font-semibold mb-2 flex items-center gap-2 ${mode('text-slate-700', 'text-gray-300')}`}>
-              <FiClock className="w-4 h-4" />
-              Time Limit (minutes)
-            </label>
-            <input
-              type="number"
-              min="5"
-              max="180"
-              value={timeLimit}
-              onChange={(e) => setTimeLimit(parseInt(e.target.value) || 30)}
-              className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-4 focus:ring-green-500/30 focus:border-green-500 transition-all duration-300 ${mode('bg-white border-slate-300 text-slate-700', 'bg-gray-900/60 border-gray-700/60 text-white')}`}
-            />
-          </div>
-
-          {/* JSON Format Info */}
-          <div className={`p-4 rounded-lg ${mode('bg-blue-50 border-blue-200', 'bg-blue-900/20 border-blue-800/50')} border`}>
-            <h3 className={`font-semibold mb-2 ${mode('text-blue-800', 'text-blue-300')}`}>Expected JSON Format:</h3>
-            <div className={`text-xs overflow-x-auto max-h-32 overflow-y-auto ${mode('text-blue-700', 'text-blue-400')}`}>
-              <pre className="whitespace-pre-wrap break-words">
+          {/* JSON Structure Hint */}
+          <div className={cn(
+            "rounded-lg border p-4 text-xs font-mono overflow-hidden",
+            isDark ? "bg-zinc-950/50 border-zinc-800" : "bg-zinc-50 border-zinc-200"
+          )}>
+            <div className="flex items-center gap-2 mb-2 text-zinc-500">
+              <Code2 className="w-3.5 h-3.5" />
+              <span className="font-sans font-semibold">Expected Format</span>
+            </div>
+            <pre className={cn("overflow-x-auto", isDark ? "text-zinc-400" : "text-zinc-600")}>
 {`[
   {
-    "question": "Your question here?",
-    "options": ["Option A", "Option B", "Option C", "Option D"],
+    "question": "What is React?",
+    "options": ["Library", "Framework", "Language", "Tool"],
     "correctAnswer": 0,
-    "explanation": "Explanation here",
-    "negativeMarking": {
-      "enabled": false,
-      "type": "fractional",
-      "value": 0.25
-    }
+    "negativeMarking": { "enabled": true, "value": 0.25 }
   }
 ]`}
-              </pre>
-            </div>
+            </pre>
           </div>
+        </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center gap-3 pt-4">
-            <button
-              onClick={processFile}
-              disabled={loading || !file}
-              className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 ${
-                loading || !file
-                  ? mode('bg-slate-300 text-slate-500 cursor-not-allowed', 'bg-gray-600 text-gray-400 cursor-not-allowed')
-                  : 'bg-gradient-to-r from-green-600 to-blue-600 text-white hover:from-green-700 hover:to-blue-700 shadow-lg hover:shadow-xl'
-              }`}
-            >
-              {loading ? (
-                <>
-                  <FiUpload className="w-4 h-4 animate-pulse" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <FiUpload className="w-4 h-4" />
-                  Upload Questions
-                </>
-              )}
-            </button>
-
-            <button
-              onClick={onClose}
-              className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 ${mode('bg-slate-200 text-slate-700 hover:bg-slate-300', 'bg-gray-700 text-gray-300 hover:bg-gray-600')}`}
-            >
-              Cancel
-            </button>
-          </div>
+        {/* Footer */}
+        <div className={cn(
+          "flex items-center justify-end gap-3 px-6 py-4 border-t",
+          isDark ? "bg-zinc-900 border-zinc-800" : "bg-zinc-50/50 border-zinc-100"
+        )}>
+          <button
+            onClick={onClose}
+            className={cn(
+              "px-4 py-2 text-sm font-medium rounded-lg transition-colors",
+              isDark 
+                ? "text-zinc-300 hover:bg-zinc-800" 
+                : "text-zinc-600 hover:bg-zinc-200"
+            )}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={processFile}
+            disabled={loading || !file}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all shadow-sm",
+              loading || !file
+                ? "bg-zinc-300 dark:bg-zinc-800 text-zinc-500 cursor-not-allowed"
+                : "bg-rose-600 hover:bg-rose-700 text-white shadow-rose-500/20"
+            )}
+          >
+            {loading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Processing...</span>
+              </>
+            ) : (
+              <>
+                <UploadCloud className="w-4 h-4" />
+                <span>Import Questions</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
     </div>

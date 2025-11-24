@@ -4,12 +4,13 @@ import {
   FiClock, 
   FiTrendingUp, 
   FiTarget, 
-  FiAward, 
   FiBookOpen, 
   FiRefreshCw, 
   FiLock,
   FiChevronRight,
-  FiActivity
+  FiActivity,
+  FiBarChart2,
+  FiZap
 } from 'react-icons/fi';
 import { 
   collection, 
@@ -34,7 +35,7 @@ const RecentActivityCompact = ({
   const [loading, setLoading] = useState(false);
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
 
-  // -- Data Fetching Logic (Kept same as original) --
+  // -- Data Fetching Logic --
   useEffect(() => {
     if (!currentUser) return;
 
@@ -116,22 +117,16 @@ const RecentActivityCompact = ({
     if (!date) return '';
     const now = new Date();
     const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+    if (diffInMinutes < 1) return 'Just now';
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
     return `${Math.floor(diffInMinutes / 1440)}d ago`;
   };
 
-  const getActivityStyle = (type) => {
-    switch (type) {
-      case 'test_completed':
-        return { icon: FiTarget, color: 'text-emerald-500', bg: 'bg-emerald-500/10' };
-      case 'test_started':
-        return { icon: FiPlay, color: 'text-blue-500', bg: 'bg-blue-500/10' };
-      case 'series_subscribed':
-        return { icon: FiBookOpen, color: 'text-violet-500', bg: 'bg-violet-500/10' };
-      default:
-        return { icon: FiClock, color: 'text-slate-500', bg: 'bg-slate-500/10' };
-    }
+  const getActivityStyle = (type, score) => {
+    if (score >= 80) return { icon: FiTarget, color: 'text-emerald-600', bg: isDark ? 'bg-emerald-500/10' : 'bg-emerald-100', border: isDark?'border-emerald-500/20':'border-emerald-200' };
+    if (score >= 50) return { icon: FiBarChart2, color: 'text-amber-600', bg: isDark?'bg-amber-500/10':'bg-amber-100 ', border: isDark?'border-amber-500/20':'border-amber-200' };
+    return { icon: FiActivity, color: 'text-slate-600', bg: isDark?'bg-slate-800':'bg-slate-100', border: isDark?'border-slate-200 ':'border-slate-200' };
   };
 
   const handleRecommendationClick = async (recommendation) => {
@@ -163,180 +158,175 @@ const RecentActivityCompact = ({
 
   if (!currentUser) {
     return (
-      <div className={`w-full h-full min-h-[400px] flex flex-col items-center justify-center p-8 rounded-2xl border border-dashed ${isDark ? 'bg-slate-900/50 border-slate-700' : 'bg-white border-slate-200'}`}>
-        <div className={`p-4 rounded-full mb-4 ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-100 text-slate-500'}`}>
-          <FiLock className="w-8 h-8" />
+      <div className={`w-full flex flex-col items-center justify-center p-8 rounded-2xl border border-dashed text-center ${isDark ? 'bg-zinc-900/30 border-zinc-800' : 'bg-white border-zinc-200'}`}>
+        <div className={`p-3 rounded-full mb-3 ${isDark ? 'bg-zinc-800 text-zinc-400' : 'bg-zinc-100 text-zinc-400'}`}>
+          <FiLock className="w-6 h-6" />
         </div>
-        <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>Authentication Required</h3>
-        <p className={`text-sm text-center max-w-[250px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-          Please sign in to access your recent activity and personalized insights.
+        <h3 className={`text-sm font-bold mb-1 ${isDark ? 'text-white' : 'text-zinc-900'}`}>Sign in to view activity</h3>
+        <p className={`text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>
+          Track your progress and get insights.
         </p>
       </div>
     );
   }
 
   return (
-    <div className={`flex flex-col h-full ${isDark ? 'bg-slate-900/50' : 'bg-white'} rounded-2xl p-5 shadow-sm`}>
+    <div className="flex flex-col h-full gap-6">
       
       {/* Section 1: Recent Activity */}
-      <div className="flex-1 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2.5">
-            <div className={`p-1.5 rounded-lg ${isDark ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
-              <FiClock className="w-4 h-4" />
-            </div>
-            <h3 className={`text-sm font-bold tracking-wide uppercase ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
-              Recent Activity
-            </h3>
-          </div>
-        </div>
+      <div className={`rounded-2xl p-1 ${isDark ? 'bg-transparent' : 'bg-transparent'}`}>
+        
+        {/* Header removed as it's usually handled by parent container, but we keep a minimal label if needed 
+            In this context, we assume the parent card provides the main header. 
+            We'll add a subtle sub-header just in case. */}
+        
+        <div className="space-y-4 relative">
+          {/* Timeline Vertical Line */}
+          <div className={`absolute left-[19px] top-4 bottom-4 w-[2px] ${isDark ? 'bg-zinc-800' : 'bg-zinc-200'} rounded-full`} />
 
-        <div className="space-y-3">
           {loading ? (
-             // Loading Skeleton
+             // Modern Skeleton
              [1, 2, 3].map(i => (
-              <div key={i} className={`flex items-center gap-4 p-3 rounded-xl animate-pulse ${isDark ? 'bg-slate-800/50' : 'bg-slate-50'}`}>
-                <div className={`w-10 h-10 rounded-lg ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
-                <div className="flex-1 space-y-2">
-                  <div className={`h-3 w-3/4 rounded ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
-                  <div className={`h-2 w-1/2 rounded ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`} />
+              <div key={i} className="flex items-start gap-3 relative z-10">
+                <div className={`w-10 h-10 rounded-full flex-shrink-0 ${isDark ? 'bg-zinc-800' : 'bg-zinc-100'} animate-pulse`} />
+                <div className="flex-1 pt-1 space-y-2">
+                  <div className={`h-3 w-3/4 rounded ${isDark ? 'bg-zinc-800' : 'bg-zinc-100'} animate-pulse`} />
+                  <div className={`h-2 w-1/2 rounded ${isDark ? 'bg-zinc-800' : 'bg-zinc-100'} animate-pulse`} />
                 </div>
               </div>
             ))
           ) : recentActivity.length > 0 ? (
             recentActivity.map((activity) => {
-              const style = getActivityStyle(activity.type);
+              const style = getActivityStyle(activity.type, activity.score);
               const Icon = style.icon;
               
               return (
-                <div
-                  key={activity.id}
-                  className={`group relative flex items-center gap-3 p-3 rounded-xl transition-all duration-200 border border-transparent hover:border-slate-200/50 ${
-                    isDark ? 'bg-slate-800/40 hover:bg-slate-800' : 'bg-slate-50/80 hover:bg-white hover:shadow-md'
-                  }`}
-                >
-                  {/* Icon Box */}
-                  <div className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-lg ${style.bg} ${style.color}`}>
-                    <Icon className="w-5 h-5" />
+                <div key={activity.id} className="group relative flex items-start gap-3 z-10">
+                  
+                  {/* Icon Circle */}
+                  <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center border-2 transition-colors ${
+                    isDark ? 'bg-zinc-900 border-zinc-800 group-hover:border-zinc-600' : 'bg-white border-zinc-100 group-hover:border-zinc-300'
+                  }`}>
+                    <Icon className={`w-4 h-4 ${style.color}`} />
                   </div>
                   
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <h4 className={`text-sm font-medium truncate pr-2 ${isDark ? 'text-slate-200 group-hover:text-white' : 'text-slate-700 group-hover:text-slate-900'}`}>
+                  {/* Content Card */}
+                  <div className={`flex-1 min-w-0 p-3 rounded-xl border transition-all duration-200 hover:-translate-y-0.5 cursor-default ${
+                    isDark 
+                      ? 'bg-zinc-900 border-zinc-800 hover:border-zinc-700' 
+                      : 'bg-white border-zinc-200 hover:border-zinc-300 hover:shadow-sm'
+                  }`}>
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <h4 className={`text-xs font-semibold truncate leading-tight ${isDark ? 'text-zinc-200' : 'text-zinc-900'}`}>
                         {activity.title}
                       </h4>
-                      <span className={`text-[10px] font-medium whitespace-nowrap ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                      <span className={`text-[10px] font-medium whitespace-nowrap flex-shrink-0 ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>
                         {formatTimeAgo(activity.completedAt)}
                       </span>
                     </div>
                     
-                    <div className="flex items-center justify-between mt-1">
-                      <p className={`text-xs truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    <div className="flex items-center justify-between mt-2">
+                      <span className={`text-[10px] font-medium truncate max-w-[120px] ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>
                         {activity.seriesName}
-                      </p>
+                      </span>
                       
-                      {/* Status Badge */}
-                      {activity.status === 'completed' && (
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
-                          activity.score >= 70 
-                            ? (isDark ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-700')
-                            : (isDark ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-100 text-amber-700')
-                        }`}>
-                          {activity.score}% Score
-                        </span>
-                      )}
+                      {/* Score Badge */}
+                      <div className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border ${style.bg} ${style.color} ${style.border}`}>
+                        <span>{activity.score}%</span>
+                      </div>
                     </div>
                   </div>
                 </div>
               );
             })
           ) : (
-            <div className={`flex flex-col items-center justify-center py-8 text-center ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-              <FiActivity className="w-8 h-8 mb-2 opacity-50" />
-              <p className="text-xs font-medium">No recent activity yet</p>
+            <div className={`flex flex-col items-center justify-center py-12 text-center ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>
+              <div className={`p-3 rounded-full mb-2 ${isDark ? 'bg-zinc-800' : 'bg-zinc-100'}`}>
+                <FiClock className="w-5 h-5 opacity-50" />
+              </div>
+              <p className="text-xs font-medium">No recent activity</p>
+              <p className="text-[10px] opacity-70">Your test history will appear here</p>
             </div>
           )}
         </div>
       </div>
 
       {/* Section 2: AI Recommendations */}
-      <div className={`pt-5 border-t ${isDark ? 'border-slate-700' : 'border-slate-100'}`}>
-        <div className="flex items-center justify-between mb-4">
+      <div className={`rounded-2xl p-4 border ${isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-gradient-to-br from-emerald-50/50 to-blue-50/50 border-emerald-100'}`}>
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <FiTrendingUp className={`w-4 h-4 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
-            <h4 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              Recommended for You
+            <div className={`p-1 rounded bg-emerald-500 text-white`}>
+              <FiZap className="w-3 h-3" />
+            </div>
+            <h4 className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+              Recommended
             </h4>
           </div>
           <button
             onClick={refreshRecommendations}
             disabled={recommendationsLoading}
-            className={`p-1.5 rounded-md transition-colors ${
-              isDark 
-                ? 'text-slate-400 hover:text-white hover:bg-slate-700' 
-                : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
-            }`}
-            title="Refresh Recommendations"
+            className={`p-1.5 rounded hover:bg-black/5 dark:hover:bg-white/10 transition-colors ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}
           >
-            <FiRefreshCw className={`w-3.5 h-3.5 ${recommendationsLoading ? 'animate-spin' : ''}`} />
+            <FiRefreshCw className={`w-3 h-3 ${recommendationsLoading ? 'animate-spin' : ''}`} />
           </button>
         </div>
 
-        <div className="space-y-2.5">
+        <div className="space-y-2">
           {recommendationsLoading ? (
             [1, 2].map(i => (
-              <div key={i} className={`h-16 rounded-lg animate-pulse ${isDark ? 'bg-slate-800/50' : 'bg-slate-50'}`} />
+              <div key={i} className={`h-14 rounded-lg animate-pulse ${isDark ? 'bg-zinc-800' : 'bg-white'}`} />
             ))
           ) : recommendations.length > 0 ? (
             recommendations.slice(0, 2).map((rec) => (
               <div
                 key={rec.id}
                 onClick={() => handleRecommendationClick(rec)}
-                className={`group cursor-pointer p-3 rounded-lg border transition-all duration-200 ${
+                className={`group cursor-pointer p-3 rounded-lg border transition-all duration-200 relative overflow-hidden ${
                   isDark 
-                    ? 'bg-slate-800/30 border-slate-700/50 hover:border-emerald-500/50 hover:bg-slate-800' 
-                    : 'bg-white border-slate-200 hover:border-emerald-500/50 hover:shadow-sm'
+                    ? 'bg-zinc-800 border-zinc-700 hover:border-emerald-500/50' 
+                    : 'bg-white border-zinc-200 hover:border-emerald-400 hover:shadow-md'
                 }`}
               >
-                <div className="flex items-start justify-between gap-3">
+                {/* Hover Highlight */}
+                <div className="absolute inset-0 bg-emerald-500/0 group-hover:bg-emerald-500/[0.02] transition-colors pointer-events-none" />
+
+                <div className="flex items-center justify-between gap-3 relative z-10">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      {rec.difficulty && (
-                        <span className={`text-[9px] px-1.5 py-0.5 rounded uppercase tracking-wider font-bold ${
-                          rec.difficulty === 'Easy' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' :
-                          rec.difficulty === 'Medium' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400' :
-                          'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400'
-                        }`}>
-                          {rec.difficulty}
-                        </span>
-                      )}
-                    </div>
-                    <h5 className={`text-xs font-semibold leading-tight mb-1 ${isDark ? 'text-slate-200 group-hover:text-white' : 'text-slate-800 group-hover:text-black'}`}>
+                    <h5 className={`text-xs font-bold leading-tight mb-1.5 truncate ${isDark ? 'text-zinc-200' : 'text-zinc-800'}`}>
                       {rec.title}
                     </h5>
-                    {rec.confidence && (
-                      <div className="flex items-center gap-1.5">
-                        <div className={`h-1 w-12 rounded-full overflow-hidden ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`}>
-                          <div 
-                            className="h-full bg-emerald-500 rounded-full" 
-                            style={{ width: `${rec.confidence}%` }}
-                          />
-                        </div>
-                        <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                          {rec.confidence}% Match
+                    
+                    <div className="flex items-center gap-3">
+                      {/* Difficulty Dot */}
+                      <div className="flex items-center gap-1">
+                        <div className={`w-1.5 h-1.5 rounded-full ${
+                          rec.difficulty === 'Easy' ? 'bg-emerald-500' :
+                          rec.difficulty === 'Medium' ? 'bg-amber-500' :
+                          'bg-rose-500'
+                        }`} />
+                        <span className={`text-[10px] font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                          {rec.difficulty || 'Medium'}
                         </span>
                       </div>
-                    )}
+
+                      {/* Match Score */}
+                      {rec.confidence && (
+                        <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                           <FiTrendingUp className="w-3 h-3" />
+                           <span className="text-[10px] font-bold">{rec.confidence}% Match</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <FiChevronRight className={`w-4 h-4 mt-1 opacity-0 -translate-x-2 transition-all group-hover:opacity-100 group-hover:translate-x-0 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
+                  
+                  <FiChevronRight className={`w-4 h-4 transition-transform group-hover:translate-x-1 ${isDark ? 'text-zinc-600 group-hover:text-zinc-300' : 'text-zinc-300 group-hover:text-emerald-500'}`} />
                 </div>
               </div>
             ))
           ) : (
-            <div className={`text-center py-6 rounded-lg border border-dashed ${isDark ? 'border-slate-700 bg-slate-800/20' : 'border-slate-200 bg-slate-50/50'}`}>
-              <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                Complete more tests to unlock<br />personalized insights.
+            <div className="text-center py-4">
+              <p className={`text-xs italic ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                Keep practicing to generate insights
               </p>
             </div>
           )}
