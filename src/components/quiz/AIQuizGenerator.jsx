@@ -104,7 +104,7 @@ const AIQuizGenerator = ({ onBack, onQuizCreated, testSeriesId }) => {
     setLoading(true); clearMessages();
 
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-exp" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
       const prompt = `Create a quiz with exactly ${aiForm.numberOfQuestions} multiple-choice questions about "${aiForm.topic}". Difficulty: ${aiForm.difficulty}. Language: ${aiForm.language}. Return JSON only: { "title": "...", "description": "...", "questions": [ { "question": "...", "options": ["A","B","C","D"], "correctAnswer": 0, "explanation": "..." } ] }`;
       
       const result = await model.generateContent(prompt);
