@@ -236,24 +236,6 @@ const TestResults = ({
           {/* --- Right Column: Detailed Stats --- */}
           <div className="lg:col-span-7 space-y-6">
 
-            {/* Earnings Banner */}
-            {earnedAmount > 0 && (
-              <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-900/40 to-green-900/40 border border-emerald-500/30 p-6 flex items-center justify-between transition-all duration-700 ${showEarningAnimation ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">
-                    <FaRupeeSign className="text-xl" />
-                  </div>
-                  <div>
-                    <div className="text-emerald-400 font-bold uppercase text-xs tracking-wider">Reward Unlocked</div>
-                    <div className="text-white font-bold text-xl">You earned ₹{earnedAmount}</div>
-                  </div>
-                </div>
-                <button onClick={() => navigate('/earnings')} className="text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-lg transition-colors cursor-pointer">
-                  Claim
-                </button>
-              </div>
-            )}
-
             {/* Stats Grid */}
             <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
               <StatCard
