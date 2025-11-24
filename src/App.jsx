@@ -9,8 +9,10 @@ import AuthForm from './components/auth/AuthForm';
 import LoginPopup from './components/auth/LoginPopup';
 import WelcomePage from './components/layout/WelcomePage';
 import FlashcardReview from './components/flashcards/FlashCardReview';
+import ChallengeLanding from './components/gamification/ChallengeLanding';
+import ChallengeEntry from './components/gamification/ChallengeEntry'; 
 // Homepage components - Remove unused direct imports since they're used within EnhancedHomepage
-import EnhancedHomepage from './components/homepage/EnhancedHomepage';  
+import EnhancedHomepage from './components/homepage/EnhancedHomepage';
 import HomepageDemo from './components/homepage/HomepageDemo';
 // Remove these unused direct imports:
 // import HeroSection from './components/homepage/HeroSection';
@@ -105,12 +107,12 @@ const AppContent = () => {
   // Sync URL with currentView state
   useEffect(() => {
     const path = location.pathname;
-    
+
     // Don't sync if we're on login page
     if (path === '/login') {
       return;
     }
-    
+
     // Map URL paths to currentView states      
     if (path === '/welcome' || path === '/') {
       setCurrentView('welcome');
@@ -283,7 +285,7 @@ const AppContent = () => {
         const quizId = path.split('/')[2];
         if (quizId && (!selectedItem || selectedItem.id !== quizId)) {
           setIsLoadingSeries(true);
-          
+
           getDoc(doc(db, 'quizzes', quizId))
             .then((snap) => {
               if (snap.exists()) {
@@ -317,7 +319,7 @@ const AppContent = () => {
         if (quizId && (!selectedItem || selectedItem.id !== quizId)) {
           logger.log('App: Loading quiz data from Firestore for quizId:', quizId);
           setIsLoadingSeries(true);
-          
+
           getDoc(doc(db, 'quizzes', quizId))
             .then((snap) => {
               if (snap.exists()) {
@@ -387,7 +389,7 @@ const AppContent = () => {
                   base.isFromOffer = true;
                 }
               }
-            } catch (_) {}
+            } catch (_) { }
             setSelectedItem(base);
           }
         })
@@ -634,7 +636,7 @@ const AppContent = () => {
   };
 
   const handleViewTestSeries = () => {
-    setCurrentView('test-series'); 
+    setCurrentView('test-series');
     setSelectedItem(null);
     navigate('/test-series');
   };
@@ -1036,11 +1038,10 @@ const AppContent = () => {
   const showFooter = location.pathname === '/test-series';
 
   return (
-    <div className={`flex flex-col min-h-screen transition-all duration-500 ${pageLoaded ? 'opacity-100' : 'opacity-0'} ${
-      isDark ? 'bg-gray-900' : 'bg-white'
-    }`}>
+    <div className={`flex flex-col min-h-screen transition-all duration-500 ${pageLoaded ? 'opacity-100' : 'opacity-0'} ${isDark ? 'bg-gray-900' : 'bg-white'
+      }`}>
       {showHeader && (
-        <Header 
+        <Header
           onViewAttempts={handleViewAttempts}
           onViewHome={handleViewHome}
           onViewTestSeries={handleViewTestSeries}
@@ -1049,17 +1050,15 @@ const AppContent = () => {
           currentView={currentView}
         />
       )}
-      
+
       <main className={`flex-grow ${showHeader ? 'pt-20' : ''} relative`}>
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className={`absolute -top-40 -right-40 w-80 h-80 rounded-full blur-3xl animate-pulse transition-all duration-500 ${
-            isDark ? 'bg-blue-400/5' : 'bg-blue-400/10'
-          }`}></div>
-          <div className={`absolute -bottom-40 -left-40 w-80 h-80 rounded-full blur-3xl animate-pulse delay-1000 transition-all duration-500 ${
-            isDark ? 'bg-green-400/5' : 'bg-green-400/10'
-          }`}></div>
+          <div className={`absolute -top-40 -right-40 w-80 h-80 rounded-full blur-3xl animate-pulse transition-all duration-500 ${isDark ? 'bg-blue-400/5' : 'bg-blue-400/10'
+            }`}></div>
+          <div className={`absolute -bottom-40 -left-40 w-80 h-80 rounded-full blur-3xl animate-pulse delay-1000 transition-all duration-500 ${isDark ? 'bg-green-400/5' : 'bg-green-400/10'
+            }`}></div>
         </div>
-        
+
         <div className="relative z-10">
           <ErrorBoundary>
             {renderContent()}
@@ -1073,7 +1072,7 @@ const AppContent = () => {
         onLoginClick={handleLoginClick}
         pendingAction={pendingAction}
       />
-      
+
       {showFooter && <Footer />}
     </div>
   );
@@ -1083,10 +1082,10 @@ const AppContent = () => {
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { 
-      hasError: false, 
-      error: null, 
-      errorInfo: null 
+    this.state = {
+      hasError: false,
+      error: null,
+      errorInfo: null
     };
   }
 
@@ -1110,13 +1109,13 @@ class ErrorBoundary extends React.Component {
             <div className="w-20 h-20 bg-gradient-to-br from-red-100 to-red-200 dark:from-red-900/20 dark:to-red-800/20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
               <span className="text-red-500 text-3xl">⚠️</span>
             </div>
-            
+
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
               Oops! Something went wrong
             </h2>
-            
+
             <p className="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
-              We encountered an unexpected error. Don't worry, your data is safe. 
+              We encountered an unexpected error. Don't worry, your data is safe.
               Please try refreshing the page or go back to the home page.
             </p>
 
@@ -1127,7 +1126,7 @@ class ErrorBoundary extends React.Component {
               >
                 🔄 Refresh Page
               </button>
-              
+
               <button
                 onClick={() => window.location.href = '/test-series'}
                 className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded transition-colors flex items-center justify-center gap-2"
@@ -1170,8 +1169,8 @@ const ApplyCreator = () => {
         <p className="text-gray-300 mb-6">
           Join our platform as a creator to publish your own quizzes and test series.
         </p>
-        
-        <button 
+
+        <button
           onClick={handleApply}
           className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors"
         >
@@ -1195,11 +1194,13 @@ const App = () => {
         <AuthProvider>
           <SubscriptionProvider>
             <Routes>
+              <Route path="/challenge/:challengeId" element={<ChallengeLanding />} />
               <Route path="/flashcards" element={<FlashcardRoute />} />
               <Route path="/admin-dashboard" element={<AdminDashboard />} />
               <Route path="/apply-creator" element={<ApplyCreator />} />
               <Route path="/login" element={<AuthForm />} />
               <Route path="/" element={<AppContent />} />
+              <Route path="/challenge/:id" element={<ChallengeEntry />} />
               <Route path="/welcome" element={<AppContent />} />
               <Route path="/homepage" element={<AppContent />} />
               <Route path="/subscriptions" element={<AppContent />} />

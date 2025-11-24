@@ -21,7 +21,7 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
   const isSectionWiseQuiz = useMemo(() => {
     return quiz.sections && Array.isArray(quiz.sections) && quiz.sections.length > 0;
   }, [quiz.sections]);
-  
+
   // Calculate total questions
   const totalQuestions = useMemo(() => {
     if (isSectionWiseQuiz) {
@@ -33,12 +33,12 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
   // Get current section info for section-wise quizzes
   const getCurrentSectionInfo = useCallback(() => {
     if (!isSectionWiseQuiz) return null;
-    
+
     let questionCount = 0;
     for (let i = 0; i < quiz.sections.length; i++) {
       const section = quiz.sections[i];
       const sectionQuestionCount = section.questions ? section.questions.length : 0;
-      
+
       if (currentQuestionIndex < questionCount + sectionQuestionCount) {
         return {
           section,
@@ -61,12 +61,12 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
     }
     return quiz?.questions?.[currentQuestionIndex];
   }, [isSectionWiseQuiz, currentSectionInfo, quiz?.questions, currentQuestionIndex]);
-  
+
   const currentQuestion = getCurrentQuestion();
 
   // Progress percentage
-  const progressPercentage = useMemo(() => 
-    ((currentQuestionIndex + 1) / totalQuestions) * 100, 
+  const progressPercentage = useMemo(() =>
+    ((currentQuestionIndex + 1) / totalQuestions) * 100,
     [currentQuestionIndex, totalQuestions]
   );
 
@@ -74,7 +74,7 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
   const handleAnswerSelect = useCallback((optionIndex) => {
     setAnswers(prev => {
       const newAnswers = { ...prev };
-      
+
       // If the same option is clicked again, unmark it (remove from answers)
       if (prev[currentQuestionIndex] === optionIndex) {
         delete newAnswers[currentQuestionIndex];
@@ -82,7 +82,7 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
         // Otherwise, mark the new option
         newAnswers[currentQuestionIndex] = optionIndex;
       }
-      
+
       return newAnswers;
     });
   }, [currentQuestionIndex]);
@@ -124,7 +124,7 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
     let correctAnswers = 0;
     let incorrectAnswers = 0;
     let totalScore = 0;
-    
+
     quiz.questions.forEach((question, index) => {
       if (answers[index] === question.correctAnswer) {
         correctAnswers++;
@@ -133,13 +133,13 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
         incorrectAnswers++;
         // Apply negative marking - check question-specific first, then global
         let negativeMarkingToApply = null;
-        
+
         if (question.negativeMarking && question.negativeMarking.enabled) {
           negativeMarkingToApply = question.negativeMarking;
         } else if (quiz.negativeMarking && quiz.negativeMarking.enabled) {
           negativeMarkingToApply = quiz.negativeMarking;
         }
-        
+
         if (negativeMarkingToApply) {
           if (negativeMarkingToApply.type === 'fractional') {
             totalScore -= negativeMarkingToApply.value;
@@ -149,13 +149,13 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
         }
       }
     });
-    
+
     totalScore = Math.max(0, totalScore);
-    
+
     const finalScore = Math.round(totalScore * 100) / 100;
     const timeSpentSeconds = Math.floor((endTimeNow - startTime) / 1000);
     const percentage = Math.round((finalScore / quiz.questions.length) * 100);
-    
+
     setScore(correctAnswers);
     setFinalScore(finalScore);
 
@@ -199,17 +199,17 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
               <div className="absolute -left-10 -top-10 w-40 h-40 bg-red-100 rounded-full blur-3xl"></div>
               <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-red-100 rounded-full blur-3xl"></div>
             </div>
-            
+
             <div className="relative">
               <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-100 text-red-500 mb-6">
                 <FiAlertCircle className="w-10 h-10" />
               </div>
-              
+
               <h2 className="text-3xl font-bold text-gray-900 mb-4">Quiz Not Found</h2>
               <p className="text-lg text-gray-600 mb-10 max-w-md mx-auto">
                 This quiz has no questions or might have been deleted. Please try another quiz.
               </p>
-              
+
               <button
                 onClick={onBack}
                 className="px-8 py-4 bg-blue-600 text-white font-medium rounded-xl flex items-center gap-2 justify-center mx-auto hover:bg-blue-700 transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
@@ -225,7 +225,7 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
 
   if (showResults) {
     const percentage = Math.round((score / quiz.questions.length) * 100);
-    
+
     return (
       <div className="min-h-screen bg-white">
         <div className="max-w-4xl mx-auto p-6">
@@ -237,7 +237,7 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
                 <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-green-500/20 rounded-full blur-3xl"></div>
               </div>
             )}
-            
+
             <div className="relative px-6 pt-10 pb-12 md:px-10">
               {/* Results Header with animated score */}
               <div className="text-center mb-10">
@@ -245,37 +245,36 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
                   <div className="inline-flex items-center justify-center w-28 h-28 md:w-36 md:h-36 rounded-full bg-gradient-to-r shadow-lg relative animate-scale-in">
                     {/* Background circular progress */}
                     <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
-                      <circle 
-                        cx="50" 
-                        cy="50" 
-                        r="45" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        strokeWidth="8" 
-                        className="text-gray-200" 
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="45"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="8"
+                        className="text-gray-200"
                       />
-                      <circle 
-                        cx="50" 
-                        cy="50" 
-                        r="45" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        strokeWidth="8" 
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="45"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="8"
                         strokeDasharray="283"
                         strokeDashoffset={283 - (283 * percentage) / 100}
-                        className={`transform -rotate-90 origin-center transition-all duration-1000 ease-out ${
-                          percentage >= 80 ? 'text-green-500' :
-                          percentage >= 60 ? 'text-blue-500' :
-                          percentage >= 40 ? 'text-yellow-500' :
-                          'text-red-500'
-                        }`}
+                        className={`transform -rotate-90 origin-center transition-all duration-1000 ease-out ${percentage >= 80 ? 'text-green-500' :
+                            percentage >= 60 ? 'text-blue-500' :
+                              percentage >= 40 ? 'text-yellow-500' :
+                                'text-red-500'
+                          }`}
                       />
                     </svg>
                     <span className="text-3xl md:text-4xl font-extrabold text-gray-900 animate-fade-in">
                       {percentage}%
                     </span>
                   </div>
-                  
+
                   {/* Badge for perfect score */}
                   {percentage === 100 && (
                     <div className="absolute -right-2 -top-2 bg-yellow-500 rounded-full p-1.5 shadow-lg animate-bounce-in">
@@ -283,11 +282,11 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
                     </div>
                   )}
                 </div>
-                
+
                 <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3 animate-fade-up">
                   Quiz Complete!
                 </h1>
-                <p className="text-xl text-gray-600 mb-4 animate-fade-up" style={{animationDelay: '100ms'}}>
+                <p className="text-xl text-gray-600 mb-4 animate-fade-up" style={{ animationDelay: '100ms' }}>
                   You scored <span className="font-semibold text-blue-600">{score}</span> out of <span className="font-semibold text-blue-600">{quiz.questions.length}</span> questions correctly
                   {quiz.negativeMarking && quiz.negativeMarking.enabled && (
                     <span className="block text-sm text-red-600 mt-1">
@@ -295,7 +294,7 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
                     </span>
                   )}
                 </p>
-                
+
                 {saving && (
                   <div className="flex items-center justify-center gap-2 text-blue-600 animate-fade-in">
                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
@@ -315,7 +314,7 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
                     {Math.floor((endTime - startTime) / 60000)}m {Math.floor(((endTime - startTime) % 60000) / 1000)}s
                   </span>
                 </div>
-                
+
                 {/* Result message based on score */}
                 <div className="p-4 rounded-xl border border-gray-200 bg-white">
                   <p className="text-center text-gray-800 text-lg">
@@ -335,7 +334,7 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-up" style={{animationDelay: '200ms'}}>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-up" style={{ animationDelay: '200ms' }}>
                 <button
                   onClick={onBack}
                   className="px-6 py-3.5 bg-blue-600 text-white font-medium rounded-xl flex items-center gap-2 justify-center hover:bg-blue-700 transition-all duration-300 shadow-md hover:shadow-lg focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
@@ -343,7 +342,7 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
                   <FiArrowLeft className="w-5 h-5" />
                   Back to Quizzes
                 </button>
-                
+
                 <button
                   onClick={() => onViewLeaderboard && onViewLeaderboard(quiz)}
                   className="px-6 py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium rounded-xl flex items-center gap-2 justify-center hover:from-purple-700 hover:to-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
@@ -353,7 +352,7 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
                 </button>
               </div>
             </div>
-            
+
             {/* Custom footer */}
             <div className="bg-gray-50 py-4 px-6 border-t border-gray-200">
               <div className="flex justify-between items-center">
@@ -366,7 +365,7 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
               </div>
             </div>
           </div>
-          
+
           {/* Add the following CSS to the component for animations */}
           <style>{`
             @keyframes scaleIn {
@@ -420,7 +419,7 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
           <div className="relative bg-white rounded-2xl shadow-xl p-6 border border-gray-200 overflow-hidden">
             {/* Top accent */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-purple-500"></div>
-            
+
             <div className="flex items-center gap-4 mb-6">
               <div className="p-2.5 rounded-full bg-blue-100 text-blue-600">
                 <FiSend className="w-6 h-6" />
@@ -429,12 +428,12 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
                 Ready to Submit?
               </h3>
             </div>
-            
+
             <div className="bg-blue-50 p-4 rounded-xl mb-6 border border-blue-100">
               <p className="text-gray-700 mb-2 text-center">
-                You've answered <span className="font-semibold text-blue-700">{Object.keys(answers).length}</span> of <span className="font-semibold text-blue-700">{quiz.questions.length}</span> questions. 
+                You've answered <span className="font-semibold text-blue-700">{Object.keys(answers).length}</span> of <span className="font-semibold text-blue-700">{quiz.questions.length}</span> questions.
               </p>
-              
+
               {Object.keys(answers).length < quiz.questions.length && (
                 <div className="flex items-center gap-3 justify-center mt-3 py-2 px-4 bg-amber-50 rounded-lg border border-amber-100">
                   <FiAlertCircle className="text-amber-500 flex-shrink-0 w-5 h-5" />
@@ -444,7 +443,7 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
                 </div>
               )}
             </div>
-            
+
             <div className="mb-2">
               <div className="flex items-center gap-2 mb-1">
                 <FiClock className="w-4 h-4 text-gray-500" />
@@ -454,7 +453,7 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
                 </span>
               </div>
             </div>
-            
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
               <button
                 onClick={handleCancelSubmit}
@@ -463,7 +462,7 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
                 <FiX className="w-5 h-5" />
                 Continue Quiz
               </button>
-              
+
               <button
                 onClick={submitQuiz}
                 className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-medium rounded-xl flex items-center gap-2 justify-center hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
@@ -492,7 +491,7 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
             <FiArrowLeft className="w-5 h-5" />
             <span className="hidden sm:inline text-sm font-medium">Exit Quiz</span>
           </button>
-          
+
           <div className="text-center flex-1 mx-4">
             <h1 className="text-xl sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 truncate">
               {quiz.title}
@@ -503,7 +502,7 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
               </div>
             )}
           </div>
-          
+
           <div className="flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-100">
             <FiClock className="w-4 h-4" />
             <span>{Object.keys(answers).length}/{totalQuestions}</span>
@@ -512,7 +511,7 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
 
         {/* Progress Bar with gradient */}
         <div className="h-2 w-full bg-gray-200 rounded-full mb-8 overflow-hidden">
-          <div 
+          <div
             className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500 ease-out shadow-sm"
             style={{ width: `${progressPercentage}%` }}
           ></div>
@@ -524,7 +523,7 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-5 border-b border-gray-200">
             <div className="flex justify-between items-center">
               <span className="font-medium text-sm px-3 py-1 rounded-full bg-blue-100 text-blue-700">
-                {isSectionWiseQuiz && currentSectionInfo 
+                {isSectionWiseQuiz && currentSectionInfo
                   ? `Q ${currentSectionInfo.questionInSection}/${currentSectionInfo.totalQuestionsInSection}`
                   : `Question ${currentQuestionIndex + 1} of ${quiz.questions.length}`
                 }
@@ -570,24 +569,21 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
                   <button
                     key={index}
                     onClick={() => handleAnswerSelect(index)}
-                    className={`w-full text-left p-4 rounded-xl border-2 flex items-start transition-all duration-300 group ${
-                      isSelected
+                    className={`w-full text-left p-4 rounded-xl border-2 flex items-start transition-all duration-300 group ${isSelected
                         ? 'bg-blue-50 border-blue-500 shadow-md'
                         : 'bg-white border-gray-200 hover:border-blue-300 hover:bg-blue-50/50'
-                    }`}
+                      }`}
                   >
-                    <div className={`flex-shrink-0 w-8 h-8 mr-3 rounded-lg flex items-center justify-center border ${
-                      isSelected
+                    <div className={`flex-shrink-0 w-8 h-8 mr-3 rounded-lg flex items-center justify-center border ${isSelected
                         ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
                         : 'bg-gray-100 text-gray-800 border-gray-300 group-hover:bg-blue-100 group-hover:border-blue-400'
-                    }`}>
+                      }`}>
                       <span className="text-sm font-bold">{String.fromCharCode(65 + index)}</span>
                     </div>
-                    <span className={`text-md ${
-                      isSelected
+                    <span className={`text-md ${isSelected
                         ? 'text-blue-900 font-medium'
                         : 'text-gray-800'
-                    }`}>
+                      }`}>
                       {option}
                     </span>
                     {isSelected && (
@@ -620,11 +616,10 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
           <button
             onClick={handlePreviousQuestion}
             disabled={currentQuestionIndex === 0}
-            className={`flex items-center gap-2 px-5 py-3 rounded-xl font-medium transition-all duration-300 ${
-              currentQuestionIndex === 0
+            className={`flex items-center gap-2 px-5 py-3 rounded-xl font-medium transition-all duration-300 ${currentQuestionIndex === 0
                 ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
                 : 'text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200'
-            }`}
+              }`}
           >
             <FiChevronLeft className="w-5 h-5" /> Previous
           </button>
@@ -634,7 +629,7 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
               onClick={handleSubmitConfirm}
               className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-medium rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
             >
-              <FiSend className="w-5 h-5" /> 
+              <FiSend className="w-5 h-5" />
               Submit Quiz
             </button>
           ) : (
@@ -646,7 +641,7 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
             </button>
           )}
         </div>
-        
+
         {/* Quiz footer */}
         <div className="mt-8 pt-4 border-t border-gray-200">
           <div className="flex flex-wrap justify-between items-center text-sm text-gray-500">
