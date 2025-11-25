@@ -118,7 +118,7 @@ const Footer = () => {
             </div>
 
             {/* 2. Quick Links (Lg: 3 cols) */}
-            <div className="lg:col-span-3">
+            <div className="lg:col-span-3 hidden md:block">
               <h4 className={`font-bold mb-6 ${styles.text.heading}`}>Platform</h4>
               <ul className="space-y-4">
                 {quickLinks.map((link, idx) => (
@@ -133,7 +133,7 @@ const Footer = () => {
             </div>
 
             {/* 3. Legal (Lg: 3 cols) */}
-            <div className="lg:col-span-3">
+            <div className="lg:col-span-3 hidden md:block">
               <h4 className={`font-bold mb-6 ${styles.text.heading}`}>Legal & Help</h4>
               <ul className="space-y-4">
                 {legalLinks.map((link, idx) => (

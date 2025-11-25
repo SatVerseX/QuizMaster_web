@@ -100,7 +100,7 @@ const SectionQuestionNavigator = ({ section, onClose }) => {
     setShowExplanation(true);
     setIsLoadingExplanation(true);
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
       const prompt = `Explain concisely:\nQ: "${currentQuestion.question}"\nCorrect: "${currentQuestion.options[currentQuestion.correctAnswer]}"\nWhy is this correct?`;
       const result = await model.generateContent(prompt);
       setExplanations(prev => ({ ...prev, [id]: result.response.text() }));
