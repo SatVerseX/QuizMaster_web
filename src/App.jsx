@@ -9,8 +9,7 @@ import AuthForm from './components/auth/AuthForm';
 import LoginPopup from './components/auth/LoginPopup';
 import WelcomePage from './components/layout/WelcomePage';
 import FlashcardReview from './components/flashcards/FlashCardReview';
-import ChallengeLanding from './components/gamification/ChallengeLanding';
-import ChallengeEntry from './components/gamification/ChallengeEntry'; 
+import ChallengeLanding from './components/gamification/ChallengeLanding'; 
 // Homepage components - Remove unused direct imports since they're used within EnhancedHomepage
 import EnhancedHomepage from './components/homepage/EnhancedHomepage';
 import HomepageDemo from './components/homepage/HomepageDemo';
@@ -1200,7 +1199,6 @@ const App = () => {
               <Route path="/apply-creator" element={<ApplyCreator />} />
               <Route path="/login" element={<AuthForm />} />
               <Route path="/" element={<AppContent />} />
-              <Route path="/challenge/:id" element={<ChallengeEntry />} />
               <Route path="/welcome" element={<AppContent />} />
               <Route path="/homepage" element={<AppContent />} />
               <Route path="/subscriptions" element={<AppContent />} />
