@@ -261,24 +261,40 @@ const AppContent = () => {
     } else if (path.startsWith('/attempt/')) {
       setCurrentView('attempt-details');
       const attemptId = path.split('/')[2];
+      
+      // Check if we need to load data (if ID exists but no selectedItem or ID doesn't match)
       if (attemptId && (!selectedItem || selectedItem.id !== attemptId)) {
         setIsLoadingSeries(true);
+        
+        // Try fetching from 'test-attempts' first
         getDoc(doc(db, 'test-attempts', attemptId))
           .then((snap) => {
             if (snap.exists()) {
-              setSelectedItem({ id: snap.id, ...snap.data() });
+              return { id: snap.id, ...snap.data() };
+            }
+            // Fallback: Try 'quiz-attempts' if not found in test-attempts
+            return getDoc(doc(db, 'quiz-attempts', attemptId)).then(quizSnap => {
+               if (quizSnap.exists()) {
+                 return { id: quizSnap.id, ...quizSnap.data() };
+               }
+               return null;
+            });
+          })
+          .then((data) => {
+            if (data) {
+              setSelectedItem(data);
             } else {
-              logger.error('Attempt not found:', attemptId);
-              navigate('/test-history');
+              logger.error('Attempt not found in any collection:', attemptId);
+              // Optional: Don't redirect immediately, let the UI show a "Not Found" state
+              // navigate('/test-history'); 
             }
           })
           .catch((err) => {
             logger.error('Failed to load attempt:', err);
-            navigate('/test-history');
           })
           .finally(() => setIsLoadingSeries(false));
       }
-    } else if (path.startsWith('/quiz/')) {
+    }  else if (path.startsWith('/quiz/')) {
       if (path.includes('/take')) {
         setCurrentView('take-quiz');
         const quizId = path.split('/')[2];
@@ -892,16 +908,27 @@ const AppContent = () => {
           </div>
         );
 
-      case 'attempt-details':
-        return (
-          <div className="animate-fade-in">
-            <TestAttemptDetails
-              attempt={selectedItem}
-              onBack={handleBackToHistory}
-              testSeriesId={selectedItem?.testSeriesId}
-            />
-          </div>
-        );
+        case 'attempt-details':
+          // Add Loading Guard here to prevent the error screen
+          if (isLoadingSeries || !selectedItem) {
+            return (
+              <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center">
+                  <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-lg text-gray-600 dark:text-gray-300">Loading results...</p>
+                </div>
+              </div>
+            );
+          }
+          return (
+            <div className="animate-fade-in">
+              <TestAttemptDetails
+                attempt={selectedItem}
+                onBack={handleBackToHistory}
+                testSeriesId={selectedItem?.testSeriesId}
+              />
+            </div>
+          );
 
       case 'test-leaderboard':
         if (isLoadingSeries) {

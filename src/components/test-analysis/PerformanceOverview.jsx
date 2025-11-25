@@ -136,6 +136,28 @@ const PerformanceOverview = ({ attempt, questionAnalysis }) => {
     return { grade: 'D', label: 'Needs Improvement', color: '#ef4444', text: 'text-rose-600' };
   };
 
+  const resolvePassingThreshold = () => {
+    const totalMarks = attempt?.totalMarks || attempt?.totalQuestions || 0;
+    const candidates = [
+      attempt?.passPercentage,
+      attempt?.passingPercentage,
+      attempt?.passingPercent,
+      attempt?.passPercent,
+      attempt?.minPassPercentage,
+      attempt?.minimumPassingPercentage,
+      attempt?.passingScore && totalMarks > 0 ? (attempt.passingScore / totalMarks) * 100 : null,
+      attempt?.passScore && totalMarks > 0 ? (attempt.passScore / totalMarks) * 100 : null,
+      attempt?.passMarks && totalMarks > 0 ? (attempt.passMarks / totalMarks) * 100 : null
+    ];
+
+    return candidates.find(value => typeof value === 'number' && !Number.isNaN(value)) ?? 33;
+  };
+
+  const passThreshold = resolvePassingThreshold();
+  const derivedIsPassed = typeof attempt?.isPassed === 'boolean'
+    ? attempt.isPassed
+    : finalScore >= passThreshold;
+
   const grade = getGradeInfo(finalScore);
   const timeDisplay = `${Math.floor((attempt.timeSpent || 0) / 60)}m ${(attempt.timeSpent || 0) % 60}s`;
   const avgTime = stats.total > 0 ? ((attempt.timeSpent || 0) / stats.total).toFixed(1) : 0;
@@ -261,11 +283,11 @@ const PerformanceOverview = ({ attempt, questionAnalysis }) => {
 
           {/* Badge (Logic kept inline as it depends on pass/fail AND isDark) */}
           <div className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide border ${
-            attempt.isPassed 
+            derivedIsPassed
               ? isDark ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-emerald-100 text-emerald-800 border-emerald-200'
               : isDark ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-rose-100 text-rose-800 border-rose-200'
           }`}>
-              {attempt.isPassed ? 'Passed Exam' : 'Not Passed'}
+              {derivedIsPassed ? 'Passed Exam' : 'Not Passed'}
           </div>
 
         </div>

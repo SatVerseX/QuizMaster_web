@@ -10,6 +10,7 @@ import {
 } from "react-icons/fi";
 import { Sparkle, X } from "lucide-react";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import QuestionDiscussion from "../discussion/QuestionDiscussion";
 
 // Initialize Gemini API
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
@@ -91,7 +92,10 @@ const QuestionNavigator = ({ questionAnalysis, attempt }) => {
   const getGeminiExplanation = async (questionData) => {
     try {
       // Check for cached explanation first
-      const cacheKey = `ai-explanation-${questionData.question.substring(0, 50)}-${questionData.correctAnswer}`;
+      const cacheKey = `ai-explanation-${questionData.question.substring(
+        0,
+        50
+      )}-${questionData.correctAnswer}`;
       const cached = localStorage.getItem(cacheKey);
       if (cached) {
         const cachedData = JSON.parse(cached);
@@ -101,14 +105,14 @@ const QuestionNavigator = ({ questionAnalysis, attempt }) => {
         }
       }
 
-      const model = genAI.getGenerativeModel({ 
+      const model = genAI.getGenerativeModel({
         model: "gemini-2.5-pro",
         generationConfig: {
           temperature: 0.3, // Lower temperature for more consistent, faster responses
           maxOutputTokens: 300, // Limit response length for faster generation
           topP: 0.8,
-          topK: 20
-        }
+          topK: 20,
+        },
       });
 
       // Optimized, concise prompt
@@ -116,10 +120,16 @@ const QuestionNavigator = ({ questionAnalysis, attempt }) => {
 
 Q: ${questionData.question}
 Correct: ${String.fromCharCode(65 + questionData.correctAnswer)}
-Student: ${questionData.userAnswer !== undefined ? String.fromCharCode(65 + questionData.userAnswer) : "Not answered"}
+Student: ${
+        questionData.userAnswer !== undefined
+          ? String.fromCharCode(65 + questionData.userAnswer)
+          : "Not answered"
+      }
 
 Options:
-${questionData.options.map((opt, i) => `${String.fromCharCode(65 + i)}) ${opt}`).join('\n')}
+${questionData.options
+  .map((opt, i) => `${String.fromCharCode(65 + i)}) ${opt}`)
+  .join("\n")}
 
 Provide:
 1. Why correct answer is right
@@ -129,13 +139,13 @@ Provide:
 Keep under 150 words.`;
 
       // Add timeout to prevent hanging
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout')), 15000)
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Request timeout")), 15000)
       );
 
       const result = await Promise.race([
         model.generateContent(prompt),
-        timeoutPromise
+        timeoutPromise,
       ]);
 
       const response = await result.response;
@@ -143,12 +153,15 @@ Keep under 150 words.`;
 
       // Cache the explanation
       try {
-        localStorage.setItem(cacheKey, JSON.stringify({
-          explanation,
-          timestamp: Date.now()
-        }));
+        localStorage.setItem(
+          cacheKey,
+          JSON.stringify({
+            explanation,
+            timestamp: Date.now(),
+          })
+        );
       } catch (e) {
-        console.warn('Failed to cache explanation:', e);
+        console.warn("Failed to cache explanation:", e);
       }
 
       return explanation;
@@ -226,6 +239,8 @@ Please try again in a moment!`);
 
   const currentQuestion = questionAnalysis[currentQuestionIndex];
 
+  const discussionThreadId = `${attempt.testId}_q${currentQuestionIndex}`;
+
   return (
     <>
       {/* Main Content */}
@@ -236,9 +251,7 @@ Please try again in a moment!`);
       >
         <div
           className={`border rounded-xl shadow-sm overflow-hidden ${
-            isDark
-              ? "bg-gray-900 border-gray-700"
-              : "bg-white border-gray-200"
+            isDark ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200"
           }`}
         >
           {/* Header */}
@@ -519,6 +532,17 @@ Please try again in a moment!`);
               </div>
             )}
 
+            {attempt.testId && (
+              <div className="mb-8">
+                <QuestionDiscussion
+                  questionId={discussionThreadId}
+                  questionTitle={`Discussion: Question ${
+                    currentQuestionIndex + 1
+                  }`}
+                />
+              </div>
+            )}
+
             {/* Navigation Controls */}
             <div className="flex items-center justify-between">
               <button
@@ -540,7 +564,8 @@ Please try again in a moment!`);
                     isDark ? "text-gray-300" : "text-gray-600"
                   }`}
                 >
-                  Question {currentQuestionIndex + 1} of {questionAnalysis.length}
+                  Question {currentQuestionIndex + 1} of{" "}
+                  {questionAnalysis.length}
                 </div>
               </div>
 
@@ -679,7 +704,6 @@ Please try again in a moment!`);
                 >
                   <span className="font-bold text-xs">AI</span>
                 </div>
-                
               </div>
             </div>
           </div>
