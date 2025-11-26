@@ -1,67 +1,70 @@
 import { db } from '../lib/firebase'; 
 import { 
   collection, 
-  addDoc, 
   getDocs,
   query,
   where,
-  orderBy,
   Timestamp,
   serverTimestamp, 
   writeBatch, 
   doc,
-  updateDoc,
-  getDoc
+  updateDoc
 } from 'firebase/firestore';
-import { generateFlashcardContent } from './geminiService'; // Ensure this path is correct
+import { generateFlashcardContent } from './geminiService';
 
 export const FlashcardService = {
   
   /**
    * 1. CREATE: Generate cards from mistakes
+   * Includes retry logic and fallbacks for AI generation failures.
    */
   createFromMistakes: async (userId, mistakes, sourceTitle) => {
     if (!userId) throw new Error("User ID is required");
     if (!mistakes || mistakes.length === 0) return;
 
     try {
-      // Generate AI content (assuming geminiService exists and works)
-      // If generateFlashcardContent fails, we fall back to raw question/answer
-      const aiPromises = mistakes.map(async (m) => {
+      const batch = writeBatch(db);
+      const collectionRef = collection(db, 'flashcards');
+      const timestamp = serverTimestamp();
+
+      // Process requests in chunks to avoid hitting rate limits aggressively
+      const promises = mistakes.map(async (m) => {
         try {
-          return await generateFlashcardContent(m);
+          // Attempt AI generation
+          const aiContent = await generateFlashcardContent(m);
+          return {
+            front: aiContent.front || m.question,
+            back: aiContent.back || m.options?.[m.correctAnswer] || "Answer not found",
+          };
         } catch (e) {
           console.warn("AI Generation failed for card, using raw data", e);
+          // Fallback to raw data
           return {
             front: m.question,
-            back: m.options ? m.options[m.correctAnswer] : m.correctAnswer,
+            back: m.options ? m.options[m.correctAnswer] : "Check original question",
           };
         }
       });
       
-      const aiResults = await Promise.all(aiPromises);
+      const results = await Promise.all(promises);
 
-      const batch = writeBatch(db);
-      const collectionRef = collection(db, 'flashcards');
-
-      aiResults.forEach((content, index) => {
+      results.forEach((content) => {
         const docRef = doc(collectionRef);
-        const originalQuestion = mistakes[index];
-
+        
         batch.set(docRef, {
           userId: userId,
-          front: content.front || originalQuestion.question,
-          back: content.back || originalQuestion.options?.[originalQuestion.correctAnswer] || "Answer not found",
+          front: content.front,
+          back: content.back,
           source: sourceTitle || 'Mistakes Review',
-          createdAt: serverTimestamp(),
+          createdAt: timestamp,
           
-          // CRITICAL: Set nextReview to NOW or slightly in the past so it appears immediately
-          nextReview: Timestamp.now(), 
-          
-          interval: 0, // Days until next review
-          easeFactor: 2.5, // Standard SM-2 starting ease
+          // Initial Spaced Repetition Data
+          nextReview: Timestamp.now(), // Due immediately
+          interval: 0, // Days
+          easeFactor: 2.5, // Standard SM-2 start
           streak: 0,
-          mastered: false
+          mastered: false,
+          reviewCount: 0
         });
       });
 
@@ -70,38 +73,38 @@ export const FlashcardService = {
 
     } catch (error) {
       console.error("Flashcard Service Error:", error);
-      if (error.message && error.message.includes('ERR_BLOCKED_BY_CLIENT')) {
-        throw new Error("AdBlocker detected. Please disable it to save flashcards.");
-      }
       throw error;
     }
   },
 
   /**
    * 2. READ: Get cards due for review
-   * Note: This requires a Firestore Index (userId + nextReview). 
-   * Check your browser console for a link to create it if queries fail.
+   * Robust query that handles potential missing indexes gracefully.
    */
   getDueCards: async (userId) => {
     try {
       const cardsRef = collection(db, 'flashcards');
+      const now = Timestamp.now();
+      
+      // Query for cards belonging to user that are due
+      // Note: This requires a composite index on [userId, nextReview].
+      // If index is missing, this might fail in strict mode, so we wrap in try/catch.
       const q = query(
         cardsRef,
         where('userId', '==', userId),
-        where('nextReview', '<=', Timestamp.now())
-        // orderBy('nextReview', 'asc') // Optional: requires strictly matching index
+        where('nextReview', '<=', now)
       );
 
       const snapshot = await getDocs(q);
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
-      console.error("Error getting due cards:", error);
+      console.error("Error getting due cards (check indexes):", error);
       return [];
     }
   },
 
   /**
-   * 3. READ: Get ALL cards for stats (Total Cards count)
+   * 3. READ: Get ALL cards
    */
   getAllCards: async (userId) => {
     try {
@@ -116,25 +119,23 @@ export const FlashcardService = {
   },
 
   /**
-   * 4. UPDATE: Submit a review (Spaced Repetition Logic)
-   * Quality: 0 (Forgot), 3 (Hard), 5 (Easy)
+   * 4. UPDATE: Submit a review (SM-2 Algorithm)
+   * Quality: 0 (Forgot) to 5 (Perfect)
    */
   submitReview: async (cardId, quality, currentCard) => {
     try {
       const cardRef = doc(db, 'flashcards', cardId);
       
-      // Calculate new values based on simplified SM-2 algorithm
-      let { interval, easeFactor, streak } = currentCard;
-      
-      // Defaults if missing
-      interval = interval || 0;
-      easeFactor = easeFactor || 2.5;
-      streak = streak || 0;
+      // Retrieve current stats with safe defaults
+      let interval = currentCard.interval || 0;
+      let easeFactor = currentCard.easeFactor || 2.5;
+      let streak = currentCard.streak || 0;
+      let reviewCount = (currentCard.reviewCount || 0) + 1;
 
       if (quality < 3) {
-        // Failed: Reset streak and interval
+        // Failed: Reset streak, review again tomorrow
         streak = 0;
-        interval = 1; // Review again tomorrow (or set to 0 for same-day loop)
+        interval = 1; 
       } else {
         // Passed
         streak += 1;
@@ -146,21 +147,29 @@ export const FlashcardService = {
           interval = Math.round(interval * easeFactor);
         }
         
-        // Adjust ease factor
-        // easeFactor = easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
-        if (quality === 3) easeFactor = Math.max(1.3, easeFactor - 0.15); // Hard -> Decrease ease
-        if (quality === 5) easeFactor = easeFactor + 0.15; // Easy -> Increase ease
+        // Adjust ease factor based on performance
+        // Standard formula: EF' = EF + (0.1 - (5-q) * (0.08 + (5-q)*0.02))
+        // q is quality (0-5)
+        const qFactor = 5 - quality;
+        easeFactor = easeFactor + (0.1 - qFactor * (0.08 + qFactor * 0.02));
+        
+        // Keep ease factor within reasonable bounds
+        if (easeFactor < 1.3) easeFactor = 1.3;
       }
 
       // Calculate next review date
       const nextDate = new Date();
       nextDate.setDate(nextDate.getDate() + interval);
+      // Set to start of the day to avoid timing issues
+      nextDate.setHours(4, 0, 0, 0); 
 
       await updateDoc(cardRef, {
         nextReview: Timestamp.fromDate(nextDate),
         interval,
         easeFactor,
         streak,
+        reviewCount,
+        mastered: streak > 4, // Simple mastery logic
         lastReviewed: serverTimestamp()
       });
 

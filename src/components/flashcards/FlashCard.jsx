@@ -7,91 +7,82 @@ const FlashcardCard = ({ card, isFlipped, onFlip }) => {
   const { isDark } = useTheme();
 
   return (
-    <div className="relative w-full h-80 sm:h-96 perspective-1000 group cursor-pointer" onClick={onFlip}>
+    <div 
+      className="relative w-full h-80 sm:h-96 perspective-1000 group cursor-pointer" 
+      onClick={onFlip}
+      style={{ perspective: '1000px' }} // Ensure perspective is applied
+    >
       <motion.div
-        className="w-full h-full relative preserve-3d"
+        className="w-full h-full relative"
         animate={{ rotateY: isFlipped ? 180 : 0 }}
         transition={{ duration: 0.6, type: "spring", stiffness: 260, damping: 20 }}
         style={{ transformStyle: 'preserve-3d' }}
       >
         {/* ================= FRONT (QUESTION) ================= */}
-        <div className={`absolute inset-0 backface-hidden rounded-[2rem] p-8 flex flex-col items-center justify-center text-center overflow-hidden border transition-all duration-300 ${
-          isDark 
-            ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700 text-white shadow-[0_0_40px_-10px_rgba(0,0,0,0.5)]' 
-            : 'bg-white border-slate-100 text-slate-900 shadow-[0_20px_40px_-12px_rgba(0,0,0,0.1)]'
-        }`}>
+        <div 
+          className={`absolute inset-0 rounded-[2rem] p-8 flex flex-col items-center justify-center text-center overflow-hidden border transition-all duration-300 backface-hidden ${
+            isDark 
+              ? 'bg-gradient-to-br from-zinc-800 to-zinc-900 border-zinc-700 text-white shadow-2xl' 
+              : 'bg-white border-slate-200 text-slate-900 shadow-xl'
+          }`}
+          style={{ backfaceVisibility: 'hidden' }} // Explicit inline style for Safari support
+        >
           
-          {/* Decorative Glow Blob */}
-          <div className={`absolute -top-20 -right-20 w-64 h-64 rounded-full blur-[80px] opacity-40 pointer-events-none transition-colors duration-500 ${
-            isDark ? 'bg-indigo-600' : 'bg-indigo-200'
-          }`} />
+          {/* Decorative Elements */}
+          <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl opacity-20 pointer-events-none ${isDark ? 'bg-indigo-500' : 'bg-indigo-400'}`} />
+          <div className={`absolute bottom-0 left-0 w-32 h-32 rounded-full blur-3xl opacity-20 pointer-events-none ${isDark ? 'bg-purple-500' : 'bg-purple-400'}`} />
 
-          {/* Content Wrapper */}
-          <div className="relative z-10 flex flex-col items-center gap-6 w-full h-full">
-            
-            {/* 'Q' Badge */}
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-sm ${
-              isDark ? 'bg-gray-700/50 text-indigo-300 ring-1 ring-indigo-500/20' : 'bg-slate-50 text-indigo-600 ring-1 ring-indigo-100'
+          {/* Content */}
+          <div className="relative z-10 flex flex-col items-center gap-6 w-full">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold ${
+              isDark ? 'bg-zinc-700 text-zinc-300' : 'bg-slate-100 text-slate-600'
             }`}>
-              <span className="font-serif font-bold italic">Q</span>
+              Q
             </div>
 
-            <div className="flex-1 flex items-center justify-center">
-              <h3 className="text-2xl sm:text-3xl font-bold leading-snug tracking-tight">
-                {card.front}
-              </h3>
-            </div>
+            <h3 className="text-xl sm:text-2xl md:text-3xl font-bold leading-snug max-h-[60%] overflow-y-auto custom-scrollbar">
+              {card.front}
+            </h3>
 
-            {/* Prompt */}
-            <div className={`flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.25em] ${
-              isDark ? 'text-gray-600' : 'text-slate-300'
-            }`}>
-              <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${
-                isDark ? 'bg-indigo-500' : 'bg-indigo-400'
-              }`} />
-              Tap to Reveal
-              <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${
-                isDark ? 'bg-indigo-500' : 'bg-indigo-400'
-              }`} />
+            <div className={`text-[10px] font-bold uppercase tracking-widest mt-auto ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>
+              Tap to Flip
             </div>
           </div>
         </div>
 
         {/* ================= BACK (ANSWER) ================= */}
-        <div className={`absolute inset-0 backface-hidden rounded-[2rem] p-8 flex flex-col items-center justify-center text-center overflow-hidden border ${
-          isDark 
-            ? 'bg-gray-900 border-emerald-900/50 text-white shadow-[0_0_50px_-12px_rgba(16,185,129,0.2)]' 
-            : 'bg-[#fafcfb] border-emerald-100 text-slate-900 shadow-inner'
-        }`} style={{ transform: 'rotateY(180deg)' }}>
+        <div 
+          className={`absolute inset-0 rounded-[2rem] p-8 flex flex-col items-center justify-center text-center overflow-hidden border backface-hidden ${
+            isDark 
+              ? 'bg-zinc-900 border-emerald-900/50 text-white shadow-2xl' 
+              : 'bg-emerald-50/30 border-emerald-100 text-slate-900 shadow-xl'
+          }`} 
+          style={{ 
+            transform: 'rotateY(180deg)',
+            backfaceVisibility: 'hidden' 
+          }}
+        >
+          {/* Subtle Grid Pattern */}
+          <div className={`absolute inset-0 opacity-5 pointer-events-none`} style={{ backgroundImage: 'radial-gradient(currentColor 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
 
-          {/* Dot Grid Pattern */}
-          <div 
-            className="absolute inset-0 opacity-[0.07] pointer-events-none" 
-            style={{ backgroundImage: `radial-gradient(${isDark ? '#34d399' : '#059669'} 1px, transparent 1px)`, backgroundSize: '24px 24px' }}
-          />
-
-          <div className="relative z-10 flex flex-col items-center gap-6 w-full h-full">
-            
-            {/* 'A' Badge */}
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl ${
-              isDark ? 'bg-emerald-900/20 text-emerald-400 ring-1 ring-emerald-500/20' : 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200'
+          <div className="relative z-10 flex flex-col items-center gap-6 w-full">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold ${
+              isDark ? 'bg-emerald-900/30 text-emerald-400' : 'bg-emerald-100 text-emerald-700'
             }`}>
-              <span className="font-serif font-bold italic">A</span>
+              A
             </div>
 
-            <div className="flex-1 flex items-center justify-center">
-              <p className={`text-xl sm:text-2xl font-medium leading-relaxed ${
-                isDark ? 'text-emerald-50' : 'text-slate-800'
-              }`}>
-                {card.back}
-              </p>
-            </div>
+            <p className={`text-lg sm:text-xl font-medium leading-relaxed max-h-[60%] overflow-y-auto custom-scrollbar ${
+              isDark ? 'text-emerald-50' : 'text-slate-800'
+            }`}>
+              {card.back}
+            </p>
 
-            <div className={`flex items-center gap-2 text-xs font-bold uppercase tracking-widest ${
+            <div className={`mt-auto flex items-center gap-2 text-xs font-bold uppercase tracking-widest ${
               isDark ? 'text-emerald-500' : 'text-emerald-600'
             }`}>
               <FiRefreshCw className="w-3 h-3" /> 
-              Concept Answer
+              Review
             </div>
           </div>
         </div>

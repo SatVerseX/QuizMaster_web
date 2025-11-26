@@ -4,54 +4,37 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { FlashcardService } from '../../services/flashcardService';
 import FlashcardCard from './FlashCard';
 import { 
-  Play, 
-  Layers, 
-  Clock, 
-  CheckCircle2, 
-  RotateCcw, 
-  Trophy, 
-  ArrowLeft,
-  Eye
+  Play, Layers, Clock, CheckCircle2, RotateCcw, Trophy, ArrowLeft, Eye, Smile, Frown
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 
 const FlashcardReview = ({ onBack }) => {
   const { currentUser } = useAuth();
   const { isDark } = useTheme();
   
-  const [view, setView] = useState('dashboard');
+  const [view, setView] = useState('dashboard'); // 'dashboard', 'review', 'summary'
   const [cards, setCards] = useState([]);
   const [stats, setStats] = useState({ due: 0, total: 0, mastered: 0 });
   const [loading, setLoading] = useState(true);
   
+  // Session State
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
-  const [sessionStats, setSessionStats] = useState({ correct: 0, hard: 0, wrong: 0 });
-
+  
   useEffect(() => {
-    loadDashboardData();
+    if(currentUser) loadDashboardData();
   }, [currentUser]);
 
   const loadDashboardData = async () => {
     setLoading(true);
     try {
       const due = await FlashcardService.getDueCards(currentUser.uid);
+      const all = await FlashcardService.getAllCards(currentUser.uid);
       
-      // Try to get all cards, fallback to due count if not implemented
-      let total = 0;
-      if (FlashcardService.getAllCards) {
-        const all = await FlashcardService.getAllCards(currentUser.uid);
-        total = all.length;
-      } else {
-        total = due.length;
-      }
-
       setStats({
         due: due.length,
-        total: total || due.length,
-        mastered: Math.floor(total * 0.3) 
+        total: all.length,
+        mastered: all.filter(c => c.mastered).length 
       });
-      setCards(due);
     } catch (error) {
       console.error("Failed to load cards", error);
     } finally {
@@ -65,21 +48,20 @@ const FlashcardReview = ({ onBack }) => {
       let sessionCards = [];
       if (mode === 'all') {
          sessionCards = await FlashcardService.getAllCards(currentUser.uid);
+         // Shuffle for practice
          sessionCards = sessionCards.sort(() => Math.random() - 0.5);
       } else {
          sessionCards = await FlashcardService.getDueCards(currentUser.uid);
       }
       
       if (sessionCards.length === 0) {
-        alert("No cards found for this mode!");
-        setView('dashboard');
+        // Quick visual feedback handled by UI state, but safety check here
         setLoading(false);
         return;
       }
 
       setCards(sessionCards);
       setCurrentIndex(0);
-      setSessionStats({ correct: 0, hard: 0, wrong: 0 });
       setIsFlipped(false);
       setView('review');
     } catch (err) {
@@ -92,15 +74,14 @@ const FlashcardReview = ({ onBack }) => {
   const handleGrade = async (quality) => {
     const currentCard = cards[currentIndex];
     
-    if (quality === 5) setSessionStats(prev => ({ ...prev, correct: prev.correct + 1 }));
-    else if (quality === 3) setSessionStats(prev => ({ ...prev, hard: prev.hard + 1 }));
-    else setSessionStats(prev => ({ ...prev, wrong: prev.wrong + 1 }));
-
+    // Optimistic update
     FlashcardService.submitReview(currentCard.id, quality, currentCard).catch(console.error);
 
     if (currentIndex < cards.length - 1) {
-      setIsFlipped(false);
-      setTimeout(() => setCurrentIndex(prev => prev + 1), 150);
+      setIsFlipped(false); // Reset flip BEFORE changing card content
+      setTimeout(() => {
+        setCurrentIndex(prev => prev + 1);
+      }, 150); // Small delay for animation smoothness
     } else {
       setView('summary');
     }
@@ -108,93 +89,81 @@ const FlashcardReview = ({ onBack }) => {
 
   if (loading) {
     return (
-      <div className={`min-h-[60vh] flex items-center justify-center ${isDark ? 'bg-gray-950' : 'bg-slate-50'}`}>
-        <div className="animate-spin w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full"></div>
+      <div className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-zinc-950' : 'bg-zinc-50'}`}>
+        <div className="animate-spin w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full"></div>
       </div>
     );
   }
 
-  // --- DASHBOARD VIEW ---
+  // --- DASHBOARD ---
   if (view === 'dashboard') {
     return (
-      <div className={`min-h-screen p-6 ${isDark ? 'bg-gray-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
+      <div className={`min-h-screen p-6 ${isDark ? 'bg-zinc-950 text-white' : 'bg-zinc-50 text-zinc-900'}`}>
         <div className="max-w-4xl mx-auto">
+          {/* Header */}
           <div className="flex items-center gap-4 mb-8">
             {onBack && (
-              <button onClick={onBack} className={isDark ? "p-2 rounded-full hover:bg-slate-800 transition-colors" : "p-2 rounded-full hover:bg-slate-200  transition-colors"}>
-                <ArrowLeft className="w-5 h-5" />
+              <button onClick={()=>window.history.back()} className={`p-2 rounded-full transition-colors ${isDark ? 'hover:bg-zinc-800' : 'hover:bg-zinc-200'}`}>
+                <ArrowLeft className="w-6 h-6" />
               </button>
             )}
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">Flashcard Dashboard</h1>
-              <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Track your progress.</p>
+              <h1 className="text-3xl font-bold tracking-tight">Flashcards</h1>
+              <p className={`text-sm ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>Spaced repetition system</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <div className={`p-6 rounded-2xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-              <p className="text-sm font-medium opacity-70">Due Today</p>
-              <h3 className="text-3xl font-bold mt-1 text-emerald-500">{stats.due}</h3>
-            </div>
-            <div className={`p-6 rounded-2xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-              <p className="text-sm font-medium opacity-70">Total Cards</p>
-              <h3 className="text-3xl font-bold mt-1">{stats.total}</h3>
-            </div>
-             <div className={`p-6 rounded-2xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-              <p className="text-sm font-medium opacity-70">Mastery</p>
-              <h3 className="text-3xl font-bold mt-1 text-rose-500">~{Math.round((stats.mastered / (stats.total || 1)) * 100)}%</h3>
-            </div>
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
+            <StatBox label="Due Today" value={stats.due} color="text-indigo-500" isDark={isDark} />
+            <StatBox label="Total Cards" value={stats.total} color={isDark ? "text-white" : "text-zinc-900"} isDark={isDark} />
+            <StatBox label="Mastered" value={stats.mastered} color="text-emerald-500" isDark={isDark} />
           </div>
 
+          {/* Actions */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <button
+            <ActionCard 
               onClick={() => startSession('due')}
               disabled={stats.due === 0}
-              className={`p-8 rounded-3xl border-2 text-left transition-all ${
-                stats.due > 0 
-                  ? 'border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10' 
-                  : isDark ? ' opacity-70 cursor-not-allowed border-slate-800 bg-slate-900' : 'border-slate-200 bg-slate-100 opacity-70 cursor-not-allowed '
-              }`}
-            >
-              <Layers className={`w-8 h-8 mb-4 ${stats.due > 0 ? 'text-emerald-500' : 'text-slate-400'}`} />
-              <h3 className="text-xl font-bold mb-2">Daily Review</h3>
-              <p className="opacity-70 text-sm mb-4">
-                 {stats.due > 0 ? `${stats.due} cards waiting.` : "All caught up!"}
-              </p>
-              <span className={`inline-flex items-center gap-2 font-bold text-sm ${stats.due > 0 ? 'text-emerald-600' : 'text-slate-500'}`}>
-                 {stats.due > 0 ? 'Start Session' : 'No Cards Due'} <Play className="w-4 h-4" />
-              </span>
-            </button>
-
-            <button
+              icon={Layers}
+              title="Daily Review"
+              desc={stats.due > 0 ? `${stats.due} cards waiting for review.` : "You're all caught up!"}
+              btnText={stats.due > 0 ? 'Start Review' : 'No Reviews Due'}
+              accentColor="indigo"
+              isDark={isDark}
+            />
+            
+            <ActionCard 
               onClick={() => startSession('all')}
-              className={`p-8 rounded-3xl border text-left transition-all ${isDark ? 'bg-slate-900 border-slate-800 hover:border-rose-500/50' : 'bg-white border-slate-200 hover:border-rose-300'}`}
-            >
-              <RotateCcw className="w-8 h-8 mb-4 text-rose-500" />
-              <h3 className="text-xl font-bold mb-2">Practice Mode</h3>
-              <p className="opacity-70 text-sm mb-4">Review all cards regardless of due date.</p>
-              <span className="inline-flex items-center gap-2 font-bold text-sm text-rose-600">
-                 Review All <Play className="w-4 h-4" />
-              </span>
-            </button>
+              disabled={stats.total === 0}
+              icon={RotateCcw}
+              title="Practice Mode"
+              desc="Review all cards without affecting scheduling."
+              btnText="Practice All"
+              accentColor="emerald"
+              isDark={isDark}
+            />
           </div>
         </div>
       </div>
     );
   }
 
-  // --- SUMMARY VIEW ---
+  // --- SUMMARY ---
   if (view === 'summary') {
     return (
-      <div className={`min-h-screen flex flex-col items-center justify-center p-6 ${isDark ? 'bg-gray-950' : 'bg-slate-50'}`}>
-        <div className={`max-w-md w-full p-8 rounded-3xl text-center ${isDark ? 'bg-slate-900 border border-slate-800' : 'bg-white border border-slate-200 shadow-xl'}`}>
-          <Trophy className="w-16 h-16 text-emerald-500 mx-auto mb-6" />
-          <h2 className="text-2xl font-bold mb-2">Session Complete!</h2>
-          <p className="opacity-70 mb-8">You've reviewed {cards.length} cards.</p>
-          
+      <div className={`min-h-screen flex flex-col items-center justify-center p-6 ${isDark ? 'bg-zinc-950' : 'bg-zinc-50'}`}>
+        <div className={`max-w-md w-full p-8 rounded-3xl text-center shadow-2xl ${isDark ? 'bg-zinc-900 border border-zinc-800' : 'bg-white border border-zinc-200'}`}>
+          <div className="w-20 h-20 bg-yellow-100 dark:bg-yellow-900/20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Trophy className="w-10 h-10 text-yellow-600 dark:text-yellow-500" />
+          </div>
+          <h2 className={`text-2xl font-bold mb-2 ${isDark ? 'text-white' : 'text-zinc-900'}`}>Session Complete!</h2>
+          <p className={`opacity-70 mb-8 ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
+            You've reviewed {cards.length} cards today. Keep up the great work!
+          </p>
           <button 
             onClick={() => { setView('dashboard'); loadDashboardData(); }}
-            className="w-full py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-colors"
+            className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/25"
           >
             Back to Dashboard
           </button>
@@ -203,64 +172,141 @@ const FlashcardReview = ({ onBack }) => {
     );
   }
 
-  // --- REVIEW VIEW ---
+  // --- REVIEW ---
   return (
-    <div className={`min-h-screen flex flex-col ${isDark ? 'bg-gray-950' : 'bg-slate-50'}`}>
-      {/* Header */}
-      <div className="px-6 py-4 flex items-center justify-between max-w-2xl mx-auto w-full">
-        <button onClick={() => setView('dashboard')} className={isDark ? "p-2 rounded-lg hover:bg-slate-800 transition-colors" : "p-2 rounded-lg hover:bg-slate-200 transition-colors"}>
+    <div className={`min-h-screen flex flex-col ${isDark ? 'bg-zinc-950' : 'bg-zinc-100'}`}>
+      {/* Top Bar */}
+      <div className="px-6 py-4 flex items-center justify-between max-w-3xl mx-auto w-full">
+        <button onClick={() => setView('dashboard')} className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-zinc-800 text-zinc-400' : 'hover:bg-zinc-200 text-zinc-600'}`}>
+          <XIcon isDark={isDark} /> {/* Defined below or verify import */}
+          <span className="sr-only">Exit</span>
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="text-center">
-          <span className="text-xs font-bold uppercase tracking-wider opacity-60">Reviewing</span>
-          <div className="text-sm font-bold">{currentIndex + 1} / {cards.length}</div>
+          <div className={`text-sm font-bold ${isDark ? 'text-zinc-200' : 'text-zinc-800'}`}>
+            {currentIndex + 1} <span className="opacity-40">/</span> {cards.length}
+          </div>
         </div>
-        <div className="w-9" />
+        <div className="w-9" /> {/* Spacer */}
       </div>
 
-      {/* Card Container */}
-      <div className="flex-1 flex flex-col items-center justify-center p-4 max-w-2xl mx-auto w-full">
+      {/* Card Area */}
+      <div className="flex-1 flex flex-col items-center justify-center p-4 w-full max-w-2xl mx-auto">
         {cards[currentIndex] && (
            <FlashcardCard 
-             key={cards[currentIndex].id}
+             key={cards[currentIndex].id} // Key ensures component resets on change
              card={cards[currentIndex]} 
              isFlipped={isFlipped} 
              onFlip={() => setIsFlipped(!isFlipped)} 
            />
         )}
 
-        {/* Manual Reveal Button (Fallback if card click fails) */}
-        {!isFlipped && (
-          <button 
-            onClick={() => setIsFlipped(true)}
-            className={`mt-8 flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all shadow-sm ${
-              isDark 
-                ? 'bg-slate-800 text-slate-200 hover:bg-slate-700' 
-                : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
-            }`}
-          >
-            <Eye className="w-4 h-4" /> Show Answer
-          </button>
-        )}
-
-        {/* Grading Controls */}
-        <div className={`w-full mt-8 grid grid-cols-3 gap-4 transition-all duration-300 ${isFlipped ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none hidden'}`}>
-          <button onClick={() => handleGrade(0)} className={isDark ? "group flex flex-col items-center p-4 rounded-xl bg-rose-900/20 text-rose-400 hover:scale-105 transition-transform" : "group flex flex-col items-center p-4 rounded-xl bg-rose-100 text-rose-600  hover:scale-105 transition-transform"}>
-            <RotateCcw className="w-5 h-5 mb-2" />
-            <span className="text-xs font-bold uppercase">Again</span>
-          </button>
-          <button onClick={() => handleGrade(3)} className={isDark?"group flex flex-col items-center p-4 rounded-xl bg-amber-900/20 text-amber-400 hover:scale-105 transition-transform":"group flex flex-col items-center p-4 rounded-xl bg-amber-100 text-amber-600  hover:scale-105 transition-transform"}>
-            <Clock className="w-5 h-5 mb-2" />
-            <span className="text-xs font-bold uppercase">Hard</span>
-          </button>
-          <button onClick={() => handleGrade(5)} className={isDark?"group flex flex-col items-center p-4 rounded-xl bg-emerald-900/20 text-emerald-400 hover:scale-105 transition-transform":"group flex flex-col items-center p-4 rounded-xl bg-emerald-100 text-emerald-600  hover:scale-105 transition-transform"}>
-            <CheckCircle2 className="w-5 h-5 mb-2" />
-            <span className="text-xs font-bold uppercase">Easy</span>
-          </button>
+        {/* Controls Area - Fixed Height to prevent jumping */}
+        <div className="h-24 w-full mt-8">
+          {!isFlipped ? (
+            <div className="flex justify-center">
+              <button 
+                onClick={() => setIsFlipped(true)}
+                className={`flex items-center gap-2 px-8 py-3 rounded-full font-semibold transition-all shadow-md hover:scale-105 active:scale-95 ${
+                  isDark ? 'bg-zinc-800 text-white hover:bg-zinc-700' : 'bg-white text-zinc-900 hover:bg-zinc-50'
+                }`}
+              >
+                <Eye className="w-4 h-4" /> Show Answer
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto">
+              <GradeButton 
+                color="rose" 
+                icon={RotateCcw} 
+                label="Again" 
+                sub="< 1m" 
+                onClick={() => handleGrade(0)} 
+                isDark={isDark} 
+              />
+              <GradeButton 
+                color="amber" 
+                icon={Clock} 
+                label="Hard" 
+                sub="2d" 
+                onClick={() => handleGrade(3)} 
+                isDark={isDark} 
+              />
+              <GradeButton 
+                color="emerald" 
+                icon={CheckCircle2} 
+                label="Easy" 
+                sub="4d" 
+                onClick={() => handleGrade(5)} 
+                isDark={isDark} 
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 };
+
+// --- Helpers ---
+
+const StatBox = ({ label, value, color, isDark }) => (
+  <div className={`p-5 rounded-2xl border text-center ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200 shadow-sm'}`}>
+    <div className={`text-3xl font-bold mb-1 ${color}`}>{value}</div>
+    <div className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>{label}</div>
+  </div>
+);
+
+const ActionCard = ({ onClick, disabled, icon: Icon, title, desc, btnText, accentColor, isDark }) => {
+  const colors = {
+    indigo: isDark ? 'text-indigo-400' : 'text-indigo-600',
+    emerald: isDark ? 'text-emerald-400' : 'text-emerald-600',
+  };
+  
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`p-6 rounded-3xl border text-left transition-all relative overflow-hidden group ${
+        disabled 
+          ? 'opacity-50 cursor-not-allowed grayscale' 
+          : isDark 
+            ? 'hover:border-zinc-700 hover:bg-zinc-900' 
+            : 'hover:border-zinc-300 hover:shadow-md'
+      } ${isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-white border-zinc-200'}`}
+    >
+      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${isDark ? 'bg-zinc-800' : 'bg-zinc-100'} ${colors[accentColor]}`}>
+        <Icon className="w-6 h-6" />
+      </div>
+      <h3 className={`text-lg font-bold mb-2 ${isDark ? 'text-white' : 'text-zinc-900'}`}>{title}</h3>
+      <p className={`text-sm mb-6 leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>{desc}</p>
+      <span className={`text-sm font-bold flex items-center gap-2 ${colors[accentColor]}`}>
+        {btnText} <Play className="w-3 h-3 fill-current" />
+      </span>
+    </button>
+  );
+};
+
+const GradeButton = ({ color, icon: Icon, label, sub, onClick, isDark }) => {
+  const styles = {
+    rose: isDark ? 'bg-rose-900/20 text-rose-400 hover:bg-rose-900/30' : 'bg-rose-50 text-rose-600 hover:bg-rose-100',
+    amber: isDark ? 'bg-amber-900/20 text-amber-400 hover:bg-amber-900/30' : 'bg-amber-50 text-amber-600 hover:bg-amber-100',
+    emerald: isDark ? 'bg-emerald-900/20 text-emerald-400 hover:bg-emerald-900/30' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100',
+  };
+
+  return (
+    <button 
+      onClick={onClick}
+      className={`flex flex-col items-center justify-center p-3 rounded-xl transition-all transform active:scale-95 ${styles[color]}`}
+    >
+      <Icon className="w-5 h-5 mb-1" />
+      <span className="text-xs font-bold uppercase">{label}</span>
+      <span className="text-[10px] opacity-70">{sub}</span>
+    </button>
+  );
+};
+
+// Fallback icon if X not imported
+const XIcon = () => null;
 
 export default FlashcardReview;

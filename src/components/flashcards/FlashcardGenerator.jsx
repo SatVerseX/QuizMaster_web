@@ -1,15 +1,22 @@
 import React, { useState } from 'react';
-import { Layers, Check, Loader2, AlertCircle, X } from 'lucide-react';
+import { Layers, Check, Loader2, AlertCircle, X, Brain } from 'lucide-react';
 import { FlashcardService } from '../../services/flashcardService';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const FlashcardGenerator = ({ userId, mistakes, testTitle, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(null);
+  const { isDark } = useTheme();
 
   const handleGenerate = async () => {
     if (!userId) {
-      setError("User not authenticated.");
+      setError("Authentication required.");
+      return;
+    }
+
+    if (!mistakes || mistakes.length === 0) {
+      setError("No mistakes to process.");
       return;
     }
 
@@ -17,109 +24,107 @@ const FlashcardGenerator = ({ userId, mistakes, testTitle, onClose }) => {
     setError(null);
 
     try {
-      // Format mistakes for service
+      // Ensure valid data structure before sending
       const incorrectQuestions = mistakes.map(m => ({
-        question: m.question,
-        options: m.options,
-        correctAnswer: m.correctAnswer,
-        explanation: m.explanation,
-        id: m.id || Date.now().toString()
+        question: m.question || "Unknown Question",
+        options: m.options || [],
+        correctAnswer: m.correctAnswer || 0,
+        explanation: m.explanation || "",
+        id: m.id || `gen-${Date.now()}-${Math.random()}`
       }));
 
-      await FlashcardService.createFromMistakes(userId, incorrectQuestions, `Mistakes: ${testTitle}`);
+      await FlashcardService.createFromMistakes(
+        userId, 
+        incorrectQuestions, 
+        `Review: ${testTitle || 'General Practice'}`
+      );
       
       setSuccess(true);
       setTimeout(() => {
-        onClose();
-      }, 2500);
+        if (onClose) onClose();
+      }, 2000);
 
     } catch (err) {
       console.error(err);
-      // User-friendly error message
-      if (err.code === 'permission-denied') {
-        setError("Permission denied. Please check your login status.");
-      } else if (err.message.includes("AdBlocker")) {
-        setError("Please disable AdBlocker to save flashcards.");
-      } else {
-        setError("Failed to generate cards. Please try again.");
-      }
+      setError("Failed to generate cards. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden relative">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-in fade-in duration-200">
+      <div className={`w-full max-w-md rounded-2xl border shadow-2xl overflow-hidden relative transition-colors ${
+        isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
+      }`}>
         
         {/* Close Button */}
         {!loading && !success && (
           <button 
             onClick={onClose}
-            className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+            className={`absolute top-4 right-4 p-2 rounded-full transition-colors ${
+              isDark ? 'text-zinc-400 hover:bg-zinc-800' : 'text-zinc-500 hover:bg-zinc-100'
+            }`}
           >
             <X size={20} />
           </button>
         )}
 
         <div className="p-8 text-center">
-          {/* Status Icon */}
-          <div className={`w-16 h-16 rounded-full mx-auto mb-6 flex items-center justify-center transition-all duration-500 ${
+          {/* Dynamic Icon State */}
+          <div className={`w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center transition-all duration-500 ${
             success 
-              ? 'bg-emerald-100 text-emerald-600 ring-4 ring-emerald-50' 
+              ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400' 
               : error
-                ? 'bg-rose-100 text-rose-600 ring-4 ring-rose-50'
-                : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400'
+                : loading 
+                  ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400'
+                  : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'
           }`}>
             {success ? (
-              <Check className="w-8 h-8 animate-in zoom-in duration-300" />
+              <Check className="w-10 h-10 animate-in zoom-in duration-300" />
             ) : error ? (
-              <AlertCircle className="w-8 h-8" />
+              <AlertCircle className="w-10 h-10" />
+            ) : loading ? (
+              <Loader2 className="w-10 h-10 animate-spin" />
             ) : (
-              <Layers className="w-8 h-8" />
+              <Brain className="w-10 h-10" />
             )}
           </div>
           
-          {/* Text Content */}
-          <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
-            {success ? 'Flashcards Created!' : error ? 'Generation Failed' : 'Create Smart Flashcards'}
+          <h3 className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+            {success ? 'Cards Created!' : error ? 'Error' : 'Review with Flashcards'}
           </h3>
           
-          <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 leading-relaxed">
+          <p className={`text-sm mb-8 leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
             {success 
-              ? 'Your mistakes have been converted into an active learning deck.' 
+              ? 'Your active learning deck is ready.' 
               : error
                 ? error
-                : `Convert your ${mistakes.length} mistakes into AI-powered flashcards for spaced repetition review.`}
+                : `Turn ${mistakes.length} mistakes into smart flashcards? AI will summarize key concepts for better retention.`}
           </p>
 
-          {/* Actions */}
-          {!success && (
+          {!success && !loading && (
             <div className="flex gap-3">
               <button 
                 onClick={onClose}
-                className="flex-1 py-2.5 rounded-lg font-medium text-sm transition-colors border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                className={`flex-1 py-3 rounded-xl font-medium text-sm transition-colors border ${
+                  isDark 
+                    ? 'border-zinc-700 text-zinc-300 hover:bg-zinc-800' 
+                    : 'border-zinc-200 text-zinc-600 hover:bg-zinc-50'
+                }`}
               >
                 Cancel
               </button>
               <button 
                 onClick={handleGenerate}
-                disabled={loading}
-                className="flex-1 py-2.5 rounded-lg font-medium text-sm text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
+                className="flex-1 py-3 rounded-xl font-bold text-sm text-white bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2"
               >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Layers className="w-4 h-4" />}
-                {loading ? 'Generating...' : 'Create Deck'}
+                <Layers className="w-4 h-4" /> Generate
               </button>
             </div>
           )}
         </div>
-        
-        {/* Loading Progress Bar (Optional Visual) */}
-        {loading && (
-          <div className="absolute bottom-0 left-0 w-full h-1 bg-slate-100 dark:bg-slate-800">
-            <div className="h-full bg-emerald-500 animate-pulse w-full origin-left"></div>
-          </div>
-        )}
       </div>
     </div>
   );
