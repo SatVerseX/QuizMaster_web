@@ -1342,6 +1342,15 @@ const FlashcardRoute = () => {
   return <FlashcardReview onBack={() => navigate("/")} />;
 };
 
+const StudyPlannerRoute = () => {
+  const navigate = useNavigate();
+  return (
+    <div className="min-h-screen p-4 md:p-8 flex items-center justify-center">
+      <StudyPlanGenerator onClose={() =>window.history.back()} />
+    </div>
+  );
+};
+
 const App = () => {
   return (
     <Router>
@@ -1349,16 +1358,7 @@ const App = () => {
         <AuthProvider>
           <SubscriptionProvider>
             <Routes>
-              <Route
-                path="/study-planner"
-                element={
-                  <div className="min-h-screen p-4 md:p-8 flex items-center justify-center">
-                    <StudyPlanGenerator
-                      onClose={() => navigate("/dashboard")}
-                    />
-                  </div>
-                }
-              />
+              <Route path="/study-planner" element={<StudyPlannerRoute />} />
               <Route
                 path="/challenge/:challengeId"
                 element={<ChallengeLanding />}
