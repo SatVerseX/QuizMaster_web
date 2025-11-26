@@ -20,6 +20,7 @@ import {
   FiGrid 
 } from "react-icons/fi";
 import { FaCrown, FaStar } from "react-icons/fa";
+import { getUserAvatar } from "../../utils/userUtils";
 
 const UserSubscriptions = ({ onViewTests, onSubscribeSeries }) => {
   const { currentUser } = useAuth();
@@ -27,6 +28,7 @@ const UserSubscriptions = ({ onViewTests, onSubscribeSeries }) => {
   const [loading, setLoading] = useState(true);
   const [subs, setSubs] = useState([]);
   const [series, setSeries] = useState([]);
+  const userAvatar = useMemo(() => getUserAvatar(currentUser), [currentUser]);
 
   // --- Data Loading Logic (Preserved) ---
   useEffect(() => {
@@ -139,8 +141,8 @@ const UserSubscriptions = ({ onViewTests, onSubscribeSeries }) => {
                 <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-inner ${
                   isDark ? "bg-gray-700 text-gray-300" : "bg-blue-50 text-blue-600"
                 }`}>
-                  {currentUser?.photoURL ? (
-                    <img src={currentUser.photoURL} alt="Profile" className="w-full h-full object-cover rounded-2xl" />
+                  {userAvatar ? (
+                    <img src={userAvatar} alt="Profile" className="w-full h-full object-cover rounded-2xl" referrerPolicy="no-referrer" />
                   ) : (
                     currentUser?.displayName?.charAt(0) || <FiUser />
                   )}

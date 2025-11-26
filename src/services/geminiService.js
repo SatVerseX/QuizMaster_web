@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { z } from "zod";
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(API_KEY);
@@ -62,10 +63,56 @@ const quizSchema = {
   required: ["title", "questions"]
 };
 
+// Validation Schema for Explanation Input
+const explanationInputSchema = z.object({
+  question: z.string().min(1, "Question text is required"),
+  options: z.array(z.string()),
+  correctAnswer: z.string(),
+  userAnswer: z.string().optional().nullable(),
+});
+
+/**
+ * Generates an educational explanation for a specific question.
+ * Used in the AI Explanation Modal.
+ */
+export const explainQuestion = async (params) => {
+  try {
+    // 1. Validate Input
+    const validatedData = explanationInputSchema.parse(params);
+
+    // 2. Use Flash model for faster response time in UI modals
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    
+    const prompt = `
+      Act as an expert tutor. Provide a clear, concise explanation for this quiz question.
+      
+      Question: "${validatedData.question}"
+      Options: ${validatedData.options.join(", ")}
+      Correct Answer: "${validatedData.correctAnswer}"
+      User Selected: "${validatedData.userAnswer || "None"}"
+
+      Structure the response as follows:
+      1. **Answer Confirmation**: Briefly state the correct answer.
+      2. **Concept Explanation**: Explain the underlying concept simply.
+      3. **Analysis**: If the user selected a wrong answer, explain why that specific option is incorrect.
+      
+      Keep the tone encouraging. Do not use complex markdown headers like # or ##, use bolding **text** instead.
+    `;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text();
+
+  } catch (error) {
+    console.error("Gemini Explanation Error:", error);
+    throw new Error("Unable to generate explanation at this time.");
+  }
+};
+
 export const generateQuizWithAI = async (topic, numberOfQuestions = 5, difficulty = 'medium') => {
   try {
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-pro",
       generationConfig: {
         responseMimeType: "application/json",
         responseSchema: quizSchema
@@ -87,6 +134,56 @@ export const generateQuizWithAI = async (topic, numberOfQuestions = 5, difficult
     return { success: true, data: quizData };
   } catch (error) {
     console.error('Error generating quiz with AI:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Generates a remediation quiz based on specific user mistakes.
+ * Focuses on the concepts underlying the incorrect answers.
+ */
+export const generateRemediationQuiz = async (mistakes, originalTitle) => {
+  try {
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-2.5-pro", 
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: quizSchema
+      }
+    });
+
+    // Prepare context (limit to 10 to preserve context window tokens and focus)
+    const context = mistakes.slice(0, 10).map(m => ({
+      question: m.question,
+      correctAnswer: m.options ? m.options[m.correctAnswer] : "N/A",
+      explanation: m.explanation || "No explanation provided"
+    }));
+
+    const prompt = `
+      The user took a test titled "${originalTitle}" and failed the following questions.
+      
+      Failed Questions Context:
+      ${JSON.stringify(context)}
+
+      Task:
+      Generate a personalized "Smart Remediation Quiz" with 5-7 questions.
+      1. Analyze the *underlying concepts* missed in the failed questions.
+      2. Create NEW questions testing these specific concepts.
+      3. Do NOT simply repeat the old questions. Create variations or conceptual checks.
+      4. If the mistakes indicate a fundamental misunderstanding, include a simpler conceptual question first.
+      5. Title the quiz "Remediation: [Main Concept Identified]".
+      
+      Output must be valid JSON matching the schema.
+    `;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const quizData = cleanAndParseJSON(response.text());
+
+    return { success: true, data: quizData };
+
+  } catch (error) {
+    console.error("Remediation generation failed:", error);
     return { success: false, error: error.message };
   }
 };
@@ -159,7 +256,7 @@ export const generateFlashcardContent = async (questionData) => {
   try {
     // 1. Enforce JSON schema in configuration
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-pro",
       generationConfig: {
         responseMimeType: "application/json",
         responseSchema: flashcardSchema

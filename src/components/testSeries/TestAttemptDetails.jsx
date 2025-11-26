@@ -13,11 +13,13 @@ import {
   FiAward,
   FiChevronRight,
   FiActivity,
-  FiLayers
+  FiLayers,
+  FiZap
 } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import Confetti from "react-confetti";
 import FlashcardGenerator from "../flashcards/FlashcardGenerator";
+import RemediationGenerator from "../quiz/RemediationGenerator"; 
 import TestAttemptHeader from "./TestAttemptHeader";
 import PerformanceOverview from "../test-analysis/PerformanceOverview";
 import SectionWiseAnalysis from "../test-analysis/SectionWiseAnalysis";
@@ -45,6 +47,7 @@ const TestAttemptDetails = ({
   
   // State
   const [showFlashcardGen, setShowFlashcardGen] = useState(false);
+  const [showRemediationGen, setShowRemediationGen] = useState(false);
   const [testDetails, setTestDetails] = useState(null);
   const [testSeries, setTestSeries] = useState(propTestSeries);
   const [loading, setLoading] = useState(true);
@@ -55,20 +58,23 @@ const TestAttemptDetails = ({
   const [activeMobileTab, setActiveMobileTab] = useState("overview");
   const [showConfetti, setShowConfetti] = useState(false);
 
-  // Early validation & Setup
+  // --- FIX: Improved useEffect for Data Loading ---
   useEffect(() => {
+    // 1. If attempt is completely missing, wait (don't error yet)
     if (!attempt) {
-      setError("No attempt data provided");
-      setLoading(false);
       return;
     }
+
+    // 2. If attempt object exists but IDs are missing, check if it's just an empty init object
     if (!attempt.id && !attempt.testId) {
-      setError("Invalid attempt data - missing required IDs");
-      setLoading(false);
+      // Only set error if it's not just a loading state
+      // console.warn("Empty attempt object received");
       return;
     }
+
+    // 3. Valid attempt, load details
     loadTestDetails();
-  }, [attempt?.id, attempt?.testId]);
+  }, [attempt]);
 
   useEffect(() => {
     if (propTestSeries) setTestSeries(propTestSeries);
@@ -76,11 +82,8 @@ const TestAttemptDetails = ({
 
   // Gamification: Trigger confetti on high scores
   useEffect(() => {
-    if (!loading && attempt) {
-      const percentage = (attempt.score / (attempt.totalQuestions * (attempt.marksPerQuestion || 1))) * 100; // Approximate
-      // Or simple correct/total ratio
-      const simplePercentage = (attempt.correctAnswers / attempt.totalQuestions) * 100;
-      
+    if (!loading && attempt && attempt.totalQuestions > 0) {
+      const simplePercentage = (attempt.score / attempt.totalQuestions) * 100;
       if (simplePercentage > 80) {
         setShowConfetti(true);
         const timer = setTimeout(() => setShowConfetti(false), 5000);
@@ -89,7 +92,7 @@ const TestAttemptDetails = ({
     }
   }, [loading, attempt]);
 
-  // --- Data Extraction Logic (Kept identical to original for logic safety) ---
+  // --- Data Extraction Logic ---
   const extractQuestionsFromSections = (sections) => {
     if (!sections || !Array.isArray(sections)) return [];
     const allQuestions = [];
@@ -115,9 +118,17 @@ const TestAttemptDetails = ({
     try {
       setLoading(true);
       setError(null);
-      if (!attempt || !attempt.testId) throw new Error("Attempt data is not available");
+
+      // FIX: Defensive check inside the function
+      if (!attempt || !attempt.testId) {
+        console.warn("Skipping load: Attempt data incomplete", attempt);
+        setLoading(false);
+        return;
+      }
 
       let testDoc = await getDoc(doc(db, "quizzes", attempt.testId));
+      
+      // Fallback to section-quizzes if not found in regular quizzes
       if (!testDoc.exists()) {
         testDoc = await getDoc(doc(db, "section-quizzes", attempt.testId));
       }
@@ -129,6 +140,9 @@ const TestAttemptDetails = ({
           if (extractedQuestions.length > 0) testData.allQuestions = extractedQuestions;
         }
         setTestDetails(testData);
+      } else {
+        // Test might have been deleted, but we still have attempt data
+        console.warn("Original test document not found (might be deleted)");
       }
       setLoading(false);
     } catch (error) {
@@ -140,6 +154,8 @@ const TestAttemptDetails = ({
 
   // --- Analysis Logic ---
   const getQuestionAnalysis = () => {
+    if (!attempt) return []; // Guard
+
     let questionsToAnalyze = [];
     if (testDetails?.allQuestions?.length > 0) {
       questionsToAnalyze = testDetails.allQuestions;
@@ -172,11 +188,9 @@ const TestAttemptDetails = ({
     });
   };
 
-  // Handle Retake
   const handleRetakeTest = async () => {
     if (safeAttempt.testId) {
       try {
-        // Simple redirect logic for robustness
         window.location.href = `/test/${safeAttempt.testId}/take`;
       } catch (error) {
         showError("Failed to load test. Please try again.", "Load Error");
@@ -186,7 +200,7 @@ const TestAttemptDetails = ({
     }
   };
 
-  // --- Safe Data Prep ---
+  // --- Safe Data Prep (Guards against null) ---
   const safeAttempt = {
     id: "unknown",
     testTitle: "Unknown Test",
@@ -198,34 +212,17 @@ const TestAttemptDetails = ({
     submittedAt: new Date(),
     answers: [],
     flaggedQuestions: [],
-    ...attempt,
+    ...(attempt || {}), // Spread safely
   };
 
   const questionAnalysis = getQuestionAnalysis();
   const incorrectQuestions = questionAnalysis.filter(q => q.status === 'incorrect');
   const isSectionWise = questionAnalysis.some((q) => q.sectionId);
   
-  // Calculate simple stats for badge
   const scorePercent = safeAttempt.totalQuestions > 0 
-    ? (safeAttempt.correctAnswers / safeAttempt.totalQuestions) * 100 
+    ? (safeAttempt.correctAnswers || safeAttempt.score) / safeAttempt.totalQuestions * 100 
     : 0;
   const badge = getPerformanceBadge(scorePercent);
-
-  // --- Render Logic ---
-  {incorrectQuestions.length > 0 && (
-   <button onClick={() => setShowFlashcardGen(true)}>
-      Review Mistakes with Flashcards
-   </button>
-)}
-
-{showFlashcardGen && (
-   <FlashcardGenerator 
-      userId={currentUser.uid}
-      mistakes={incorrectQuestions}
-      testTitle={attempt.testTitle}
-      onClose={() => setShowFlashcardGen(false)}
-   />
-)}
 
   if (error) {
     return (
@@ -251,7 +248,6 @@ const TestAttemptDetails = ({
     return (
       <div className={`min-h-screen flex items-center justify-center ${isDark ? "bg-slate-950" : "bg-slate-50"}`}>
         <div className="text-center space-y-4">
-           {/* Custom Skeleton Loader Animation */}
           <div className="flex gap-2 justify-center">
             {[0, 1, 2].map(i => (
                <motion.div 
@@ -262,12 +258,11 @@ const TestAttemptDetails = ({
                />
             ))}
           </div>
-          <p className={`font-medium ${isDark ? "text-slate-400" : "text-slate-600"}`}>Crunching your numbers...</p>
+          <p className={`font-medium ${isDark ? "text-slate-400" : "text-slate-600"}`}>Analyzing performance...</p>
         </div>
       </div>
     );
   }
-  
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${isDark ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"}`}>
@@ -288,7 +283,6 @@ const TestAttemptDetails = ({
             <span>Back to Dashboard</span>
           </button>
 
-          {/* Badge Display (Gamification) */}
           <div className={`flex items-center gap-3 px-4 py-2 rounded-full border ${isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200 shadow-sm"}`}>
              <span className="text-xl">{badge.icon}</span>
              <div className="flex flex-col leading-none">
@@ -297,7 +291,6 @@ const TestAttemptDetails = ({
           </div>
         </motion.div>
 
-        {/* Main Header Component */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -307,30 +300,38 @@ const TestAttemptDetails = ({
           <TestAttemptHeader
             attempt={safeAttempt}
             testSeries={testSeries || {}}
-            onBack={null} // Handled above
-            // Pass empty handlers here to hide default buttons if we want custom ones, 
-            // or keep them and style the header component internally.
-            // Assuming we keep them:
+            onBack={null}
             onDownload={() => setShowDownloadModal(true)}
             onShare={() => setShowShareModal(true)}
           />
         </motion.div>
 
-        {/* Custom Action Bar (Floating/Sticky or Standard) */}
+        {/* Action Bar with Remediation Button */}
         <div className="flex flex-wrap gap-3 mb-8">
           {incorrectQuestions.length > 0 && (
-             <button
-               onClick={() => setShowFlashcardGen(true)}
-               className={`w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg transition-all transform hover:-translate-y-0.5 ${
-                 isDark 
-                   ? 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-900/20' 
-                   : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200'
-               }`}
-             >
-               <FiLayers className="w-4 h-4" /> 
-               Turn Mistakes to Flashcards ({incorrectQuestions.length})
-             </button>
-           )}
+            <>
+              <button
+                onClick={() => setShowFlashcardGen(true)}
+                className={`w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg transition-all transform hover:-translate-y-0.5 ${
+                  isDark 
+                    ? 'bg-zinc-800 text-white hover:bg-zinc-700 border border-zinc-700' 
+                    : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
+                }`}
+              >
+                <FiLayers className="w-4 h-4" /> 
+                Mistakes to Flashcards
+              </button>
+
+              {/* Remediation Button */}
+              <button
+                onClick={() => setShowRemediationGen(true)}
+                className={`w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg transition-all transform hover:-translate-y-0.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-indigo-500/20`}
+              >
+                <FiZap className="w-4 h-4 text-yellow-300" /> 
+                Generate Smart Remediation Quiz
+              </button>
+            </>
+          )}
            
            <div className="flex-grow hidden sm:block"></div>
            <button
@@ -341,7 +342,7 @@ const TestAttemptDetails = ({
           </button>
         </div>
 
-        {/* Mobile Tab Switcher (Segmented Control Style) */}
+        {/* Mobile Tabs */}
         <div className="lg:hidden mb-8">
           <div className={`p-1.5 rounded-xl flex ${isDark ? "bg-slate-900" : "bg-slate-100"}`}>
             {["overview", isSectionWise ? "sections" : null, !isSectionWise ? "questions" : null].filter(Boolean).map((tab) => (
@@ -370,10 +371,10 @@ const TestAttemptDetails = ({
           </div>
         </div>
 
-        {/* Main Grid Layout */}
+        {/* Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
-          {/* Left Column: Performance (Sticky on Desktop) */}
+          {/* Left Column: Performance */}
           <div className={`lg:col-span-4 lg:block ${activeMobileTab === "overview" ? "block" : "hidden"}`}>
              <div className="lg:sticky lg:top-6 space-y-6">
                 <div className={`rounded-2xl border overflow-hidden ${isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200 shadow-sm"}`}>
@@ -389,10 +390,9 @@ const TestAttemptDetails = ({
              </div>
           </div>
 
-          {/* Right Column: Detailed Analysis */}
+          {/* Right Column: Analysis */}
           <div className={`lg:col-span-8 space-y-6 ${activeMobileTab !== "overview" ? "block" : "hidden lg:block"}`}>
             
-            {/* Section Analysis */}
             {isSectionWise && (activeMobileTab === "sections" || activeMobileTab === "overview") && (
               <motion.div 
                 initial={{ opacity: 0, x: 20 }}
@@ -412,7 +412,6 @@ const TestAttemptDetails = ({
               </motion.div>
             )}
 
-            {/* Question Navigator */}
             {!isSectionWise && (activeMobileTab === "questions" || activeMobileTab === "overview") && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -444,7 +443,7 @@ const TestAttemptDetails = ({
           </div>
         </div>
 
-        {/* Modals (Z-Index handling usually in component) */}
+        {/* Modals */}
         <AnimatePresence>
           {showDownloadModal && (
             <DownloadModal
@@ -467,6 +466,14 @@ const TestAttemptDetails = ({
               mistakes={incorrectQuestions}
               testTitle={safeAttempt.testTitle || "Test Mistakes"}
               onClose={() => setShowFlashcardGen(false)}
+            />
+          )}
+          {showRemediationGen && (
+            <RemediationGenerator
+               userId={currentUser.uid}
+               mistakes={incorrectQuestions}
+               originalTitle={safeAttempt.testTitle}
+               onClose={() => setShowRemediationGen(false)}
             />
           )}
         </AnimatePresence>

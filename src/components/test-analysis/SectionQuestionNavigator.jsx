@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { createPortal } from "react-dom"; // IMPORT THIS FOR PORTAL
+import { createPortal } from "react-dom"; 
 import { useTheme } from "../../contexts/ThemeContext";
 import {
   FiX,
@@ -42,16 +42,17 @@ const SectionQuestionNavigator = ({ section, onClose }) => {
       ? "bg-gray-800 border-gray-700 shadow-xl" 
       : "bg-white border-slate-200 shadow-xl shadow-slate-200/50",
       
-    // Option styling
+    // Option styling - Responsive padding
     option: (status) => {
-      const base = "p-4 rounded-xl border-2 transition-all duration-200 cursor-default ";
+      const base = "p-3 md:p-4 rounded-xl border-2 transition-all duration-200 cursor-default ";
       if (status === 'correct') return base + (isDark ? "bg-emerald-500/10 border-emerald-500/50" : "bg-emerald-50 border-emerald-500");
       if (status === 'wrong') return base + (isDark ? "bg-rose-500/10 border-rose-500/50" : "bg-rose-50 border-rose-500");
       return base + (isDark ? "bg-gray-800/50 border-gray-700" : "bg-white border-slate-200");
     },
 
+    // Nav button styling - Responsive size
     navBtn: (isActive, status) => {
-      let base = "shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold transition-all duration-200 border ";
+      let base = "shrink-0 w-9 h-9 md:w-10 md:h-10 rounded-lg flex items-center justify-center text-xs md:text-sm font-bold transition-all duration-200 border ";
       if (isActive) return base + "bg-indigo-600 text-white border-indigo-500 scale-110 shadow-lg z-10 ring-2 ring-indigo-200 dark:ring-indigo-900";
       if (status === 'correct') return base + (isDark ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" : "bg-emerald-50 text-emerald-600 border-emerald-200");
       if (status === 'incorrect') return base + (isDark ? "bg-rose-500/10 text-rose-400 border-rose-500/30" : "bg-rose-50 text-rose-600 border-rose-200");
@@ -113,9 +114,6 @@ const SectionQuestionNavigator = ({ section, onClose }) => {
 
   if (!section.questions.length) return null;
 
-  // --- THE PORTAL FIX ---
-  // Using createPortal pushes this entire div to document.body
-  // This ensures z-index works correctly and it covers the full screen.
   return createPortal(
     <div className={`fixed inset-0 z-[9999] flex items-center justify-center p-0 md:p-4 ${styles.overlay}`}>
       
@@ -131,7 +129,7 @@ const SectionQuestionNavigator = ({ section, onClose }) => {
                 <FiX className="w-5 h-5" />
               </button>
               <div>
-                <h2 className={`text-sm md:text-base font-bold leading-tight ${styles.textPrimary}`}>{section.name}</h2>
+                <h2 className={`text-sm md:text-base font-bold leading-tight ${styles.textPrimary} truncate max-w-[200px] md:max-w-md`}>{section.name}</h2>
                 <p className={`text-[10px] md:text-xs font-medium uppercase tracking-wider ${styles.textSecondary}`}>Review Mode</p>
               </div>
             </div>
@@ -139,7 +137,8 @@ const SectionQuestionNavigator = ({ section, onClose }) => {
             {/* AI Action */}
             <button 
               onClick={handleExplanation}
-              className="hidden md:flex items-center gap-2 px-3 py-3 rounded-full bg-black  text-white text-lg font-bold  hover:scale-105 transition-all"
+              className="hidden md:flex items-center gap-2 px-3 py-3 rounded-full bg-black dark:bg-white text-white dark:text-black text-lg font-bold hover:scale-105 transition-all"
+              title="AI Explain"
             >
               <FiZap />
             </button>
@@ -158,35 +157,35 @@ const SectionQuestionNavigator = ({ section, onClose }) => {
         </div>
 
         {/* 2. Scrollable Body */}
-        <div className={`flex-1 overflow-y-auto p-4 md:p-8 ${styles.body}`}>
-          <div className="max-w-3xl mx-auto space-y-6">
+        <div className={`flex-1 overflow-y-auto p-3 md:p-8 ${styles.body}`}>
+          <div className="max-w-3xl mx-auto space-y-4 md:space-y-6">
             
             {/* Question Card */}
-            <div className={`p-6 rounded-2xl border ${styles.card}`}>
-               <div className="flex justify-between items-start mb-4">
-                 <span className="px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-bold uppercase tracking-wider">
+            <div className={`p-4 md:p-6 rounded-2xl border ${styles.card}`}>
+               <div className="flex justify-between items-start mb-3 md:mb-4">
+                 <span className="px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[10px] md:text-xs font-bold uppercase tracking-wider">
                    Question {currentQuestionIndex + 1}
                  </span>
                  
                  {/* Mobile AI Button */}
-                 <button onClick={handleExplanation} className="md:hidden text-indigo-500">
+                 <button onClick={handleExplanation} className="md:hidden text-indigo-500 p-1">
                     <FiZap className="w-5 h-5" />
                  </button>
                </div>
 
-               <div className={`text-lg md:text-xl font-medium leading-relaxed mb-6 ${styles.textPrimary}`}>
+               <div className={`text-base md:text-xl font-medium leading-relaxed mb-4 md:mb-6 ${styles.textPrimary}`}>
                  {currentQuestion.question}
                </div>
 
                {currentQuestion.image && (
-                 <div className="mb-6 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-black/5">
-                   <img src={currentQuestion.image} alt="Question Reference" className="w-full h-auto max-h-80 object-contain mx-auto" />
+                 <div className="mb-4 md:mb-6 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-black/5">
+                   <img src={currentQuestion.image} alt="Question Reference" className="w-full h-auto max-h-48 md:max-h-80 object-contain mx-auto" />
                  </div>
                )}
             </div>
 
             {/* Options */}
-            <div className="grid grid-cols-1 gap-3">
+            <div className="grid grid-cols-1 gap-2 md:gap-3">
               {currentQuestion.options.map((opt, idx) => {
                 const isCorrect = idx === currentQuestion.correctAnswer;
                 const isSelected = idx === currentQuestion.userAnswer;
@@ -194,21 +193,21 @@ const SectionQuestionNavigator = ({ section, onClose }) => {
 
                 return (
                   <div key={idx} className={styles.option(status)}>
-                    <div className="flex gap-4">
+                    <div className="flex gap-3 md:gap-4">
                       <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold 
                         ${isCorrect ? 'bg-emerald-500 text-white' : (status === 'wrong') ? 'bg-rose-500 text-white' : (isDark ? 'bg-gray-700 text-gray-300' : 'bg-slate-100 text-slate-500')}
                       `}>
                         {String.fromCharCode(65 + idx)}
                       </div>
-                      <div className="flex-1">
-                        <div className={`text-base font-medium ${isCorrect ? (isDark ? 'text-emerald-400' : 'text-emerald-700') : (status === 'wrong') ? (isDark ? 'text-rose-400' : 'text-rose-700') : styles.textPrimary}`}>
+                      <div className="flex-1 min-w-0">
+                        <div className={`text-sm md:text-base font-medium break-words ${isCorrect ? (isDark ? 'text-emerald-400' : 'text-emerald-700') : (status === 'wrong') ? (isDark ? 'text-rose-400' : 'text-rose-700') : styles.textPrimary}`}>
                           {opt}
                         </div>
                         {currentQuestion.optionImages?.[idx] && (
-                          <img src={currentQuestion.optionImages[idx]} alt="Option" className="mt-3 h-24 rounded border object-contain" />
+                          <img src={currentQuestion.optionImages[idx]} alt="Option" className="mt-2 h-20 md:h-24 rounded border object-contain" />
                         )}
                         {(isCorrect || status === 'wrong') && (
-                          <div className={`flex items-center gap-1.5 mt-2 text-xs font-bold uppercase ${isCorrect ? 'text-emerald-500' : 'text-rose-500'}`}>
+                          <div className={`flex items-center gap-1.5 mt-2 text-[10px] md:text-xs font-bold uppercase ${isCorrect ? 'text-emerald-500' : 'text-rose-500'}`}>
                             {isCorrect ? <FiCheck /> : <FiAlertCircle />}
                             {isCorrect ? "Correct Answer" : "Your Answer"}
                           </div>
@@ -222,7 +221,7 @@ const SectionQuestionNavigator = ({ section, onClose }) => {
 
             {/* Standard Explanation */}
             {currentQuestion.explanation && (
-              <div className={`p-6 rounded-xl border-l-4 ${isDark ? 'bg-blue-900/10 border-blue-500' : 'bg-blue-50 border-blue-500'}`}>
+              <div className={`p-4 md:p-6 rounded-xl border-l-4 ${isDark ? 'bg-blue-900/10 border-blue-500' : 'bg-blue-50 border-blue-500'}`}>
                 <h4 className={`flex items-center gap-2 font-bold text-sm mb-2 ${isDark ? 'text-blue-400' : 'text-blue-700'}`}>
                   <FiBookOpen /> Explanation
                 </h4>
@@ -235,11 +234,11 @@ const SectionQuestionNavigator = ({ section, onClose }) => {
         </div>
 
         {/* 3. Footer */}
-        <div className={`p-4 border-t flex justify-between items-center ${styles.header}`}>
+        <div className={`p-3 md:p-4 border-t flex justify-between items-center ${styles.header}`}>
           <button 
             onClick={prevQ} 
             disabled={currentQuestionIndex === 0}
-            className={`px-5 py-2.5 rounded-xl font-medium flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${isDark ? 'bg-gray-800 hover:bg-gray-700 text-white' : 'bg-white border border-slate-200 hover:bg-slate-50 text-slate-700'}`}
+            className={`px-4 py-2 md:px-5 md:py-2.5 rounded-xl font-medium text-sm md:text-base flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${isDark ? 'bg-gray-800 hover:bg-gray-700 text-white' : 'bg-white border border-slate-200 hover:bg-slate-50 text-slate-700'}`}
           >
             <FiChevronLeft /> Prev
           </button>
@@ -247,7 +246,7 @@ const SectionQuestionNavigator = ({ section, onClose }) => {
           <button 
             onClick={nextQ} 
             disabled={currentQuestionIndex === section.questions.length - 1}
-            className="px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all disabled:opacity-50 bg-blue-700 text-white shadow-lg shadow-indigo-500/20"
+            className="px-5 py-2 md:px-6 md:py-2.5 rounded-xl font-bold text-sm md:text-base flex items-center gap-2 transition-all disabled:opacity-50 bg-blue-700 text-white shadow-lg shadow-indigo-500/20"
           >
             Next <FiChevronRight />
           </button>
@@ -255,7 +254,7 @@ const SectionQuestionNavigator = ({ section, onClose }) => {
 
       </div>
 
-      {/* AI Modal Overlay (Nested Portal not needed, handled by absolute) */}
+      {/* AI Modal Overlay */}
       {showExplanation && (
         <div className="absolute inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowExplanation(false)}>
           <div className={`relative w-full max-w-2xl max-h-[80vh] flex flex-col rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 ${styles.modal}`} onClick={e => e.stopPropagation()}>
@@ -273,14 +272,14 @@ const SectionQuestionNavigator = ({ section, onClose }) => {
                   <p>Thinking...</p>
                 </div>
               ) : (
-                <div className="whitespace-pre-wrap leading-relaxed">{explanations[`${section.name}-${currentQuestionIndex}`]}</div>
+                <div className="whitespace-pre-wrap leading-relaxed text-sm md:text-base">{explanations[`${section.name}-${currentQuestionIndex}`]}</div>
               )}
             </div>
           </div>
         </div>
       )}
     </div>,
-    document.body // PORTAL TARGET
+    document.body
   );
 };
 

@@ -1,8 +1,9 @@
-import React, { useCallback, useState, useRef, useEffect } from "react";
+import React, { useCallback, useState, useRef, useEffect, useMemo } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useSubscription } from "../../contexts/SubscriptionContext";
+import { getUserAvatar } from "../../utils/userUtils";
 import {
   Sun,
   Moon,
@@ -38,6 +39,11 @@ const Header = ({
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [avatarError, setAvatarError] = useState(false);
   const userMenuCloseTimerRef = useRef(null);
+  const userAvatar = useMemo(() => getUserAvatar(currentUser), [currentUser]);
+
+  useEffect(() => {
+    setAvatarError(false);
+  }, [userAvatar]);
 
   const handleLogout = useCallback(async () => {
     try {
@@ -200,11 +206,12 @@ const Header = ({
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 >
                   <div className={`w-7 h-7 rounded-full overflow-hidden flex items-center justify-center ${theme === "dark" ? "bg-gray-700 text-gray-300" : "bg-blue-100 text-blue-600"}`}>
-                    {currentUser?.photoURL && !avatarError ? (
+                    {userAvatar && !avatarError ? (
                       <img
-                        src={currentUser.photoURL}
+                        src={userAvatar}
                         alt="User"
                         className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
                         onError={() => setAvatarError(true)}
                       />
                     ) : (
@@ -319,7 +326,7 @@ const Header = ({
                      theme === "dark" ? "bg-gray-800/50 border-gray-700" : "bg-slate-50 border-slate-100"
                    }`}>
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center overflow-hidden ${theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-blue-100 text-blue-600'}`}>
-                         {currentUser.photoURL ? <img src={currentUser.photoURL} className="w-full h-full object-cover"/> : <User className="w-5 h-5"/>}
+                         {userAvatar ? <img src={userAvatar} className="w-full h-full object-cover" referrerPolicy="no-referrer" /> : <User className="w-5 h-5"/>}
                       </div>
                       <div>
                         <p className={`text-sm font-bold ${theme === "dark" ? "text-white" : "text-slate-900"}`}>

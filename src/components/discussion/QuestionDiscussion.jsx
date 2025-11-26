@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   collection, 
   addDoc, 
@@ -20,6 +20,7 @@ import {
   FiMoreHorizontal,
   FiCornerDownRight 
 } from 'react-icons/fi';
+import { getUserAvatar } from '../../utils/userUtils';
 
 // --- SECURITY UTILITIES ---
 
@@ -54,6 +55,7 @@ const formatTimestamp = (timestamp) => {
 const QuestionDiscussion = ({ questionId }) => {
   const { currentUser } = useAuth();
   const { isDark } = useTheme();
+  const userAvatar = useMemo(() => getUserAvatar(currentUser), [currentUser]);
   
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
@@ -112,7 +114,7 @@ const QuestionDiscussion = ({ questionId }) => {
         text: validation.data,
         userId: currentUser.uid,
         userName: currentUser.displayName || 'Anonymous Student',
-        userAvatar: currentUser.photoURL || null,
+        userAvatar: userAvatar,
         createdAt: serverTimestamp(),
         isEdited: false,
         upvotes: 0

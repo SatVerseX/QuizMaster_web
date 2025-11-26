@@ -1,3 +1,4 @@
+// src/components/quiz/QuestionNavigator.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { useTheme } from "../../contexts/ThemeContext";
 import {
@@ -6,210 +7,76 @@ import {
   FiCheck,
   FiX,
   FiBookOpen,
-  FiLoader,
 } from "react-icons/fi";
-import { Sparkle, X } from "lucide-react";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { Sparkle } from "lucide-react";
 import QuestionDiscussion from "../discussion/QuestionDiscussion";
-
-// Initialize Gemini API
-const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
+// IMPORT THE NEW MODAL COMPONENT
+import AIExplanationModal from "../modals/AIExplanationModal"; 
 
 const QuestionNavigator = ({ questionAnalysis, attempt }) => {
   const { isDark } = useTheme();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [showExplanation, setShowExplanation] = useState(false);
-  const [explanations, setExplanations] = useState("");
-  const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
-  const sparkleRef = useRef(null);
-
-  // Lock body scroll when popup is open
-  useEffect(() => {
-    document.body.style.overflow = showExplanation ? "hidden" : "unset";
-    return () => (document.body.style.overflow = "unset");
-  }, [showExplanation]);
+  
+  // State for the new AI Modal
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+  const [questionForAI, setQuestionForAI] = useState(null);
 
   // Keyboard navigation
   useEffect(() => {
     const handleKeyPress = (e) => {
-      if (showExplanation) return;
+      // Disable keyboard nav if modal is open
+      if (isAIModalOpen) return;
+      
       if (e.key === "ArrowLeft") handlePrevious();
       if (e.key === "ArrowRight") handleNext();
-      if (e.key === "Escape") setShowExplanation(false);
     };
 
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [currentQuestionIndex, showExplanation]);
-
-  // Close explanation popup when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (sparkleRef.current && !sparkleRef.current.contains(event.target)) {
-        setShowExplanation(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [currentQuestionIndex, isAIModalOpen]);
 
   const handleNext = () => {
     if (currentQuestionIndex < questionAnalysis.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
-      setShowExplanation(false);
     }
   };
 
   const handlePrevious = () => {
     if (currentQuestionIndex > 0) {
       setCurrentQuestionIndex(currentQuestionIndex - 1);
-      setShowExplanation(false);
     }
   };
 
   const jumpToQuestion = (index) => {
     setCurrentQuestionIndex(index);
-    setShowExplanation(false);
   };
 
-  // Generate detailed explanation for current question
-  const generateQuestionAnalysis = () => {
+  // Prepare data for the AI Modal
+  const openAIExplanation = () => {
     const currentQ = questionAnalysis[currentQuestionIndex];
-    return {
-      questionNumber: currentQuestionIndex + 1,
+    
+    // SAFE MAPPING: Convert indices to text strings for the AI
+    // Defensive check: ensure options exist and indices are valid
+    const safeOptions = currentQ.options || [];
+    const correctText = safeOptions[currentQ.correctAnswer] || "Correct Answer";
+    
+    let userText = "Skipped";
+    if (currentQ.userAnswer !== undefined && currentQ.userAnswer !== null && currentQ.userAnswer !== -1) {
+        userText = safeOptions[currentQ.userAnswer] || "Unknown Answer";
+    }
+
+    setQuestionForAI({
       question: currentQ.question,
-      isCorrect: currentQ.isCorrect,
-      userAnswer: currentQ.userAnswer,
-      correctAnswer: currentQ.correctAnswer,
-      explanation: currentQ.explanation,
-      topic: currentQ.topic || "General Knowledge",
-      options: currentQ.options,
-    };
+      options: safeOptions,
+      correctAnswer: correctText,
+      userAnswer: userText
+    });
+
+    setIsAIModalOpen(true);
   };
 
-  // Call Gemini 2.5 Flash API for detailed explanation with optimizations
-  const getGeminiExplanation = async (questionData) => {
-    try {
-      // Check for cached explanation first
-      const cacheKey = `ai-explanation-${questionData.question.substring(
-        0,
-        50
-      )}-${questionData.correctAnswer}`;
-      const cached = localStorage.getItem(cacheKey);
-      if (cached) {
-        const cachedData = JSON.parse(cached);
-        // Cache valid for 24 hours
-        if (Date.now() - cachedData.timestamp < 24 * 60 * 60 * 1000) {
-          return cachedData.explanation;
-        }
-      }
-
-      const model = genAI.getGenerativeModel({
-        model: "gemini-2.5-pro",
-        generationConfig: {
-          temperature: 0.3, // Lower temperature for more consistent, faster responses
-          maxOutputTokens: 300, // Limit response length for faster generation
-          topP: 0.8,
-          topK: 20,
-        },
-      });
-
-      // Optimized, concise prompt
-      const prompt = `Explain this question concisely:
-
-Q: ${questionData.question}
-Correct: ${String.fromCharCode(65 + questionData.correctAnswer)}
-Student: ${
-        questionData.userAnswer !== undefined
-          ? String.fromCharCode(65 + questionData.userAnswer)
-          : "Not answered"
-      }
-
-Options:
-${questionData.options
-  .map((opt, i) => `${String.fromCharCode(65 + i)}) ${opt}`)
-  .join("\n")}
-
-Provide:
-1. Why correct answer is right
-2. Why others are wrong  
-3. Key concept to remember
-
-Keep under 150 words.`;
-
-      // Add timeout to prevent hanging
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Request timeout")), 15000)
-      );
-
-      const result = await Promise.race([
-        model.generateContent(prompt),
-        timeoutPromise,
-      ]);
-
-      const response = await result.response;
-      const explanation = response.text();
-
-      // Cache the explanation
-      try {
-        localStorage.setItem(
-          cacheKey,
-          JSON.stringify({
-            explanation,
-            timestamp: Date.now(),
-          })
-        );
-      } catch (e) {
-        console.warn("Failed to cache explanation:", e);
-      }
-
-      return explanation;
-    } catch (error) {
-      console.error("Gemini API Error:", error);
-      throw new Error("Failed to get AI explanation. Please try again.");
-    }
-  };
-
-  // Handle Explanation
-  const handleExplanation = async () => {
-    if (showExplanation) {
-      setShowExplanation(false);
-      return;
-    }
-
-    setShowExplanation(true);
-    setIsLoadingExplanation(true);
-
-    try {
-      const questionData = generateQuestionAnalysis();
-      const geminiExplanation = await getGeminiExplanation(questionData);
-      setExplanations(geminiExplanation);
-    } catch (error) {
-      console.error("Error fetching explanation:", error);
-      setExplanations(`Unable to fetch AI explanation right now.
-
-Quick Review:
-• The correct answer is Option ${String.fromCharCode(
-        65 + questionAnalysis[currentQuestionIndex].correctAnswer
-      )}
-• Review the standard explanation below
-• Try to understand the key concepts involved
-• Practice similar questions on this topic
-
-What to do next:
-• Take notes on this question
-• Research the topic further
-• Practice similar problems
-
-Please try again in a moment!`);
-    } finally {
-      setIsLoadingExplanation(false);
-    }
-  };
-
-  // Question Details Not Available
-  if (!questionAnalysis.length) {
+  // Question Details Not Available Fallback
+  if (!questionAnalysis || !questionAnalysis.length) {
     return (
       <div
         className={`border rounded-xl p-8 text-center ${
@@ -238,17 +105,12 @@ Please try again in a moment!`);
   }
 
   const currentQuestion = questionAnalysis[currentQuestionIndex];
-
-  const discussionThreadId = `${attempt.testId}_q${currentQuestionIndex}`;
+  const discussionThreadId = attempt ? `${attempt.testId}_q${currentQuestionIndex}` : `q_${currentQuestionIndex}`;
 
   return (
     <>
       {/* Main Content */}
-      <div
-        className={`transition-all duration-200 ${
-          showExplanation ? "opacity-100" : "opacity-100"
-        }`}
-      >
+      <div className="transition-all duration-200 opacity-100">
         <div
           className={`border rounded-xl shadow-sm overflow-hidden ${
             isDark ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200"
@@ -376,22 +238,20 @@ Please try again in a moment!`);
                   </span>
                 </div>
 
-                {/* AI Explanation Button */}
-                <div className="relative" ref={sparkleRef}>
+                {/* AI Explanation Trigger Button */}
+                <div className="relative">
                   <button
-                    onClick={handleExplanation}
-                    disabled={isLoadingExplanation}
+                    onClick={openAIExplanation}
                     className={`p-3 rounded-lg border transition-all duration-200 hover:scale-105 ${
                       isDark
                         ? "border-gray-600 hover:bg-gray-700 text-gray-300 hover:text-gray-100"
                         : "border-gray-300 hover:bg-gray-100 text-gray-600 hover:text-gray-800"
                     }`}
-                    title="AI Explanation"
+                    title="Get AI Explanation"
                   >
                     <Sparkle
                       size={20}
-                      color={isDark ? "#D1D5DB" : "#374151"}
-                      className={isLoadingExplanation ? "animate-pulse" : ""}
+                      className={isDark ? "text-rose-400" : "text-rose-600"}
                     />
                   </button>
                 </div>
@@ -532,7 +392,7 @@ Please try again in a moment!`);
               </div>
             )}
 
-            {attempt.testId && (
+            {attempt && attempt.testId && (
               <div className="mb-8">
                 <QuestionDiscussion
                   questionId={discussionThreadId}
@@ -586,129 +446,12 @@ Please try again in a moment!`);
         </div>
       </div>
 
-      {/* AI Explanation Modal */}
-      {showExplanation && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/60"
-            onClick={() => setShowExplanation(false)}
-          />
-          <div
-            className={`relative w-full max-w-3xl max-h-[75vh] rounded-2xl border shadow-2xl ${
-              isDark
-                ? "bg-gray-900 text-gray-100 border-gray-700"
-                : "bg-white text-gray-800 border-gray-200"
-            } overflow-hidden`}
-          >
-            {/* Header */}
-            <div
-              className={`flex items-center justify-between p-5 border-b ${
-                isDark
-                  ? "border-gray-700 bg-gray-800/50"
-                  : "border-gray-200 bg-gray-50/50"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className={`p-3 rounded-xl ${
-                    isDark
-                      ? "bg-gradient-to-br from-blue-600 to-purple-600"
-                      : "bg-gradient-to-br from-blue-600 to-indigo-600"
-                  }`}
-                >
-                  <Sparkle size={20} color="#FFFFFF" />
-                </div>
-                <div>
-                  <h6
-                    className={`font-bold text-lg ${
-                      isDark ? "text-gray-100" : "text-gray-800"
-                    }`}
-                  >
-                    AI Explanation
-                  </h6>
-                  <p
-                    className={`text-sm ${
-                      isDark ? "text-gray-400" : "text-gray-600"
-                    }`}
-                  >
-                    Question {currentQuestionIndex + 1} Analysis
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowExplanation(false)}
-                className={`p-2 rounded-lg border transition-colors ${
-                  isDark
-                    ? "border-gray-600 hover:bg-gray-700 text-gray-300 hover:text-gray-100"
-                    : "border-gray-300 hover:bg-gray-100 text-gray-600 hover:text-gray-800"
-                }`}
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="p-6 overflow-y-auto max-h-[calc(75vh-140px)]">
-              {isLoadingExplanation ? (
-                <div className="flex flex-col items-center justify-center py-20">
-                  <FiLoader
-                    className={`w-10 h-10 animate-spin ${
-                      isDark ? "text-blue-400" : "text-blue-600"
-                    }`}
-                  />
-                  <p
-                    className={`mt-4 text-base font-medium ${
-                      isDark ? "text-gray-300" : "text-gray-700"
-                    }`}
-                  >
-                    Generating detailed explanation...
-                  </p>
-                  <p
-                    className={`mt-2 text-sm ${
-                      isDark ? "text-gray-500" : "text-gray-500"
-                    }`}
-                  >
-                    Please wait while AI analyzes the question
-                  </p>
-                </div>
-              ) : (
-                <div
-                  className={`text-base leading-relaxed whitespace-pre-wrap ${
-                    isDark ? "text-gray-200" : "text-gray-800"
-                  }`}
-                >
-                  {explanations}
-                </div>
-              )}
-            </div>
-
-            {/* Footer */}
-            <div
-              className={`p-4 border-t ${
-                isDark
-                  ? "border-gray-700 bg-gray-800/30"
-                  : "border-gray-200 bg-gray-50/50"
-              }`}
-            >
-              <div
-                className={`flex items-center gap-3 text-sm ${
-                  isDark ? "text-gray-400" : "text-gray-600"
-                }`}
-              >
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    isDark
-                      ? "bg-gradient-to-br from-blue-600 to-purple-600 text-white"
-                      : "bg-gradient-to-br from-blue-600 to-indigo-600 text-white"
-                  }`}
-                >
-                  <span className="font-bold text-xs">AI</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* RENDER THE SEPARATE MODAL COMPONENT */}
+      <AIExplanationModal 
+        isOpen={isAIModalOpen} 
+        onClose={() => setIsAIModalOpen(false)} 
+        questionData={questionForAI} 
+      />
     </>
   );
 };
