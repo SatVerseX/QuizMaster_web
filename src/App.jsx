@@ -73,6 +73,15 @@ const normalizeTestForAttempt = (raw) => {
   return raw;
 };
 
+const LoadingScreen = () => (
+  <div className="min-h-[60vh] flex items-center justify-center">
+    <div className="flex flex-col items-center gap-4">
+      <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+      <p className="text-gray-500 dark:text-gray-400 font-medium">Loading content...</p>
+    </div>
+  </div>
+);
+
 const AppContent = () => {
   const { currentUser, isAdmin } = useAuth();
   const navigate = useNavigate();
@@ -194,7 +203,6 @@ const AppContent = () => {
             .finally(() => setIsLoadingSeries(false));
         }
       } else if (path.includes("/leaderboard")) {
-        // ... (Leaderboard logic remains same)
         setCurrentView("test-leaderboard");
         const testId = path.split("/")[2];
          if (testId && (!selectedItem || selectedItem.id !== testId)) {
@@ -273,27 +281,22 @@ const AppContent = () => {
         setCurrentView("take-quiz");
         const quizId = path.split("/")[2];
         
-        // --- FIXED LOGIC START ---
         if (quizId && (!selectedItem || selectedItem.id !== quizId)) {
           setIsLoadingSeries(true);
-
           getDoc(doc(db, "quizzes", quizId))
             .then((snap) => {
               if (snap.exists()) {
-                // If found in 'quizzes', return it immediately to the next .then block
                 return { id: snap.id, ...snap.data(), type: 'regular' }; 
               } else {
-                // If not, try 'section-quizzes'
                 return getDoc(doc(db, "section-quizzes", quizId)).then(sectionSnap => {
                     if (sectionSnap.exists()) {
                         return { id: sectionSnap.id, ...sectionSnap.data(), type: 'section-wise' };
                     }
-                    return null; // Not found in either
+                    return null; 
                 });
               }
             })
             .then((quizData) => {
-              // Now check the result of the chain
               if (quizData) {
                 setSelectedItem(quizData);
               } else {
@@ -307,10 +310,8 @@ const AppContent = () => {
             })
             .finally(() => setIsLoadingSeries(false));
         }
-        // --- FIXED LOGIC END ---
         
       } else if (path.includes("/leaderboard")) {
-         // ... Leaderboard logic
          setCurrentView("leaderboard");
          const quizId = path.split("/")[2];
          if (quizId && (!selectedItem || selectedItem.id !== quizId)) {
@@ -340,6 +341,8 @@ const AppContent = () => {
     if (!path.startsWith("/series/")) return;
     const seriesId = path.split("/")[2];
     if (!seriesId) return;
+    
+    // If already selected, don't reload, but if ID mismatch or null, load
     if (!selectedItem || selectedItem.id !== seriesId) {
       setIsLoadingSeries(true);
       getDoc(doc(db, "test-series", seriesId))
@@ -351,14 +354,18 @@ const AppContent = () => {
               if (raw) {
                 const offer = JSON.parse(raw);
                 if (offer && typeof offer === "object") {
-                    // ... offer merge logic
                     base.price = offer.discountedPrice ?? base.price;
-                    // ...
                 }
               }
             } catch (_) {}
             setSelectedItem(base);
+          } else {
+            // Series not found handling
+             navigate("/test-series");
           }
+        })
+        .catch(err => {
+            console.error("Error loading series:", err);
         })
         .finally(() => setIsLoadingSeries(false));
     }
@@ -405,8 +412,7 @@ const AppContent = () => {
 
   const handleSubscribeSeries = (series) => {
     if (!requireLoginForTestSeries("subscribe-series")) return;
-    // ... (Subscribe logic same as before)
-    setSelectedItem(series); // simplified for brevity in fix
+    setSelectedItem(series); 
     setCurrentView("subscribe-series");
     navigate(`/series/${series.id}/subscribe`);
   };
@@ -594,24 +600,64 @@ const AppContent = () => {
   }
 
   const renderContent = () => {
+    // Show loading if we are fetching crucial series data
+    if (isLoadingSeries) {
+      return <LoadingScreen />;
+    }
+
     switch (currentView) {
       case "welcome": return <WelcomePage onGetStarted={handleGetStarted} onCreateSeries={handleCreateSeries} onViewExistingSeries={handleViewTestSeries} />;
       case "homepage": return <EnhancedHomepage onCreateSeries={handleCreateSeries} onViewSeries={handleViewSeries} onSubscribeSeries={handleSubscribeSeries} onViewTests={handleViewTests} />;
       case "subscriptions": return <UserSubscriptions onViewTests={handleViewTests} onSubscribeSeries={handleSubscribeSeries} />;
-      case "create-series": return isAdmin ? <TestSeriesCreator onBack={handleBackToSeries} onSeriesCreated={handleSeriesCreated} /> : <div className="text-center p-10">Admin Access Required</div>;
-      case "subscribe-series": return <TestSeriesSubscription testSeries={selectedItem} onSuccess={handleSubscriptionSuccess} onCancel={handleBackToSeries} />;
-      case "series-dashboard": return <TestSeriesDashboard testSeries={selectedItem} onBack={handleBackToSeries} onCreateManualTest={isAdmin ? handleCreateManualTest : undefined} onCreateAITest={isAdmin ? handleCreateAITest : undefined} onTakeTest={handleTakeTest} onViewLeaderboard={handleViewLeaderboard} />;
-      case "create-manual-test": return <SectionWiseQuizCreator onBack={handleBackToDashboard} onQuizCreated={handleTestCreated} testSeriesId={selectedItem?.id} />;
-      case "create-ai-test": return <TestSeriesAIGenerator testSeries={selectedItem} onBack={handleBackToDashboard} onQuizCreated={handleTestCreated} />;
-      case "view-tests": return <TestSeriesTestsList testSeries={selectedItem} onBack={handleBackToSeries} onTakeTest={handleTakeTest} onViewLeaderboard={handleViewLeaderboard} />;
-      case "take-test": return <TestAttemptViewer test={selectedItem?.test} testSeries={selectedItem?.testSeries} onBack={() => selectedItem?.testSeries ? (setSelectedItem(selectedItem.testSeries), setCurrentView("view-tests")) : handleBackToDashboard()} onComplete={handleTestCompleted} />;
+      
+      case "create-series": 
+        return isAdmin ? <TestSeriesCreator onBack={handleBackToSeries} onSeriesCreated={handleSeriesCreated} /> : <div className="text-center p-10">Admin Access Required</div>;
+      
+      case "subscribe-series": 
+        if (!selectedItem) return <LoadingScreen />; 
+        return <TestSeriesSubscription testSeries={selectedItem} onSuccess={handleSubscriptionSuccess} onCancel={handleBackToSeries} />;
+      
+      case "series-dashboard": 
+        if (!selectedItem) return <LoadingScreen />; 
+        return <TestSeriesDashboard testSeries={selectedItem} onBack={handleBackToSeries} onCreateManualTest={isAdmin ? handleCreateManualTest : undefined} onCreateAITest={isAdmin ? handleCreateAITest : undefined} onTakeTest={handleTakeTest} onViewLeaderboard={handleViewLeaderboard} />;
+      
+      case "create-manual-test": 
+        if (!selectedItem) return <LoadingScreen />;
+        return <SectionWiseQuizCreator onBack={handleBackToDashboard} onQuizCreated={handleTestCreated} testSeriesId={selectedItem?.id} />;
+      
+      case "create-ai-test": 
+        if (!selectedItem) return <LoadingScreen />;
+        return <TestSeriesAIGenerator testSeries={selectedItem} onBack={handleBackToDashboard} onQuizCreated={handleTestCreated} />;
+      
+      case "view-tests": 
+        if (!selectedItem) return <LoadingScreen />;
+        return <TestSeriesTestsList testSeries={selectedItem} onBack={handleBackToSeries} onTakeTest={handleTakeTest} onViewLeaderboard={handleViewLeaderboard} />;
+      
+      case "take-test": 
+        // Ensure we have test data before rendering viewer
+        if (!selectedItem?.test) return <LoadingScreen />;
+        return <TestAttemptViewer test={selectedItem?.test} testSeries={selectedItem?.testSeries} onBack={() => selectedItem?.testSeries ? (setSelectedItem(selectedItem.testSeries), setCurrentView("view-tests")) : handleBackToDashboard()} onComplete={handleTestCompleted} />;
+      
       case "test-history": return <TestAttemptHistory onBack={handleBackToSeries} onViewAttempt={handleViewAttemptDetails} />;
-      case "attempt-details": return <TestAttemptDetails attempt={selectedItem} onBack={handleBackToHistory} testSeriesId={selectedItem?.testSeriesId} />;
-      case "test-leaderboard": return <LeaderBoard quizId={selectedItem?.id} quizTitle={selectedItem?.title} testSeriesId={selectedItem?.testSeriesId} onBack={() => selectedItem?.testSeriesId ? (setSelectedItem({id: selectedItem.testSeriesId}), setCurrentView("view-tests")) : handleBackToSeries()} isIndividualTest={true} />;
-      case "take-quiz": return <QuizTaker quiz={selectedItem} onBack={handleBackToSeries} onViewLeaderboard={(quiz) => { setSelectedItem(quiz); setCurrentView("leaderboard"); }} />;
+      
+      case "attempt-details": 
+        if (!selectedItem) return <LoadingScreen />;
+        return <TestAttemptDetails attempt={selectedItem} onBack={handleBackToHistory} testSeriesId={selectedItem?.testSeriesId} />;
+      
+      case "test-leaderboard": 
+         if (!selectedItem) return <LoadingScreen />;
+         return <LeaderBoard quizId={selectedItem?.id} quizTitle={selectedItem?.title} testSeriesId={selectedItem?.testSeriesId} onBack={() => selectedItem?.testSeriesId ? (setSelectedItem({id: selectedItem.testSeriesId}), setCurrentView("view-tests")) : handleBackToSeries()} isIndividualTest={true} />;
+      
+      case "take-quiz": 
+         if (!selectedItem) return <LoadingScreen />;
+         return <QuizTaker quiz={selectedItem} onBack={handleBackToSeries} onViewLeaderboard={(quiz) => { setSelectedItem(quiz); setCurrentView("leaderboard"); }} />;
+      
       case "ai-generator": return <AIQuizGenerator onClose={handleBackToSeries} onQuestionsGenerated={handleSeriesCreated} />;
       case "attempts": return <UserAttempts onBack={handleBackToSeries} />;
-      case "leaderboard": return <LeaderBoard quizId={selectedItem?.id} quizTitle={selectedItem?.title} onBack={handleBackToSeries} isIndividualTest={false} />;
+      case "leaderboard": 
+         if (!selectedItem) return <LoadingScreen />;
+         return <LeaderBoard quizId={selectedItem?.id} quizTitle={selectedItem?.title} onBack={handleBackToSeries} isIndividualTest={false} />;
+      
       case "test-series":
       default: return <TestSeriesList onCreateSeries={isAdmin ? handleCreateSeries : undefined} onViewSeries={handleViewSeries} onSubscribeSeries={handleSubscribeSeries} onTakeTest={handleTakeTest} onViewTests={handleViewTests} />;
     }

@@ -85,6 +85,13 @@ const TestSeriesDashboard = ({
   }, [testSeries]);
 
   const loadDashboardData = () => {
+    // Guard clause: prevent queries if ID is missing
+    if (!testSeries?.id) {
+      console.warn("TestSeriesDashboard: testSeries ID is missing, skipping data load.");
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     
@@ -465,7 +472,7 @@ const TestSeriesDashboard = ({
           <FiAlertCircle className={mode("w-12 h-12 text-red-500 mx-auto mb-4", "w-12 h-12 text-red-400 mx-auto mb-4")} />
           <h3 className={mode("text-xl font-bold text-red-800 mb-2", "text-xl font-bold text-white mb-2")}>Error Loading Dashboard</h3>
           <p className={mode("text-red-600 mb-4", "text-red-400 mb-4")}>{error}</p>
-          <button onClick={handleRefresh} className="btn-primary">
+          <button onClick={handleRefresh} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
             Try Again
           </button>
         </div>

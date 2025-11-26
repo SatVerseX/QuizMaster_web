@@ -25,9 +25,10 @@ import {
   FiActivity,
   FiAward,
   FiBarChart2,
-  FiArrowRight
+  FiArrowRight,
+  FiSend
 } from 'react-icons/fi';
-import { FaTrophy } from 'react-icons/fa';
+import { FaTrophy, FaRobot } from 'react-icons/fa';
 import SectionNavigation from '../quiz/SectionNavigation';
 import Confetti from 'react-confetti';
 import TestResults from './TestResults';
@@ -37,14 +38,17 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
   const { isDark } = useTheme();
   const { popupState, showError, showSuccess, hidePopup } = usePopup();
 
+  // --- Safe Initialization ---
+  const initialTime = (test?.timeLimit || 30) * 60;
+  
   // --- State ---
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState({});
-  const [timeLeft, setTimeLeft] = useState((test.timeLimit || 30) * 60);
+  const [timeLeft, setTimeLeft] = useState(initialTime);
   const [isTestStarted, setIsTestStarted] = useState(false);
   const [isTestCompleted, setIsTestCompleted] = useState(false);
   const [flaggedQuestions, setFlaggedQuestions] = useState(new Set());
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [startTime, setStartTime] = useState(null);
   const [showMobileNav, setShowMobileNav] = useState(false);
@@ -53,20 +57,33 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
   const [showConfetti, setShowConfetti] = useState(false);
   const [completedAttempt, setCompletedAttempt] = useState(null);
 
-  const storageKey = `${currentUser?.uid || 'anon'}:test-progress:${test.id}`;
+  // Safe key generation
+  const storageKey = `${currentUser?.uid || 'anon'}:test-progress:${test?.id || 'unknown'}`;
   const location = useLocation();
   const challengeMode = location.state?.challengeMode;
   const targetScore = location.state?.targetScore;
   const challengerName = location.state?.challengerName;
 
+  // --- Return Loading if Test is Missing ---
+  if (!test) {
+    return (
+      <div className={`min-h-screen flex flex-col items-center justify-center space-y-4 ${isDark ? 'bg-zinc-950' : 'bg-zinc-50'}`}>
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-emerald-200 dark:border-emerald-900/30 border-t-emerald-600 rounded-full animate-spin"></div>
+        </div>
+        <p className={`text-sm font-medium animate-pulse ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+          Loading Assessment Data...
+        </p>
+      </div>
+    );
+  }
+
   // --- Logic Helpers ---
 
-  // Section-wise quiz detection
   const isSectionWiseQuiz = useMemo(() =>
     test.sections && Array.isArray(test.sections) && test.sections.length > 0
     , [test.sections]);
 
-  // Get current section info
   const getCurrentSectionInfo = useCallback(() => {
     if (!isSectionWiseQuiz) return null;
     let questionCount = 0;
@@ -89,7 +106,6 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
 
   const currentSectionInfo = getCurrentSectionInfo();
 
-  // Get current question
   const getCurrentQuestion = useCallback(() => {
     if (isSectionWiseQuiz && currentSectionInfo) {
       return currentSectionInfo.section.questions?.[currentSectionInfo.questionInSection - 1];
@@ -106,16 +122,20 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
   }, [isSectionWiseQuiz, test]);
 
   const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
+  
+  const progressPercentage = useMemo(() => 
+    totalQuestions > 0 ? ((currentQuestionIndex + 1) / totalQuestions) * 100 : 0,
+  [currentQuestionIndex, totalQuestions]);
 
   // --- Effects ---
 
-  // Timer
   useEffect(() => {
     if (!isTestStarted || isTestCompleted) return;
     const limitSeconds = (test.timeLimit || 30) * 60;
     const startedAtMs = startTime ? new Date(startTime).getTime() : Date.now();
     const endAtMs = startedAtMs + limitSeconds * 1000;
 
+    let timeoutId;
     const tick = () => {
       const remainingMs = Math.max(0, endAtMs - Date.now());
       const remainingSeconds = Math.round(remainingMs / 1000);
@@ -129,16 +149,14 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
         timeoutId = window.setTimeout(tick, 250);
       }
     };
-    let timeoutId = window.setTimeout(tick, 0);
+    timeoutId = window.setTimeout(tick, 0);
     return () => window.clearTimeout(timeoutId);
   }, [isTestStarted, isTestCompleted, startTime, test.timeLimit]);
 
-  // Start Time
   useEffect(() => {
     if (isTestStarted && !startTime) setStartTime(new Date());
   }, [isTestStarted, startTime]);
 
-  // Restore Progress
   useEffect(() => {
     try {
       const raw = localStorage.getItem(storageKey);
@@ -155,9 +173,8 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
     } catch (e) {
       console.warn('Failed to restore test progress', e);
     }
-  }, []);
+  }, []); 
 
-  // Persist Progress
   useEffect(() => {
     if (!isTestStarted || isTestCompleted) return;
     const payload = {
@@ -172,7 +189,6 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
     try { localStorage.setItem(storageKey, JSON.stringify(payload)); } catch { }
   }, [isTestStarted, isTestCompleted, currentQuestionIndex, answers, flaggedQuestions, timeLeft, startTime]);
 
-  // Anti-Cheat / Leave Warning
   useEffect(() => {
     if (!isTestStarted || isTestCompleted) return;
     const handleVisibility = () => {
@@ -205,7 +221,6 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
     return () => clearTimeout(t);
   }, [leaveCountdown]);
 
-  // Prevent accidental back
   useEffect(() => {
     if (!isTestStarted || isTestCompleted) return;
     const push = () => { try { window.history.pushState({ preventLeave: true }, '', window.location.href); } catch { } };
@@ -283,7 +298,7 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
       correct,
       incorrect,
       totalScore: Math.round(totalScore * 100) / 100,
-      percentage: Math.round((totalScore / (totalQuestions * 1)) * 100) // Assuming 1 mark per question for % calc base
+      percentage: Math.round((totalScore / (totalQuestions * 1)) * 100)
     };
   };
 
@@ -319,7 +334,6 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
       const docRef = await addDoc(collection(db, 'test-attempts'), attemptData);
       try { localStorage.removeItem(storageKey); } catch { }
 
-      // Update aggregate stats if possible
       try {
         const collectionName = isSectionWiseQuiz ? 'section-quizzes' : 'quizzes';
         await updateDoc(doc(db, collectionName, test.id), {
@@ -330,7 +344,6 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
       setIsTestCompleted(true);
       if (score.percentage > 80) setShowConfetti(true);
       setCompletedAttempt({ ...attemptData, id: docRef.id });
-      // onComplete({ ...attemptData, id: docRef.id });
     } catch (error) {
       console.error('Submission Error:', error);
       showError('Failed to submit test. Please try again.', 'Submission Error');
@@ -344,14 +357,13 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
     return flaggedQuestions.has(index) ? 'flagged' : 'unanswered';
   };
 
-  // --- Styles Helpers ---
   const mode = (light, dark) => (isDark ? dark : light);
 
   const getNavButtonClass = (index) => {
     const status = getQuestionStatus(index);
     const isCurrent = index === currentQuestionIndex;
 
-    let baseClass = "w-9 h-9 rounded-lg text-xs font-bold transition-all duration-200 flex items-center justify-center border ";
+    let baseClass = "w-9 h-9 rounded-lg text-xs font-bold transition-all duration-200 flex items-center justify-center border cursor-pointer ";
 
     if (isCurrent) return baseClass + "bg-emerald-600 border-emerald-600 text-white shadow-md scale-110 ring-2 ring-emerald-200 dark:ring-emerald-900 z-10";
 
@@ -359,7 +371,7 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
       case 'answered': return baseClass + (isDark ? "bg-emerald-900/30 border-emerald-800 text-emerald-400" : "bg-emerald-50 border-emerald-200 text-emerald-700");
       case 'answered-flagged': return baseClass + (isDark ? "bg-amber-900/30 border-amber-800 text-amber-400" : "bg-amber-50 border-amber-200 text-amber-700");
       case 'flagged': return baseClass + (isDark ? "bg-red-900/30 border-red-800 text-red-400" : "bg-red-50 border-red-200 text-red-700");
-      default: return baseClass + (isDark ? "bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-700" : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50");
+      default: return baseClass + (isDark ? "bg-zinc-800 border-zinc-700 text-zinc-400 hover:bg-zinc-700" : "bg-white border-zinc-200 text-zinc-500 hover:bg-zinc-50");
     }
   };
 
@@ -368,55 +380,54 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
   // 1. Start Screen
   if (!isTestStarted) {
     return (
-      <div className={`min-h-screen flex flex-col items-center justify-center p-4 ${mode('bg-slate-50', 'bg-zinc-950')}`}>
-        <div className={`w-full max-w-3xl rounded-3xl p-8 sm:p-12 shadow-2xl border relative overflow-hidden ${mode('bg-white border-slate-200', 'bg-zinc-900 border-zinc-800')}`}>
-
-          {/* Decoration */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -mr-16 -mt-16" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -ml-16 -mb-16" />
-
-          <div className="relative z-10 text-center space-y-8">
-            <div className="space-y-4">
-              <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${mode('bg-emerald-100 text-emerald-700', 'bg-emerald-500/20 text-emerald-400')}`}>
-                <FiTarget /> {totalQuestions} Questions
+      <div className={`min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 transition-colors duration-300 ${mode('bg-slate-50', 'bg-zinc-950')}`}>
+        
+        <div className={`w-full max-w-3xl rounded-[2rem] p-8 sm:p-12 shadow-2xl border relative overflow-hidden transition-all ${mode('bg-white/80 border-slate-200/60 shadow-slate-200/50', 'bg-zinc-900/80 border-zinc-800/60 shadow-black/50')} backdrop-blur-xl`}>
+          <div className="relative z-10 text-center space-y-10">
+            <div className="space-y-6">
+              <span className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-extrabold uppercase tracking-widest border shadow-sm ${mode('bg-white border-emerald-100 text-emerald-600', 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400')}`}>
+                <FiTarget className="w-4 h-4" /> {totalQuestions} Questions Included
               </span>
-              <h1 className={`text-3xl sm:text-5xl font-black tracking-tight ${mode('text-slate-900', 'text-white')}`}>
-                {test.title}
-              </h1>
-              <p className={`text-lg max-w-xl mx-auto ${mode('text-slate-600', 'text-zinc-400')}`}>
-                {test.description || "Ready to test your knowledge? This assessment is timed and will evaluate your proficiency."}
-              </p>
+              
+              <div className="space-y-4">
+                <h1 className={`text-4xl sm:text-5xl font-black tracking-tighter leading-tight ${mode('text-slate-900', 'text-white')}`}>
+                  {test.title}
+                </h1>
+                <p className={`text-lg leading-relaxed max-w-2xl mx-auto font-medium ${mode('text-slate-500', 'text-zinc-400')}`}>
+                  {test.description || "Ready to test your knowledge? This assessment is timed and will evaluate your proficiency."}
+                </p>
+              </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4 max-w-2xl mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
               {[
                 { icon: FiClock, label: "Time Limit", value: `${test.timeLimit || 30}m` },
                 { icon: FiAward, label: "Difficulty", value: test.difficulty || 'Medium' },
-                { icon: FiCheckCircle, label: "Passing", value: "60%" }
+                { icon: FiCheckCircle, label: "Passing Score", value: "60%" }
               ].map((item, i) => (
-                <div key={i} className={`p-4 rounded-2xl border ${mode('bg-slate-50 border-slate-100', 'bg-zinc-800/50 border-zinc-700')}`}>
-                  <item.icon className={`w-6 h-6 mx-auto mb-2 ${mode('text-slate-400', 'text-zinc-500')}`} />
-                  <div className={`font-bold text-lg ${mode('text-slate-900', 'text-white')}`}>{item.value}</div>
-                  <div className={`text-xs uppercase tracking-wider font-semibold ${mode('text-slate-500', 'text-zinc-500')}`}>{item.label}</div>
+                <div key={i} className={`p-5 rounded-2xl border transition-all duration-200 hover:-translate-y-1 hover:shadow-lg ${mode('bg-white/50 border-slate-100 shadow-sm hover:shadow-slate-200/40', 'bg-zinc-800/40 border-zinc-700/50 hover:shadow-black/40 hover:bg-zinc-800/60')}`}>
+                  <item.icon className={`w-6 h-6 mx-auto mb-3 ${mode('text-emerald-500', 'text-emerald-400')}`} />
+                  <div className={`font-bold text-xl tracking-tight ${mode('text-slate-800', 'text-zinc-100')}`}>{item.value}</div>
+                  <div className={`text-[10px] uppercase tracking-widest font-bold mt-1 ${mode('text-slate-400', 'text-zinc-500')}`}>{item.label}</div>
                 </div>
               ))}
             </div>
 
-            <div className={`p-4 rounded-xl border text-left text-sm space-y-2 ${mode('bg-amber-50 border-amber-100 text-amber-800', 'bg-amber-900/10 border-amber-800/30 text-amber-200')}`}>
-              <p className="font-bold flex items-center gap-2"><FiAlertCircle /> Important Instructions:</p>
-              <ul className="list-disc list-inside opacity-90 space-y-1">
+            <div className={`p-6 rounded-2xl border-l-4 text-left text-sm space-y-3 ${mode('bg-amber-50/50 border-amber-200 border-l-amber-500 text-amber-900', 'bg-amber-900/10 border-amber-800/30 border-l-amber-500 text-amber-200')}`}>
+              <p className="font-bold flex items-center gap-2 text-base"><FiAlertCircle className="w-5 h-5" /> Important Instructions</p>
+              <ul className="list-disc list-inside opacity-90 space-y-1.5 ml-1">
                 <li>Do not refresh the page during the test.</li>
                 <li>Flagged questions can be reviewed before submission.</li>
                 {test.negativeMarking?.enabled && <li><strong>Negative Marking is Enabled</strong> for incorrect answers.</li>}
               </ul>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-              <button onClick={onBack} className={`px-8 py-4 rounded-xl font-bold transition-colors ${mode('bg-slate-100 text-slate-600 hover:bg-slate-200', 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700')}`}>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-2">
+              <button onClick={onBack} className={`px-8 py-4 rounded-xl font-bold transition-all duration-200 ${mode('bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-700', 'bg-transparent text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300')}`}>
                 Cancel
               </button>
-              <button onClick={() => setIsTestStarted(true)} className="group px-10 py-4 rounded-xl font-bold bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 hover:scale-105 transition-all flex items-center justify-center gap-2">
-                Start Assessment <FiArrowRight className="group-hover:translate-x-1 transition-transform" />
+              <button onClick={() => setIsTestStarted(true)} className="group px-10 py-4 rounded-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-xl shadow-emerald-600/20 hover:shadow-emerald-600/40 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3">
+                Start Assessment <FiArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
           </div>
@@ -440,7 +451,7 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
     } else {
       return (
         <div className="min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
         </div>
       );
     }
@@ -552,50 +563,62 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
             )}
 
             {/* Question Card */}
-            <div className={`rounded-2xl p-6 sm:p-10 shadow-lg border mb-6 ${mode('bg-white border-slate-200', 'bg-zinc-900 border-zinc-800')}`}>
+            <div className={`rounded-2xl shadow-sm border mb-6 overflow-hidden ${mode('bg-white border-slate-200', 'bg-zinc-900 border-zinc-800')}`}>
 
-              <div className="flex justify-between items-start mb-6">
-                <span className={`text-sm font-bold px-3 py-1 rounded-full ${mode('bg-slate-100 text-slate-600', 'bg-zinc-800 text-zinc-400')}`}>
-                  Question {currentQuestionIndex + 1}
-                </span>
-                <button
-                  onClick={toggleFlag}
-                  className={`flex items-center gap-2 text-sm font-medium transition-colors ${flaggedQuestions.has(currentQuestionIndex) ? 'text-amber-500' : 'text-slate-400 hover:text-slate-600'}`}
-                >
-                  <FiFlag className={flaggedQuestions.has(currentQuestionIndex) ? 'fill-current' : ''} />
-                  {flaggedQuestions.has(currentQuestionIndex) ? 'Flagged' : 'Flag'}
-                </button>
+              <div className={`p-6 border-b ${mode('bg-slate-50/50 border-slate-100', 'bg-zinc-900 border-zinc-800')}`}>
+                <div className="flex justify-between items-start mb-4">
+                  <span className={`text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider ${mode('bg-slate-100 text-slate-600 border border-slate-200', 'bg-zinc-800 text-zinc-400 border border-zinc-700')}`}>
+                    Question {currentQuestionIndex + 1}
+                  </span>
+                  <button
+                    onClick={toggleFlag}
+                    className={`flex items-center gap-2 text-sm font-medium transition-colors ${flaggedQuestions.has(currentQuestionIndex) ? 'text-amber-500' : 'text-slate-400 hover:text-slate-600'}`}
+                  >
+                    <FiFlag className={flaggedQuestions.has(currentQuestionIndex) ? 'fill-current' : ''} />
+                    {flaggedQuestions.has(currentQuestionIndex) ? 'Flagged' : 'Flag'}
+                  </button>
+                </div>
+
+                <h2 className={`text-lg sm:text-xl font-semibold leading-relaxed ${mode('text-slate-900', 'text-zinc-100')}`}>
+                  {currentQuestion?.question}
+                </h2>
               </div>
 
-              <h2 className={`text-xl sm:text-2xl font-medium leading-relaxed mb-8 ${mode('text-slate-900', 'text-white')}`}>
-                {currentQuestion?.question}
-              </h2>
-
               {currentQuestion?.image && (
-                <div className="mb-8 rounded-xl overflow-hidden border border-slate-200 dark:border-zinc-700">
-                  <img src={currentQuestion.image} alt="Question" className="w-full max-h-80 object-contain bg-slate-50 dark:bg-zinc-950" />
+                <div className="border-b border-slate-100 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 p-4 flex justify-center">
+                  <img src={currentQuestion.image} alt="Question" className="max-h-64 object-contain rounded-lg" />
                 </div>
               )}
 
-              <div className="space-y-3">
+              <div className="p-6 space-y-3">
                 {currentQuestion?.options?.map((option, idx) => {
                   const isSelected = answers[currentQuestionIndex] === idx;
                   return (
                     <button
                       key={idx}
                       onClick={() => handleAnswerSelect(idx)}
-                      className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-200 flex items-center gap-4 group ${isSelected
-                        ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-500/10 dark:border-emerald-500'
-                        : mode('border-slate-200 hover:border-emerald-200 hover:bg-slate-50', 'border-zinc-700 hover:border-zinc-600 hover:bg-zinc-800')
+                      className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-200 flex items-start gap-4 group ${isSelected
+                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 dark:border-emerald-500'
+                        : mode('border-slate-100 hover:border-emerald-200 hover:bg-slate-50', 'border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800')
                         }`}
                     >
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 text-sm font-bold transition-colors ${isSelected
-                        ? 'bg-emerald-500 border-emerald-500 text-white'
-                        : mode('border-slate-300 text-slate-500 group-hover:border-emerald-400', 'border-zinc-600 text-zinc-400')
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold transition-colors shrink-0 ${isSelected
+                        ? 'bg-emerald-500 text-white'
+                        : mode('bg-slate-100 text-slate-500 group-hover:bg-white group-hover:shadow-sm', 'bg-zinc-800 text-zinc-400 group-hover:bg-zinc-700')
                         }`}>
                         {String.fromCharCode(65 + idx)}
                       </div>
-                      <span className={`text-base font-medium ${mode('text-slate-700', 'text-zinc-300')}`}>{option}</span>
+                      <span className={`text-sm sm:text-base font-medium pt-1 ${isSelected
+                        ? mode('text-emerald-900', 'text-emerald-100')
+                        : mode('text-slate-700', 'text-zinc-300')
+                        }`}>
+                        {option}
+                      </span>
+                      {isSelected && (
+                        <div className="ml-auto">
+                           <FiCheckCircle className="w-5 h-5 text-emerald-500" />
+                        </div>
+                      )}
                     </button>
                   );
                 })}
@@ -611,12 +634,13 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
               >
                 <FiChevronLeft /> Previous
               </button>
+              
               <button
                 onClick={() => {
-                  if (isLastQuestion) setShowConfirmDialog(true);
+                  if (isLastQuestion) setShowSubmitConfirm(true);
                   else setCurrentQuestionIndex(p => Math.min(totalQuestions - 1, p + 1));
                 }}
-                className={`px-8 py-3 rounded-xl font-bold text-white flex items-center gap-2 shadow-lg transition-transform hover:-translate-y-0.5 ${isLastQuestion ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700'}`}
+                className={`px-8 py-3 rounded-xl font-bold text-white flex items-center gap-2 shadow-lg transition-transform hover:-translate-y-0.5 ${isLastQuestion ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
               >
                 {isLastQuestion ? 'Submit Test' : 'Next'} <FiChevronRight className={isLastQuestion ? 'hidden' : ''} />
               </button>
@@ -628,7 +652,7 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
       </div>
 
       {/* Dialogs */}
-      {showConfirmDialog && (
+      {showSubmitConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className={`w-full max-w-md rounded-2xl p-6 shadow-2xl ${mode('bg-white', 'bg-zinc-900 border border-zinc-800')}`}>
             <h3 className={`text-xl font-bold mb-2 ${mode('text-slate-900', 'text-white')}`}>Ready to submit?</h3>
@@ -636,8 +660,9 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
               You have answered <span className="font-bold text-emerald-500">{Object.keys(answers).length}</span> out of <span className="font-bold">{totalQuestions}</span> questions.
             </p>
             <div className="flex gap-3">
-              <button onClick={() => setShowConfirmDialog(false)} className={`flex-1 py-3 rounded-xl font-bold ${mode('bg-slate-100 text-slate-700 hover:bg-slate-200', 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700')}`}>Review</button>
-              <button onClick={handleSubmitTest} disabled={loading} className="flex-1 py-3 rounded-xl font-bold bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg">
+              <button onClick={() => setShowSubmitConfirm(false)} className={`flex-1 py-3 rounded-xl font-bold ${mode('bg-slate-100 text-slate-700 hover:bg-slate-200', 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700')}`}>Review</button>
+              <button onClick={handleSubmitTest} disabled={loading} className="flex-1 py-3 rounded-xl font-bold bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg flex items-center justify-center gap-2">
+                {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <FiSend />}
                 {loading ? 'Submitting...' : 'Confirm Submit'}
               </button>
             </div>
@@ -646,12 +671,12 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
       )}
 
       {leaveWarningVisible && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-red-900/80 backdrop-blur-md">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-rose-900/80 backdrop-blur-md">
           <div className="bg-white rounded-2xl p-8 text-center max-w-sm shadow-2xl animate-bounce-in">
-            <FiAlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+            <FiAlertCircle className="w-16 h-16 text-rose-500 mx-auto mb-4" />
             <h2 className="text-2xl font-black text-slate-900 mb-2">Warning!</h2>
-            <p className="text-slate-600 mb-6">You left the test window. Returning in <span className="font-bold text-red-600">{leaveCountdown}s</span> or test will auto-submit.</p>
-            <button onClick={() => { setLeaveWarningVisible(false); setLeaveCountdown(null); }} className="w-full py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700">
+            <p className="text-slate-600 mb-6">You left the test window. Returning in <span className="font-bold text-rose-600">{leaveCountdown}s</span> or test will auto-submit.</p>
+            <button onClick={() => { setLeaveWarningVisible(false); setLeaveCountdown(null); }} className="w-full py-3 bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700">
               I'm Back
             </button>
           </div>
