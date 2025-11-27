@@ -1,14 +1,13 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { collection, addDoc, getDoc, doc, updateDoc, arrayUnion, serverTimestamp, increment } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import SectionCard from './SectionCard';
-import Header from '../layout/Header';         
 import { v4 as uuidv4 } from 'uuid';
 import { 
   FiPlus, FiSave, FiArrowLeft, FiAlertCircle, FiCheck, FiBookOpen, 
-  FiLock, FiGrid, FiLayout, FiTrash2, FiSettings
+  FiLock, FiGrid, FiLayout, FiTrash2, FiSettings, FiCheckCircle, FiTarget
 } from 'react-icons/fi';
 
 const SectionWiseQuizCreator = ({ onBack, onQuizCreated, testSeriesId }) => {
@@ -22,6 +21,8 @@ const SectionWiseQuizCreator = ({ onBack, onQuizCreated, testSeriesId }) => {
   const [sections, setSections] = useState([]);
   const [quizTitle, setQuizTitle] = useState('');
   const [quizDescription, setQuizDescription] = useState('');
+  const [passingScore, setPassingScore] = useState(0); // Added Passing Score State
+  
   const [selectedTestSeries, setSelectedTestSeries] = useState(null);
   const [testSeriesLoading, setTestSeriesLoading] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -29,7 +30,7 @@ const SectionWiseQuizCreator = ({ onBack, onQuizCreated, testSeriesId }) => {
   const [success, setSuccess] = useState('');
   const hasInitialized = useRef(false);
 
-  // --- Logic (Preserved) ---
+  // --- Logic ---
   const clearError = useCallback(() => error && setError(''), [error]);
 
   const addNewSection = useCallback(() => {
@@ -53,6 +54,18 @@ const SectionWiseQuizCreator = ({ onBack, onQuizCreated, testSeriesId }) => {
       addNewSection();
     }
   }, [sections.length, addNewSection]);
+
+  // Calculate Total Max Score based on questions
+  const totalMaxScore = useMemo(() => {
+    return sections.reduce((acc, section) => {
+      const sectionScore = section.questions.reduce((qAcc, q) => {
+        // Use question specific marking if enabled, otherwise default to 1
+        const mark = q.positiveMarking?.enabled ? parseFloat(q.positiveMarking.value || 1) : 1;
+        return qAcc + mark;
+      }, 0);
+      return acc + sectionScore;
+    }, 0);
+  }, [sections]);
 
   useEffect(() => {
     const loadTestSeries = async () => {
@@ -92,7 +105,7 @@ const SectionWiseQuizCreator = ({ onBack, onQuizCreated, testSeriesId }) => {
       image: null,
       optionImages: ['', '', '', ''],
       negativeMarking: { enabled: false, type: 'fractional', value: 0.25 },
-      positiveMarking: { enabled: false, type: 'fractional', value: 1.0 }
+      positiveMarking: { enabled: false, type: 'fixed', value: 1.0 }
     };
     setSections(prev => prev.map(s => s.id === sectionId ? { ...s, questions: [...s.questions, newQ] } : s));
   }, []);
@@ -115,10 +128,13 @@ const SectionWiseQuizCreator = ({ onBack, onQuizCreated, testSeriesId }) => {
     if (!selectedTestSeries) return setError('Test series required.');
     if (sections.length === 0) return setError('At least one section required.');
     
+    // Validate Passing Score
+    if (passingScore > totalMaxScore) {
+      return setError(`Passing score (${passingScore}) cannot be greater than total marks (${totalMaxScore}).`);
+    }
+    
     const invalidSection = sections.find(s => s.questions.length === 0);
     if (invalidSection) return setError(`Section "${invalidSection.name}" is empty.`);
-    
-    // Deep validation for questions... (simplified for brevity, assume similar to original)
     
     setLoading(true);
     try {
@@ -130,7 +146,8 @@ const SectionWiseQuizCreator = ({ onBack, onQuizCreated, testSeriesId }) => {
           questions: s.questions.map(q => ({
             ...q,
             // Ensure safe defaults
-            negativeMarking: q.negativeMarking || { enabled: false, type: 'fractional', value: 0.25 }
+            negativeMarking: q.negativeMarking || { enabled: false, type: 'fractional', value: 0.25 },
+            positiveMarking: q.positiveMarking || { enabled: false, type: 'fixed', value: 1.0 }
           }))
         })),
         createdBy: currentUser.uid,
@@ -138,6 +155,8 @@ const SectionWiseQuizCreator = ({ onBack, onQuizCreated, testSeriesId }) => {
         createdAt: serverTimestamp(),
         totalSections: sections.length,
         totalQuestions: sections.reduce((acc, s) => acc + s.questions.length, 0),
+        passingScore: parseFloat(passingScore), // Save passing score
+        totalMarks: totalMaxScore, // Save total marks for reference
         testSeriesId,
         testSeriesTitle: selectedTestSeries.title,
         isPartOfSeries: true
@@ -216,18 +235,72 @@ const SectionWiseQuizCreator = ({ onBack, onQuizCreated, testSeriesId }) => {
             </div>
          )}
 
-         {/* Quiz Description Input */}
-         <div className="mb-8">
-            <textarea 
-               value={quizDescription}
-               onChange={(e) => setQuizDescription(e.target.value)}
-               placeholder="Add a description for this quiz (optional)..."
-               rows={2}
-               className={`w-full bg-transparent border-b p-2 focus:ring-0 resize-none transition-colors ${
-                  mode('border-slate-300 focus:border-indigo-500 text-slate-700 placeholder-slate-400', 
-                       'border-slate-700 focus:border-indigo-500 text-slate-300 placeholder-slate-600')
-               }`}
-            />
+         {/* Quiz Meta Configuration Card */}
+         <div className={`mb-8 p-5 rounded-2xl border shadow-sm ${mode('bg-white border-slate-200', 'bg-zinc-900 border-zinc-800')}`}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               
+               {/* Description Input */}
+               <div>
+                  <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ${mode('text-slate-500', 'text-slate-500')}`}>
+                     Description (Optional)
+                  </label>
+                  <textarea 
+                     value={quizDescription}
+                     onChange={(e) => setQuizDescription(e.target.value)}
+                     placeholder="Add a brief description..."
+                     rows={3}
+                     className={`w-full rounded-xl p-3 text-sm resize-none border focus:ring-2 focus:ring-indigo-500 outline-none transition-all ${
+                        mode('bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400', 
+                             'bg-zinc-800/50 border-zinc-700 text-zinc-200 placeholder-zinc-600')
+                     }`}
+                  />
+               </div>
+
+               {/* Scoring Settings */}
+               <div>
+                  <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ${mode('text-slate-500', 'text-slate-500')}`}>
+                     Scoring Rules
+                  </label>
+                  <div className={`rounded-xl p-4 border ${mode('bg-slate-50 border-slate-200', 'bg-zinc-800/50 border-zinc-700')}`}>
+                     
+                     <div className="flex justify-between items-center mb-4 pb-4 border-b border-dashed border-gray-300 dark:border-gray-700">
+                        <div className="flex items-center gap-2">
+                           <FiTarget className="text-indigo-500" />
+                           <span className={`text-sm font-semibold ${mode('text-slate-700', 'text-zinc-300')}`}>Total Marks</span>
+                        </div>
+                        <span className={`text-xl font-bold ${mode('text-slate-900', 'text-white')}`}>
+                           {totalMaxScore}
+                        </span>
+                     </div>
+
+                     <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                           <FiCheckCircle className="text-emerald-500" />
+                           <span className={`text-sm font-semibold ${mode('text-slate-700', 'text-zinc-300')}`}>Passing Score</span>
+                        </div>
+                        <div className="relative w-24">
+                           <input 
+                              type="number" 
+                              min="0" 
+                              max={totalMaxScore}
+                              value={passingScore}
+                              onChange={(e) => setPassingScore(parseInt(e.target.value) || 0)}
+                              className={`w-full px-3 py-1.5 rounded-lg border text-right font-bold outline-none focus:ring-2 focus:ring-emerald-500 ${
+                                 mode('bg-white border-slate-300 text-slate-900', 'bg-zinc-900 border-zinc-600 text-white')
+                              }`}
+                           />
+                        </div>
+                     </div>
+                     
+                     <div className="mt-2 flex justify-between text-xs">
+                        <span className="text-zinc-400">Recommendation: {Math.ceil(totalMaxScore * 0.4)} (40%)</span>
+                        <span className={`font-medium ${passingScore > totalMaxScore ? 'text-red-500' : 'text-emerald-500'}`}>
+                           {totalMaxScore > 0 ? Math.round((passingScore/totalMaxScore)*100) : 0}%
+                        </span>
+                     </div>
+                  </div>
+               </div>
+            </div>
          </div>
 
          {/* Sections List */}

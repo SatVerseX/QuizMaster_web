@@ -5,16 +5,12 @@ import {
   FiX,
   FiChevronLeft,
   FiChevronRight,
-  FiLoader,
   FiCheck,
   FiAlertCircle,
   FiZap,
   FiBookOpen
 } from "react-icons/fi";
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-// Initialize AI
-const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
+import AIExplanationModal from "../modals/AIExplanationModal";
 
 const SectionQuestionNavigator = ({ section, onClose }) => {
   const { isDark } = useTheme();
@@ -22,8 +18,7 @@ const SectionQuestionNavigator = ({ section, onClose }) => {
   // --- State ---
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showExplanation, setShowExplanation] = useState(false);
-  const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
-  const [explanations, setExplanations] = useState({});
+  const [questionForAI, setQuestionForAI] = useState(null);
   const navScrollRef = useRef(null);
 
   const currentQuestion = section.questions[currentQuestionIndex];
@@ -42,7 +37,7 @@ const SectionQuestionNavigator = ({ section, onClose }) => {
       ? "bg-gray-800 border-gray-700 shadow-xl" 
       : "bg-white border-slate-200 shadow-xl shadow-slate-200/50",
       
-    // Option styling - Responsive padding
+    // Option styling
     option: (status) => {
       const base = "p-3 md:p-4 rounded-xl border-2 transition-all duration-200 cursor-default ";
       if (status === 'correct') return base + (isDark ? "bg-emerald-500/10 border-emerald-500/50" : "bg-emerald-50 border-emerald-500");
@@ -50,7 +45,7 @@ const SectionQuestionNavigator = ({ section, onClose }) => {
       return base + (isDark ? "bg-gray-800/50 border-gray-700" : "bg-white border-slate-200");
     },
 
-    // Nav button styling - Responsive size
+    // Nav button styling
     navBtn: (isActive, status) => {
       let base = "shrink-0 w-9 h-9 md:w-10 md:h-10 rounded-lg flex items-center justify-center text-xs md:text-sm font-bold transition-all duration-200 border ";
       if (isActive) return base + "bg-indigo-600 text-white border-indigo-500 scale-110 shadow-lg z-10 ring-2 ring-indigo-200 dark:ring-indigo-900";
@@ -79,11 +74,12 @@ const SectionQuestionNavigator = ({ section, onClose }) => {
   // Keyboard navigation
   useEffect(() => {
     const handleKey = (e) => {
-      if (e.key === "Escape") { showExplanation ? setShowExplanation(false) : onClose(); }
-      if (!showExplanation) {
-        if (e.key === "ArrowRight") nextQ();
-        if (e.key === "ArrowLeft") prevQ();
-      }
+      // Only handle keys if AI modal is NOT open (to prevent conflicts)
+      if (showExplanation) return;
+
+      if (e.key === "Escape") { onClose(); }
+      if (e.key === "ArrowRight") nextQ();
+      if (e.key === "ArrowLeft") prevQ();
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
@@ -93,23 +89,24 @@ const SectionQuestionNavigator = ({ section, onClose }) => {
   const nextQ = () => currentQuestionIndex < section.questions.length - 1 && setCurrentQuestionIndex(p => p + 1);
   const prevQ = () => currentQuestionIndex > 0 && setCurrentQuestionIndex(p => p - 1);
 
-  const handleExplanation = async () => {
-    if (showExplanation) { setShowExplanation(false); return; }
-    const id = `${section.name}-${currentQuestionIndex}`;
-    if (explanations[id]) { setShowExplanation(true); return; }
-
-    setShowExplanation(true);
-    setIsLoadingExplanation(true);
-    try {
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
-      const prompt = `Explain concisely:\nQ: "${currentQuestion.question}"\nCorrect: "${currentQuestion.options[currentQuestion.correctAnswer]}"\nWhy is this correct?`;
-      const result = await model.generateContent(prompt);
-      setExplanations(prev => ({ ...prev, [id]: result.response.text() }));
-    } catch (e) {
-      setExplanations(prev => ({ ...prev, [id]: "Explanation unavailable." }));
-    } finally {
-      setIsLoadingExplanation(false);
+  const handleExplanation = () => {
+    // Prepare data for the AI Modal
+    // Convert indices to strings to match the service expectation
+    const safeOptions = currentQuestion.options || [];
+    const correctText = safeOptions[currentQuestion.correctAnswer] || "Correct Answer";
+    
+    let userText = "Skipped";
+    if (currentQuestion.userAnswer !== undefined && currentQuestion.userAnswer !== null && currentQuestion.userAnswer !== -1) {
+         userText = safeOptions[currentQuestion.userAnswer] || "Unknown";
     }
+
+    setQuestionForAI({
+      question: currentQuestion.question,
+      options: safeOptions,
+      correctAnswer: correctText,
+      userAnswer: userText
+    });
+    setShowExplanation(true);
   };
 
   if (!section.questions.length) return null;
@@ -134,13 +131,14 @@ const SectionQuestionNavigator = ({ section, onClose }) => {
               </div>
             </div>
             
-            {/* AI Action */}
+            {/* AI Action Button (Desktop) */}
             <button 
               onClick={handleExplanation}
-              className="hidden md:flex items-center gap-2 px-3 py-3 rounded-full bg-black dark:bg-white text-white dark:text-black text-lg font-bold hover:scale-105 transition-all"
-              title="AI Explain"
+              className="hidden md:flex items-center gap-2 px-4 py-2 rounded-full bg-black dark:bg-white text-white dark:text-black text-sm font-bold hover:scale-105 transition-all shadow-md"
+              title="Ask AI Tutor"
             >
-              <FiZap />
+              <FiZap className="w-4 h-4" />
+              <span>AI Explain</span>
             </button>
           </div>
 
@@ -168,7 +166,7 @@ const SectionQuestionNavigator = ({ section, onClose }) => {
                  </span>
                  
                  {/* Mobile AI Button */}
-                 <button onClick={handleExplanation} className="md:hidden text-indigo-500 p-1">
+                 <button onClick={handleExplanation} className="md:hidden text-indigo-500 p-2 rounded-full hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
                     <FiZap className="w-5 h-5" />
                  </button>
                </div>
@@ -254,30 +252,13 @@ const SectionQuestionNavigator = ({ section, onClose }) => {
 
       </div>
 
-      {/* AI Modal Overlay */}
-      {showExplanation && (
-        <div className="absolute inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowExplanation(false)}>
-          <div className={`relative w-full max-w-2xl max-h-[80vh] flex flex-col rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 ${styles.modal}`} onClick={e => e.stopPropagation()}>
-            <div className="p-4 bg-black text-white flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <FiZap className="w-5 h-5" />
-                <h3 className="font-bold">AI Tutor</h3>
-              </div>
-              <button onClick={() => setShowExplanation(false)} className="p-1 hover:bg-white/20 rounded"><FiX /></button>
-            </div>
-            <div className={`flex-1 overflow-y-auto p-6 ${styles.textPrimary}`}>
-              {isLoadingExplanation ? (
-                <div className="flex flex-col items-center justify-center py-10">
-                  <FiLoader className="w-8 h-8 text-indigo-500 animate-spin mb-4" />
-                  <p>Thinking...</p>
-                </div>
-              ) : (
-                <div className="whitespace-pre-wrap leading-relaxed text-sm md:text-base">{explanations[`${section.name}-${currentQuestionIndex}`]}</div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Integrated AI Explanation Modal */}
+      <AIExplanationModal 
+        isOpen={showExplanation} 
+        onClose={() => setShowExplanation(false)} 
+        questionData={questionForAI} 
+      />
+
     </div>,
     document.body
   );

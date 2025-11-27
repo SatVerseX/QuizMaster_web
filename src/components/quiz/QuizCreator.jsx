@@ -1,15 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
-import { FiPlus, FiTrash2, FiSave, FiArrowLeft, FiAlertCircle } from 'react-icons/fi';
+import { useTheme } from '../../contexts/ThemeContext';
+import { 
+  FiPlus, 
+  FiTrash2, 
+  FiSave, 
+  FiArrowLeft, 
+  FiAlertCircle, 
+  FiClock, 
+  FiTarget, 
+  FiAward,
+  FiCheckCircle
+} from 'react-icons/fi';
 import { v4 as uuidv4 } from 'uuid';
 
 const QuizCreator = ({ onBack, onQuizCreated }) => {
   const { currentUser } = useAuth();
+  const { isDark } = useTheme();
+  
   const [quiz, setQuiz] = useState({
     title: '',
     description: '',
+    timeLimit: 30, // Default 30 mins
+    difficulty: 'medium',
+    passingScore: 0, // New Field
     questions: [{ 
       id: uuidv4(), 
       question: '', 
@@ -27,8 +43,17 @@ const QuizCreator = ({ onBack, onQuizCreated }) => {
       value: 0.25
     }
   });
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Helpers
+  const mode = (light, dark) => (isDark ? dark : light);
+
+  const calculateMaxScore = useMemo(() => {
+    // Assuming 1 mark per question for now
+    return quiz.questions.length;
+  }, [quiz.questions.length]);
 
   const addQuestion = () => {
     setQuiz(prev => ({
@@ -83,6 +108,12 @@ const QuizCreator = ({ onBack, onQuizCreated }) => {
       return;
     }
 
+    // Validate Passing Score
+    if (quiz.passingScore > calculateMaxScore) {
+      setError(`Passing score cannot exceed total marks (${calculateMaxScore})`);
+      return;
+    }
+
     const hasEmptyQuestions = quiz.questions.some(q => 
       !q.question.trim() || q.options.some(opt => !opt.trim())
     );
@@ -101,7 +132,9 @@ const QuizCreator = ({ onBack, onQuizCreated }) => {
         createdBy: currentUser.uid,
         createdByName: currentUser.displayName || currentUser.email,
         createdAt: new Date(),
-        totalQuestions: quiz.questions.length
+        totalQuestions: quiz.questions.length,
+        // Ensure passing score is saved as number
+        passingScore: Number(quiz.passingScore)
       });
       
       onQuizCreated?.();
@@ -114,194 +147,211 @@ const QuizCreator = ({ onBack, onQuizCreated }) => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8 animate-fade-in">
+    <div className={`max-w-4xl mx-auto p-4 sm:p-6 lg:p-8 animate-fade-in ${isDark ? 'text-white' : 'text-slate-900'}`}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
         <div className="flex items-center gap-4">
           <button
             onClick={onBack}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors font-semibold"
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors ${
+              isDark ? 'bg-gray-800 hover:bg-gray-700 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
+            }`}
           >
             <FiArrowLeft /> Back
           </button>
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">Create a New Quiz</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight">Create New Quiz</h1>
         </div>
-        <button
-          onClick={addQuestion}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-white bg-gradient-to-r from-indigo-500 to-emerald-500 hover:opacity-90 transition-opacity"
-        >
-          <FiPlus /> Add Question
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={addQuestion}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold border transition-colors ${
+              isDark ? 'border-gray-600 hover:bg-gray-800' : 'border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            <FiPlus /> Add Question
+          </button>
+          <button
+            onClick={saveQuiz}
+            disabled={loading}
+            className="flex items-center gap-2 px-6 py-2 rounded-lg font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg disabled:opacity-50"
+          >
+            {loading ? 'Saving...' : <><FiSave /> Save Quiz</>}
+          </button>
+        </div>
       </div>
 
-      <div className="space-y-10">
-        {/* Quiz Details */}
-        <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
-          {error && (
-            <div className="mb-6 p-3 bg-red-100 dark:bg-red-500/10 border-l-4 border-red-500 dark:border-red-400 rounded-md text-red-700 dark:text-red-300 text-sm">
-              {error}
-            </div>
-          )}
+      <div className="space-y-8">
+        {error && (
+          <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 flex items-center gap-3">
+            <FiAlertCircle className="w-5 h-5" />
+            {error}
+          </div>
+        )}
 
+        {/* Quiz Settings Card */}
+        <div className={`p-6 rounded-2xl border shadow-sm ${
+          isDark ? 'bg-gray-800/50 border-gray-700' : 'bg-white border-gray-200'
+        }`}>
+          <h2 className="text-lg font-bold mb-6 flex items-center gap-2">
+            <FiTarget className="text-indigo-500" /> Quiz Settings
+          </h2>
+          
           <div className="space-y-6">
-            <div>
-              <label htmlFor="quizTitle" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Quiz Title
-              </label>
-              <input
-                id="quizTitle"
-                type="text"
-                placeholder="e.g., 'Modern Art History'"
-                value={quiz.title}
-                onChange={(e) => setQuiz(prev => ({ ...prev, title: e.target.value }))}
-                className="w-full pl-4 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-300 text-lg font-semibold"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="quizDescription" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Description
-              </label>
-              <textarea
-                id="quizDescription"
-                placeholder="A short summary of what this quiz is about"
-                value={quiz.description}
-                onChange={(e) => setQuiz(prev => ({ ...prev, description: e.target.value }))}
-                className="w-full pl-4 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-300 min-h-[120px] resize-y"
-              />
-            </div>
-
-            {/* Negative Marking Section */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
-                    <FiAlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
-                  </div>
-                  <div>
-                    <div className="font-semibold text-gray-900 dark:text-white">
-                      Enable Negative Marking
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      Deduct marks for wrong answers
-                    </div>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setQuiz(prev => ({
-                    ...prev,
-                    negativeMarking: {
-                      ...prev.negativeMarking,
-                      enabled: !prev.negativeMarking.enabled
-                    }
-                  }))}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
-                    quiz.negativeMarking.enabled
-                      ? 'bg-red-500'
-                      : 'bg-gray-200 dark:bg-gray-600'
+            {/* Title & Description */}
+            <div className="grid gap-6">
+              <div>
+                <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Quiz Title <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g., 'Modern Art History'"
+                  value={quiz.title}
+                  onChange={(e) => setQuiz(prev => ({ ...prev, title: e.target.value }))}
+                  className={`w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-indigo-500 transition-all ${
+                    isDark ? 'bg-gray-900 border-gray-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
                   }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      quiz.negativeMarking.enabled ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
+                />
               </div>
 
-              {/* Negative Marking Settings */}
-              {quiz.negativeMarking.enabled && (
-                <div className="space-y-4 p-4 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/30">
-                  {/* Type Selection */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Marking Type
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
-                        { value: 'fractional', label: 'Fractional', description: '1/4th mark deduction' },
-                        { value: 'fixed', label: 'Fixed', description: 'Fixed mark deduction' }
-                      ].map(type => (
-                        <button
-                          key={type.value}
-                          type="button"
-                          onClick={() => setQuiz(prev => ({
-                            ...prev,
-                            negativeMarking: {
-                              ...prev.negativeMarking,
-                              type: type.value
-                            }
-                          }))}
-                          className={`p-3 rounded-lg border transition-all duration-300 text-left ${
-                            quiz.negativeMarking.type === type.value
-                              ? 'bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-400 text-red-700 dark:text-red-300'
-                              : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                          }`}
-                        >
-                          <div className="font-semibold">{type.label}</div>
-                          <div className="text-xs opacity-75">{type.description}</div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+              <div>
+                <label className={`block text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Description
+                </label>
+                <textarea
+                  placeholder="A short summary of what this quiz is about"
+                  value={quiz.description}
+                  onChange={(e) => setQuiz(prev => ({ ...prev, description: e.target.value }))}
+                  rows={3}
+                  className={`w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-indigo-500 transition-all resize-none ${
+                    isDark ? 'bg-gray-900 border-gray-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
+                  }`}
+                />
+              </div>
+            </div>
 
-                  {/* Value Input */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      {quiz.negativeMarking.type === 'fractional' ? 'Fraction Value' : 'Mark Deduction'}
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        min="0.1"
-                        max="1"
-                        step="0.05"
-                        value={quiz.negativeMarking.value}
-                        onChange={(e) => setQuiz(prev => ({
-                          ...prev,
-                          negativeMarking: {
-                            ...prev.negativeMarking,
-                            value: parseFloat(e.target.value) || 0.25
-                          }
-                        }))}
-                        className="w-full px-4 py-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-300"
-                        placeholder={quiz.negativeMarking.type === 'fractional' ? "0.25" : "0.25"}
-                      />
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
-                        {quiz.negativeMarking.type === 'fractional' ? 'fraction' : 'marks'}
-                      </div>
-                    </div>
-                    <div className="mt-1 text-xs text-gray-500">
-                      {quiz.negativeMarking.type === 'fractional' 
-                        ? `For each wrong answer, ${quiz.negativeMarking.value} marks will be deducted`
-                        : `For each wrong answer, ${quiz.negativeMarking.value} marks will be deducted`
-                      }
-                    </div>
+            {/* Metrics Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-2">
+              
+              {/* Time Limit */}
+              <div>
+                <label className={`block text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <FiClock /> Time Limit (Mins)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="180"
+                  value={quiz.timeLimit}
+                  onChange={(e) => setQuiz(prev => ({ ...prev, timeLimit: parseInt(e.target.value) || 0 }))}
+                  className={`w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-indigo-500 transition-all ${
+                    isDark ? 'bg-gray-900 border-gray-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
+                  }`}
+                />
+              </div>
+
+              {/* Difficulty */}
+              <div>
+                <label className={`block text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <FiAward /> Difficulty
+                </label>
+                <select
+                  value={quiz.difficulty}
+                  onChange={(e) => setQuiz(prev => ({ ...prev, difficulty: e.target.value }))}
+                  className={`w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-indigo-500 transition-all appearance-none ${
+                    isDark ? 'bg-gray-900 border-gray-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
+                  }`}
+                >
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
+                  <option value="expert">Expert</option>
+                </select>
+              </div>
+
+              {/* Passing Score - NEW FEATURE */}
+              <div>
+                <label className={`block text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <FiCheckCircle /> Passing Score
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    max={calculateMaxScore}
+                    value={quiz.passingScore}
+                    onChange={(e) => setQuiz(prev => ({ ...prev, passingScore: parseInt(e.target.value) || 0 }))}
+                    className={`w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-indigo-500 transition-all ${
+                      isDark ? 'bg-gray-900 border-gray-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
+                    }`}
+                  />
+                  <div className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                    / {calculateMaxScore}
                   </div>
                 </div>
-              )}
+              </div>
+
             </div>
+            
+            {/* Negative Marking Toggle */}
+            <div className={`flex items-center justify-between p-4 rounded-xl border ${
+              isDark ? 'bg-gray-900/50 border-gray-700' : 'bg-gray-50 border-gray-200'
+            }`}>
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${isDark ? 'bg-red-500/20 text-red-400' : 'bg-red-100 text-red-600'}`}>
+                  <FiAlertCircle className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className={`font-bold text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>Negative Marking</div>
+                  <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Deduct 0.25 marks per wrong answer</div>
+                </div>
+              </div>
+              
+              <button
+                type="button"
+                onClick={() => setQuiz(prev => ({
+                  ...prev,
+                  negativeMarking: { ...prev.negativeMarking, enabled: !prev.negativeMarking.enabled }
+                }))}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
+                  quiz.negativeMarking.enabled ? 'bg-red-500' : (isDark ? 'bg-gray-700' : 'bg-gray-300')
+                }`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  quiz.negativeMarking.enabled ? 'translate-x-6' : 'translate-x-1'
+                }`} />
+              </button>
+            </div>
+
           </div>
         </div>
 
-        {/* Questions */}
+        {/* Questions List */}
         <div className="space-y-6">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Questions ({quiz.questions.length})
-          </h2>
+          <div className="flex items-center justify-between">
+             <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+               Questions ({quiz.questions.length})
+             </h2>
+          </div>
 
-          {quiz.questions.map((question, questionIndex) => (
-            <div key={question.id} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 relative">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-gray-800 dark:text-white">
-                  Question {questionIndex + 1}
-                </h3>
+          {quiz.questions.map((question, index) => (
+            <div 
+              key={question.id} 
+              className={`p-6 rounded-2xl border shadow-sm relative group ${
+                isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+              }`}
+            >
+              <div className="flex justify-between items-start mb-6">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
+                  isDark ? 'bg-indigo-500/20 text-indigo-400' : 'bg-indigo-100 text-indigo-700'
+                }`}>
+                  {index + 1}
+                </div>
                 
                 {quiz.questions.length > 1 && (
                   <button
                     onClick={() => removeQuestion(question.id)}
-                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-100 dark:hover:bg-red-500/10 rounded-full transition-all duration-200"
+                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all opacity-0 group-hover:opacity-100"
                   >
                     <FiTrash2 size={18} />
                   </button>
@@ -309,173 +359,61 @@ const QuizCreator = ({ onBack, onQuizCreated }) => {
               </div>
 
               <div className="space-y-5">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Question Text
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="What is the question?"
-                    value={question.question}
-                    onChange={(e) => updateQuestion(question.id, 'question', e.target.value)}
-                    className="w-full pl-4 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-300"
-                  />
-                </div>
+                <input
+                  type="text"
+                  placeholder="Enter question text..."
+                  value={question.question}
+                  onChange={(e) => updateQuestion(question.id, 'question', e.target.value)}
+                  className={`w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium ${
+                    isDark ? 'bg-gray-900 border-gray-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
+                  }`}
+                />
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                    Answer Options
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {question.options.map((option, optionIndex) => (
-                      <div key={optionIndex} className="relative flex items-center">
-                        <div className="absolute inset-y-0 left-0 flex items-center pl-4">
-                          <input
-                            type="radio"
-                            name={`correct-${question.id}`}
-                            checked={question.correctAnswer === optionIndex}
-                            onChange={() => updateQuestion(question.id, 'correctAnswer', optionIndex)}
-                            className="w-5 h-5 text-indigo-600 bg-gray-100 border-gray-300 focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                          />
-                        </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {question.options.map((option, optionIndex) => (
+                    <div key={optionIndex} className="relative flex items-center">
+                      <div className="absolute left-3 flex items-center">
                         <input
-                          type="text"
-                          placeholder={`Option ${optionIndex + 1}`}
-                          value={option}
-                          onChange={(e) => updateOption(question.id, optionIndex, e.target.value)}
-                          className={`w-full pl-12 pr-4 py-3 border rounded-lg transition-all duration-300 ${question.correctAnswer === optionIndex ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30' : 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50'} text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500`}
+                          type="radio"
+                          name={`correct-${question.id}`}
+                          checked={question.correctAnswer === optionIndex}
+                          onChange={() => updateQuestion(question.id, 'correctAnswer', optionIndex)}
+                          className="w-5 h-5 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                         />
                       </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Individual Question Negative Marking */}
-                <div className="space-y-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Question-Specific Negative Marking
-                  </label>
-                  
-                  <div className="space-y-4">
-                    {/* Enable/Disable Toggle */}
-                    <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-gradient-to-br from-red-100 to-pink-100 dark:from-red-900/30 dark:to-pink-900/30 rounded-lg flex items-center justify-center">
-                          <FiAlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
-                        </div>
-                        <div>
-                          <div className="font-semibold text-gray-900 dark:text-white">
-                            Override Global Setting
-                          </div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">
-                            Set specific negative marking for this question
-                          </div>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => updateQuestion(question.id, 'negativeMarking', {
-                          ...question.negativeMarking,
-                          enabled: !question.negativeMarking.enabled
-                        })}
-                        className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
-                          question.negativeMarking.enabled
-                            ? 'bg-red-500'
-                            : 'bg-gray-200 dark:bg-gray-600'
+                      <input
+                        type="text"
+                        placeholder={`Option ${optionIndex + 1}`}
+                        value={option}
+                        onChange={(e) => updateOption(question.id, optionIndex, e.target.value)}
+                        className={`w-full pl-10 pr-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-indigo-500 transition-all ${
+                          question.correctAnswer === optionIndex
+                            ? isDark ? 'bg-indigo-900/20 border-indigo-500' : 'bg-indigo-50 border-indigo-500'
+                            : isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
                         }`}
-                      >
-                        <span
-                          className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
-                            question.negativeMarking.enabled ? 'translate-x-5' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
+                      />
                     </div>
-
-                    {/* Question-Specific Negative Marking Settings */}
-                    {question.negativeMarking.enabled && (
-                      <div className="space-y-4 p-4 rounded-lg border border-red-200 dark:border-red-400/30 bg-red-50 dark:bg-red-500/10">
-                        {/* Type Selection */}
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Marking Type
-                          </label>
-                          <div className="grid grid-cols-2 gap-3">
-                            {[
-                              { value: 'fractional', label: 'Fractional', description: '1/4th mark deduction' },
-                              { value: 'fixed', label: 'Fixed', description: 'Fixed mark deduction' }
-                            ].map(type => (
-                              <button
-                                key={type.value}
-                                type="button"
-                                onClick={() => updateQuestion(question.id, 'negativeMarking', {
-                                  ...question.negativeMarking,
-                                  type: type.value
-                                })}
-                                className={`p-3 rounded-lg border transition-all duration-300 text-left ${
-                                  question.negativeMarking.type === type.value
-                                    ? 'bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-400 text-red-700 dark:text-red-300'
-                                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                                }`}
-                              >
-                                <div className="font-semibold">{type.label}</div>
-                                <div className="text-xs opacity-75">{type.description}</div>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Value Input */}
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            {question.negativeMarking.type === 'fractional' ? 'Fraction Value' : 'Mark Deduction'}
-                          </label>
-                          <div className="relative">
-                            <input
-                              type="number"
-                              min="0.1"
-                              max="1"
-                              step="0.05"
-                              value={question.negativeMarking.value}
-                              onChange={(e) => updateQuestion(question.id, 'negativeMarking', {
-                                ...question.negativeMarking,
-                                value: parseFloat(e.target.value) || 0.25
-                              })}
-                              className="w-full px-4 py-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-300"
-                              placeholder={question.negativeMarking.type === 'fractional' ? "0.25" : "0.25"}
-                            />
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
-                              {question.negativeMarking.type === 'fractional' ? 'fraction' : 'marks'}
-                            </div>
-                          </div>
-                          <div className="mt-1 text-xs text-gray-500">
-                            {question.negativeMarking.type === 'fractional' 
-                              ? `For this question, ${question.negativeMarking.value} marks will be deducted for wrong answers`
-                              : `For this question, ${question.negativeMarking.value} marks will be deducted for wrong answers`
-                            }
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  ))}
                 </div>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Save Button */}
-        <div className="pt-6 border-t border-gray-200 dark:border-gray-700 flex justify-end">
-          <button
-            onClick={saveQuiz}
-            disabled={loading}
-            className="flex items-center justify-center gap-2 text-lg px-8 py-3 rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-indigo-500 to-emerald-500 text-white font-semibold"
-          >
-            <FiSave />
-            {loading ? 'Saving Quiz...' : 'Save & Publish Quiz'}
-          </button>
-        </div>
+        {/* Bottom Add Button */}
+        <button
+          onClick={addQuestion}
+          className={`w-full py-4 rounded-2xl border-2 border-dashed flex items-center justify-center gap-2 font-bold transition-all ${
+            isDark 
+              ? 'border-gray-700 hover:border-indigo-500 text-gray-400 hover:text-indigo-400 hover:bg-gray-800' 
+              : 'border-gray-300 hover:border-indigo-500 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50'
+          }`}
+        >
+          <FiPlus className="w-5 h-5" /> Add New Question
+        </button>
       </div>
+      
+      <BeautifulPopup {...popupState} onClose={hidePopup} />
     </div>
   );
 };

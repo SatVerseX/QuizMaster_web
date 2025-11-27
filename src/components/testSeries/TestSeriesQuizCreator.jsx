@@ -8,11 +8,9 @@ import BeautifulPopup from '../common/BeautifulPopup';
 import { 
   FiPlus, 
   FiTrash2, 
- 
   FiArrowLeft,
   FiBookOpen,
   FiCheck,
-
   FiHelpCircle,
   FiClock,
   FiTarget,
@@ -41,6 +39,7 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
   
   // Theme mode function similar to WelcomePage
   const mode = (light, dark) => (isDark ? dark : light);
+  
   const [quizData, setQuizData] = useState({
     title: '',
     description: '',
@@ -53,14 +52,20 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
         enabled: false,
         type: 'fractional',
         value: 0.25
+      },
+      positiveMarking: {
+        enabled: false,
+        type: 'fixed',
+        value: 1
       }
     }],
     timeLimit: 30, // minutes
     difficulty: 'medium',
+    passingScore: 0, // Added Passing Score
     negativeMarking: {
       enabled: false,
       type: 'fractional', // 'fractional' or 'fixed'
-      value: 0.25 // For fractional: 0.25 means 1/4th mark deduction, For fixed: 0.25 means 0.25 marks deduction
+      value: 0.25 
     }
   });
 
@@ -104,6 +109,11 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
           enabled: false,
           type: 'fractional',
           value: 0.25
+        },
+        positiveMarking: {
+          enabled: false,
+          type: 'fixed',
+          value: 1
         }
       }]
     }));
@@ -141,6 +151,7 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
         timeLimit: quizData.timeLimit,
         difficulty: quizData.difficulty,
         negativeMarking: quizData.negativeMarking,
+        passingScore: quizData.passingScore, // Save passing score
         
         // Test Series linking
         testSeriesId: testSeries.id,
@@ -205,6 +216,15 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
     return Math.round((filledFields / totalFields) * 100);
   };
 
+  const calculateMaxScore = () => {
+    return quizData.questions.reduce((sum, q) => {
+      const mark = q.positiveMarking?.enabled && q.positiveMarking?.value ? parseFloat(q.positiveMarking.value) : 1;
+      return sum + mark;
+    }, 0);
+  };
+  
+  const maxPossibleScore = calculateMaxScore();
+
   const renderMobileHeader = () => (
     <div className="lg:hidden relative z-10 mb-6">
       <div className="flex items-center justify-between mb-4">
@@ -244,8 +264,6 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
   const renderDesktopHeader = () => (
     <div className="hidden lg:block relative z-10 mb-12">
       <div className="flex items-center gap-6 mb-8">
-         
-          
           <div className="flex-1">
           <h1 className={mode(
             "text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-slate-800 via-blue-600 to-indigo-600 mb-3 leading-tight",
@@ -377,203 +395,95 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
             </div>
             
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mb-6 lg:mb-8">
-              <div className="space-y-3">
+          
+          {/* Title Input */}
+          <div className="space-y-3">
             <label className={mode("flex items-center gap-2 text-sm font-semibold text-slate-700", "flex items-center gap-2 text-sm font-semibold text-gray-300")}>
               <FiEdit3 className={mode("w-4 h-4 text-blue-600", "w-4 h-4 text-blue-400")} />
               Test Title <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="e.g., Chapter 1: Basic Concepts"
-                    value={quizData.title}
-                    onChange={(e) => handleInputChange('title', e.target.value)}
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="e.g., Chapter 1: Basic Concepts"
+                value={quizData.title}
+                onChange={(e) => handleInputChange('title', e.target.value)}
                 className={mode(
                   "w-full px-4 lg:px-6 py-3 lg:py-4 rounded-xl bg-white backdrop-blur-sm border border-slate-300 text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 font-medium text-sm lg:text-base",
                   "w-full px-4 lg:px-6 py-3 lg:py-4 rounded-xl bg-gray-900/60 backdrop-blur-sm border border-gray-600/40 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 font-medium text-sm lg:text-base"
                 )}
-                    required
-                  />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                    {quizData.title ? (
+                required
+              />
+              <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                {quizData.title ? (
                   <FiCheckCircle className="w-4 h-4 lg:w-5 lg:h-5 text-emerald-500" />
-                    ) : (
+                ) : (
                   <FiAlertCircle className={mode("w-4 h-4 lg:w-5 lg:h-5 text-slate-400", "w-4 h-4 lg:w-5 lg:h-5 text-gray-500")} />
-                    )}
-                  </div>
-                </div>
+                )}
               </div>
+            </div>
+          </div>
 
-              <div className="space-y-3">
+          {/* Time Limit Input */}
+          <div className="space-y-3">
             <label className={mode("flex items-center gap-2 text-sm font-semibold text-slate-700", "flex items-center gap-2 text-sm font-semibold text-gray-300")}>
               <FiClock className={mode("w-4 h-4 text-emerald-600", "w-4 h-4 text-emerald-400")} />
-                  Time Limit (minutes)
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    min="5"
-                    max="180"
-                    value={quizData.timeLimit}
-                    onChange={(e) => handleInputChange('timeLimit', parseInt(e.target.value) || 30)}
+              Time Limit (minutes)
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                min="5"
+                max="180"
+                value={quizData.timeLimit}
+                onChange={(e) => handleInputChange('timeLimit', parseInt(e.target.value) || 30)}
                 className={mode(
                   "w-full px-4 lg:px-6 py-3 lg:py-4 rounded-xl bg-white backdrop-blur-sm border border-slate-300 text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-300 font-medium text-sm lg:text-base",
                   "w-full px-4 lg:px-6 py-3 lg:py-4 rounded-xl bg-gray-900/60 backdrop-blur-sm border border-gray-600/40 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-300 font-medium text-sm lg:text-base"
                 )}
-                  />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                <FiClock className={mode("w-4 h-4 lg:w-5 lg:h-5 text-slate-400", "w-4 h-4 lg:w-5 lg:h-5 text-gray-500")} />
-                  </div>
-                </div>
-              </div>
-
-              {/* Negative Marking Section */}
-              <div className="space-y-3">
-                <label className={mode("flex items-center gap-2 text-sm font-semibold text-slate-700", "flex items-center gap-2 text-sm font-semibold text-gray-300")}>
-                  <FiAlertCircle className={mode("w-4 h-4 text-red-600", "w-4 h-4 text-red-400")} />
-                  Negative Marking
-                </label>
-                
-                <div className="space-y-4">
-                  {/* Enable/Disable Toggle */}
-                  <div className={`flex items-center justify-between p-4 rounded-xl border transition-all duration-300 ${mode(
-                    "bg-white border-slate-200",
-                    "bg-gray-800/60 border-gray-600/40"
-                  )}`}>
-                    <div className="flex items-center gap-3">
-                      <div className={mode(
-                        "w-10 h-10 bg-gradient-to-br from-red-100 to-pink-100 rounded-lg flex items-center justify-center",
-                        "w-10 h-10 bg-gradient-to-br from-red-500/20 to-pink-500/20 rounded-lg flex items-center justify-center"
-                      )}>
-                        <FiAlertCircle className={mode("w-5 h-5 text-red-600", "w-5 h-5 text-red-400")} />
-                      </div>
-                      <div>
-                        <div className={mode("font-semibold text-slate-800", "font-semibold text-gray-200")}>
-                          Enable Negative Marking
-                        </div>
-                        <div className={mode("text-sm text-slate-600", "text-sm text-gray-400")}>
-                          Deduct marks for wrong answers
-                        </div>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleInputChange('negativeMarking', {
-                        ...quizData.negativeMarking,
-                        enabled: !quizData.negativeMarking.enabled
-                      })}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
-                        quizData.negativeMarking.enabled
-                          ? 'bg-red-500'
-                          : mode('bg-slate-200', 'bg-gray-600')
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          quizData.negativeMarking.enabled ? 'translate-x-6' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  {/* Negative Marking Settings */}
-                  {quizData.negativeMarking.enabled && (
-                    <div className={`space-y-4 p-4 rounded-xl border transition-all duration-300 ${mode(
-                      "bg-slate-50 border-slate-200",
-                      "bg-gray-700/40 border-gray-600/40"
-                    )}`}>
-                      {/* Type Selection */}
-                      <div>
-                        <label className={mode("block text-sm font-medium text-slate-700 mb-2", "block text-sm font-medium text-gray-300 mb-2")}>
-                          Marking Type
-                        </label>
-                        <div className="grid grid-cols-2 gap-3">
-                          {[
-                            { value: 'fractional', label: 'Fractional', description: '1/4th mark deduction' },
-                            { value: 'fixed', label: 'Fixed', description: 'Fixed mark deduction' }
-                          ].map(type => (
-                            <button
-                              key={type.value}
-                              type="button"
-                              onClick={() => handleInputChange('negativeMarking', {
-                                ...quizData.negativeMarking,
-                                type: type.value
-                              })}
-                              className={`p-3 rounded-lg border transition-all duration-300 text-left ${
-                                quizData.negativeMarking.type === type.value
-                                  ? mode('bg-red-50 border-red-300 text-red-700', 'bg-red-500/20 border-red-400 text-red-300')
-                                  : mode('bg-white border-slate-200 text-slate-700 hover:bg-slate-50', 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700')
-                              }`}
-                            >
-                              <div className="font-semibold">{type.label}</div>
-                              <div className="text-xs opacity-75">{type.description}</div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Value Input */}
-                      <div>
-                        <label className={mode("block text-sm font-medium text-slate-700 mb-2", "block text-sm font-medium text-gray-300 mb-2")}>
-                          {quizData.negativeMarking.type === 'fractional' ? 'Fraction Value' : 'Mark Deduction'}
-                        </label>
-                        <div className="relative">
-                          <input
-                            type="number"
-                            min="0.1"
-                            max="1"
-                            step="0.05"
-                            value={quizData.negativeMarking.value}
-                            onChange={(e) => handleInputChange('negativeMarking', {
-                              ...quizData.negativeMarking,
-                              value: parseFloat(e.target.value) || 0.25
-                            })}
-                            className={mode(
-                              "w-full px-4 py-3 rounded-lg bg-white border border-slate-300 text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-300",
-                              "w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-300"
-                            )}
-                            placeholder={quizData.negativeMarking.type === 'fractional' ? "0.25" : "0.25"}
-                          />
-                          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
-                            {quizData.negativeMarking.type === 'fractional' ? 'fraction' : 'marks'}
-                          </div>
-                        </div>
-                        <div className="mt-1 text-xs text-slate-500">
-                          {quizData.negativeMarking.type === 'fractional' 
-                            ? `For each wrong answer, ${quizData.negativeMarking.value} marks will be deducted`
-                            : `For each wrong answer, ${quizData.negativeMarking.value} marks will be deducted`
-                          }
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-        <div className="mb-6 lg:mb-8 space-y-3">
-          <label className={mode("flex items-center gap-2 text-sm font-semibold text-slate-700", "flex items-center gap-2 text-sm font-semibold text-gray-300")}>
-            <FiList className={mode("w-4 h-4 text-purple-600", "w-4 h-4 text-purple-400")} />
-                Description
-              </label>
-              <textarea
-                placeholder="Brief description of this test..."
-                value={quizData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
-            className={mode(
-              "w-full px-4 lg:px-6 py-3 lg:py-4 rounded-xl bg-white backdrop-blur-sm border border-slate-300 text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 font-medium text-sm lg:text-base h-24 lg:h-32 resize-none",
-              "w-full px-4 lg:px-6 py-3 lg:py-4 rounded-xl bg-gray-900/60 backdrop-blur-sm border border-gray-600/40 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 font-medium text-sm lg:text-base h-24 lg:h-32 resize-none"
-            )}
-                rows="3"
               />
+              <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                <FiClock className={mode("w-4 h-4 lg:w-5 lg:h-5 text-slate-400", "w-4 h-4 lg:w-5 lg:h-5 text-gray-500")} />
+              </div>
             </div>
+          </div>
 
-            <div className="space-y-3">
-          <label className={mode("flex items-center gap-2 text-sm font-semibold text-slate-700", "flex items-center gap-2 text-sm font-semibold text-gray-300")}>
-            <FiTrendingUp className={mode("w-4 h-4 text-orange-600", "w-4 h-4 text-orange-400")} />
+        </div>
+
+        {/* NEW GRID FOR PASSING SCORE & DIFFICULTY */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mb-6 lg:mb-8">
+           
+           {/* Passing Score */}
+           <div className="space-y-3">
+              <label className={mode("flex items-center gap-2 text-sm font-semibold text-slate-700", "flex items-center gap-2 text-sm font-semibold text-gray-300")}>
+                 <FiCheckCircle className={mode("w-4 h-4 text-purple-600", "w-4 h-4 text-purple-400")} />
+                 Passing Score
+              </label>
+              <div className="relative">
+                 <input
+                    type="number"
+                    min="0"
+                    max={maxPossibleScore}
+                    value={quizData.passingScore || 0}
+                    onChange={(e) => handleInputChange('passingScore', parseInt(e.target.value) || 0)}
+                    className={mode(
+                       "w-full px-4 lg:px-6 py-3 lg:py-4 rounded-xl bg-white backdrop-blur-sm border border-slate-300 text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 font-medium text-sm lg:text-base",
+                       "w-full px-4 lg:px-6 py-3 lg:py-4 rounded-xl bg-gray-900/60 backdrop-blur-sm border border-gray-600/40 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 font-medium text-sm lg:text-base"
+                    )}
+                 />
+                 <div className={`absolute right-4 top-1/2 -translate-y-1/2 text-xs ${mode("text-slate-400", "text-gray-500")}`}>
+                    Max: {maxPossibleScore}
+                 </div>
+              </div>
+           </div>
+
+           {/* Difficulty (Moved here) */}
+           <div className="space-y-3">
+              <label className={mode("flex items-center gap-2 text-sm font-semibold text-slate-700", "flex items-center gap-2 text-sm font-semibold text-gray-300")}>
+                <FiTrendingUp className={mode("w-4 h-4 text-orange-600", "w-4 h-4 text-orange-400")} />
                 Difficulty Level
               </label>
-          <div className="grid grid-cols-3 gap-3 lg:gap-4">
+              <div className="grid grid-cols-3 gap-3 lg:gap-4">
                 {[
                   { value: 'easy', label: 'Easy', color: getDifficultyColor('easy') },
                   { value: 'medium', label: 'Medium', color: getDifficultyColor('medium') },
@@ -583,26 +493,166 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
                     key={diff.value}
                     type="button"
                     onClick={() => handleInputChange('difficulty', diff.value)}
-                className={`group relative p-4 lg:p-6 rounded-xl lg:rounded-2xl text-center font-bold transition-all duration-300 ${
-                      quizData.difficulty === diff.value
-                    ? `bg-gradient-to-r ${diff.color.bg} text-white shadow-xl lg:shadow-2xl scale-105`
-                    : mode(
-                        'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:scale-102 border border-slate-200',
-                        'bg-gray-700/50 text-gray-300 hover:bg-gray-600/50 hover:scale-102'
-                      )
-                }`}
-              >
-                <div className={`absolute inset-0 bg-gradient-to-r ${diff.color.bg} rounded-xl lg:rounded-2xl blur-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300`}></div>
-                    <div className="relative">
-                  <div className="text-2xl lg:text-3xl mb-1 lg:mb-2">{diff.color.emoji}</div>
-                  <div className="text-sm lg:text-lg">{diff.label}</div>
-                    </div>
+                    className={`group relative p-3 lg:p-4 rounded-xl text-center font-bold transition-all duration-300 ${
+                        quizData.difficulty === diff.value
+                        ? `bg-gradient-to-r ${diff.color.bg} text-white shadow-lg transform scale-105`
+                        : mode(
+                            'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200',
+                            'bg-gray-700/50 text-gray-300 hover:bg-gray-600/50'
+                          )
+                    }`}
+                  >
+                    <div className="text-xl lg:text-2xl mb-1">{diff.color.emoji}</div>
+                    <div className="text-xs lg:text-sm">{diff.label}</div>
                   </button>
                 ))}
               </div>
+           </div>
+        </div>
+
+        {/* Negative Marking Section */}
+        <div className="space-y-3 mb-6 lg:mb-8">
+          <label className={mode("flex items-center gap-2 text-sm font-semibold text-slate-700", "flex items-center gap-2 text-sm font-semibold text-gray-300")}>
+            <FiAlertCircle className={mode("w-4 h-4 text-red-600", "w-4 h-4 text-red-400")} />
+            Negative Marking
+          </label>
+          
+          <div className="space-y-4">
+            {/* Enable/Disable Toggle */}
+            <div className={`flex items-center justify-between p-4 rounded-xl border transition-all duration-300 ${mode(
+              "bg-white border-slate-200",
+              "bg-gray-800/60 border-gray-600/40"
+            )}`}>
+              <div className="flex items-center gap-3">
+                <div className={mode(
+                  "w-10 h-10 bg-gradient-to-br from-red-100 to-pink-100 rounded-lg flex items-center justify-center",
+                  "w-10 h-10 bg-gradient-to-br from-red-500/20 to-pink-500/20 rounded-lg flex items-center justify-center"
+                )}>
+                  <FiAlertCircle className={mode("w-5 h-5 text-red-600", "w-5 h-5 text-red-400")} />
+                </div>
+                <div>
+                  <div className={mode("font-semibold text-slate-800", "font-semibold text-gray-200")}>
+                    Enable Negative Marking
+                  </div>
+                  <div className={mode("text-sm text-slate-600", "text-sm text-gray-400")}>
+                    Deduct marks for wrong answers
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleInputChange('negativeMarking', {
+                  ...quizData.negativeMarking,
+                  enabled: !quizData.negativeMarking.enabled
+                })}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
+                  quizData.negativeMarking.enabled
+                    ? 'bg-red-500'
+                    : mode('bg-slate-200', 'bg-gray-600')
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    quizData.negativeMarking.enabled ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
             </div>
+
+            {/* Negative Marking Settings */}
+            {quizData.negativeMarking.enabled && (
+              <div className={`space-y-4 p-4 rounded-xl border transition-all duration-300 ${mode(
+                "bg-slate-50 border-slate-200",
+                "bg-gray-700/40 border-gray-600/40"
+              )}`}>
+                {/* Type Selection */}
+                <div>
+                  <label className={mode("block text-sm font-medium text-slate-700 mb-2", "block text-sm font-medium text-gray-300 mb-2")}>
+                    Marking Type
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { value: 'fractional', label: 'Fractional', description: '1/4th mark deduction' },
+                      { value: 'fixed', label: 'Fixed', description: 'Fixed mark deduction' }
+                    ].map(type => (
+                      <button
+                        key={type.value}
+                        type="button"
+                        onClick={() => handleInputChange('negativeMarking', {
+                          ...quizData.negativeMarking,
+                          type: type.value
+                        })}
+                        className={`p-3 rounded-lg border transition-all duration-300 text-left ${
+                          quizData.negativeMarking.type === type.value
+                            ? mode('bg-red-50 border-red-300 text-red-700', 'bg-red-500/20 border-red-400 text-red-300')
+                            : mode('bg-white border-slate-200 text-slate-700 hover:bg-slate-50', 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700')
+                        }`}
+                      >
+                        <div className="font-semibold">{type.label}</div>
+                        <div className="text-xs opacity-75">{type.description}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Value Input */}
+                <div>
+                  <label className={mode("block text-sm font-medium text-slate-700 mb-2", "block text-sm font-medium text-gray-300 mb-2")}>
+                    {quizData.negativeMarking.type === 'fractional' ? 'Fraction Value' : 'Mark Deduction'}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="0.1"
+                      max="1"
+                      step="0.05"
+                      value={quizData.negativeMarking.value}
+                      onChange={(e) => handleInputChange('negativeMarking', {
+                        ...quizData.negativeMarking,
+                        value: parseFloat(e.target.value) || 0.25
+                      })}
+                      className={mode(
+                        "w-full px-4 py-3 rounded-lg bg-white border border-slate-300 text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-300",
+                        "w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-300"
+                      )}
+                      placeholder={quizData.negativeMarking.type === 'fractional' ? "0.25" : "0.25"}
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
+                      {quizData.negativeMarking.type === 'fractional' ? 'fraction' : 'marks'}
+                    </div>
+                  </div>
+                  <div className="mt-1 text-xs text-slate-500">
+                    {quizData.negativeMarking.type === 'fractional' 
+                      ? `For each wrong answer, ${quizData.negativeMarking.value} marks will be deducted`
+                      : `For each wrong answer, ${quizData.negativeMarking.value} marks will be deducted`
+                    }
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Description */}
+        <div className="mb-6 lg:mb-8 space-y-3">
+          <label className={mode("flex items-center gap-2 text-sm font-semibold text-slate-700", "flex items-center gap-2 text-sm font-semibold text-gray-300")}>
+            <FiList className={mode("w-4 h-4 text-purple-600", "w-4 h-4 text-purple-400")} />
+            Description
+          </label>
+          <textarea
+            placeholder="Brief description of this test..."
+            value={quizData.description}
+            onChange={(e) => handleInputChange('description', e.target.value)}
+            className={mode(
+              "w-full px-4 lg:px-6 py-3 lg:py-4 rounded-xl bg-white backdrop-blur-sm border border-slate-300 text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 font-medium text-sm lg:text-base h-24 lg:h-32 resize-none",
+              "w-full px-4 lg:px-6 py-3 lg:py-4 rounded-xl bg-gray-900/60 backdrop-blur-sm border border-gray-600/40 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 font-medium text-sm lg:text-base h-24 lg:h-32 resize-none"
+            )}
+            rows="3"
+          />
+        </div>
+
+      </div>
+    </div>
   );
 
   const renderQuestions = () => (
@@ -899,8 +949,8 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
                               </div>
                               <div className="mt-1 text-xs text-slate-500">
                                 {question.negativeMarking.type === 'fractional' 
-                                  ? `For this question, ${question.negativeMarking.value} marks will be deducted for wrong answers`
-                                  : `For this question, ${question.negativeMarking.value} marks will be deducted for wrong answers`
+                                  ? `For each wrong answer, ${question.negativeMarking.value} marks will be deducted`
+                                  : `For each wrong answer, ${question.negativeMarking.value} marks will be deducted`
                                 }
                               </div>
                             </div>
@@ -977,29 +1027,6 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
                     {question.question || 'Question text not provided'}
                   </h5>
                   
-                  {/* Question Image Preview */}
-                  {question.image && (
-                    <div className="mb-3 lg:mb-4">
-                      <div className="relative rounded-lg overflow-hidden border border-gray-600/40 max-w-xs mx-auto">
-                        <img
-                          src={question.image}
-                          alt="Question illustration"
-                          className="w-full h-auto object-contain bg-gray-700/50"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            e.target.nextSibling.style.display = 'flex';
-                          }}
-                        />
-                        <div className="hidden w-full h-20 bg-gray-700/50 border border-dashed border-gray-600 rounded-lg items-center justify-center">
-                          <div className="text-center">
-                            <div className="w-4 h-4 text-gray-400 mx-auto mb-1">📷</div>
-                            <p className="text-xs text-gray-400">Failed to load image</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
                   <div className="space-y-2 lg:space-y-3">
                     {question.options.map((option, optIndex) => (
                       <div
@@ -1028,7 +1055,7 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
                         </span>
                       </div>
                     ))}
-        </div>
+                  </div>
 
                   {question.explanation && (
                     <div className="mt-3 lg:mt-4 p-3 lg:p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">

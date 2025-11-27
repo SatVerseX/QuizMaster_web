@@ -26,6 +26,7 @@ import {
   FiAward,
   FiBarChart2,
   FiArrowRight,
+  FiRefreshCw,
   FiSend
 } from 'react-icons/fi';
 import { FaTrophy, FaRobot } from 'react-icons/fa';
@@ -60,9 +61,6 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
   // Safe key generation
   const storageKey = `${currentUser?.uid || 'anon'}:test-progress:${test?.id || 'unknown'}`;
   const location = useLocation();
-  const challengeMode = location.state?.challengeMode;
-  const targetScore = location.state?.targetScore;
-  const challengerName = location.state?.challengerName;
 
   // --- Return Loading if Test is Missing ---
   if (!test) {
@@ -129,6 +127,7 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
 
   // --- Effects ---
 
+  // Timer Logic
   useEffect(() => {
     if (!isTestStarted || isTestCompleted) return;
     const limitSeconds = (test.timeLimit || 30) * 60;
@@ -141,6 +140,7 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
       const remainingSeconds = Math.round(remainingMs / 1000);
       setTimeLeft(prev => {
         if (remainingSeconds === 0 && prev !== 0) {
+          // Auto-submit when time runs out
           setTimeout(() => handleSubmitTest(), 0);
         }
         return remainingSeconds;
@@ -153,10 +153,12 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
     return () => window.clearTimeout(timeoutId);
   }, [isTestStarted, isTestCompleted, startTime, test.timeLimit]);
 
+  // Initialize Start Time
   useEffect(() => {
     if (isTestStarted && !startTime) setStartTime(new Date());
   }, [isTestStarted, startTime]);
 
+  // Restore Progress from LocalStorage
   useEffect(() => {
     try {
       const raw = localStorage.getItem(storageKey);
@@ -175,6 +177,7 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
     }
   }, []); 
 
+  // Save Progress to LocalStorage
   useEffect(() => {
     if (!isTestStarted || isTestCompleted) return;
     const payload = {
@@ -189,6 +192,7 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
     try { localStorage.setItem(storageKey, JSON.stringify(payload)); } catch { }
   }, [isTestStarted, isTestCompleted, currentQuestionIndex, answers, flaggedQuestions, timeLeft, startTime]);
 
+  // Anti-Cheat: Visibility Change Detection
   useEffect(() => {
     if (!isTestStarted || isTestCompleted) return;
     const handleVisibility = () => {
@@ -196,6 +200,7 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
         setLeaveCountdown(10);
         setLeaveWarningVisible(true);
       } else {
+        // Recalculate time left based on start time to prevent pausing timer by leaving tab
         try {
           const limitSeconds = (test.timeLimit || 30) * 60;
           const startedAtMs = startTime ? new Date(startTime).getTime() : Date.now();
@@ -209,18 +214,20 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, [isTestStarted, isTestCompleted, startTime, test.timeLimit]);
 
+  // Anti-Cheat: Countdown when user leaves
   useEffect(() => {
     if (leaveCountdown === null) return;
     if (leaveCountdown <= 0) {
       setLeaveWarningVisible(false);
       setLeaveCountdown(null);
-      handleSubmitTest();
+      handleSubmitTest(); // Auto-submit if they don't return in time
       return;
     }
     const t = setTimeout(() => setLeaveCountdown(prev => (prev ?? 0) - 1), 1000);
     return () => clearTimeout(t);
   }, [leaveCountdown]);
 
+  // Prevent Back Button
   useEffect(() => {
     if (!isTestStarted || isTestCompleted) return;
     const push = () => { try { window.history.pushState({ preventLeave: true }, '', window.location.href); } catch { } };
@@ -250,6 +257,14 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
     });
   };
 
+  const handleClearAnswer = () => {
+    setAnswers(prev => {
+      const newAnswers = { ...prev };
+      delete newAnswers[currentQuestionIndex];
+      return newAnswers;
+    });
+  };
+
   const handleSectionChange = (newSectionIndex) => {
     if (!isSectionWiseQuiz || !test.sections) return;
     let questionCount = 0;
@@ -271,44 +286,74 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
     let correct = 0;
     let incorrect = 0;
     let totalScore = 0;
+    let maxPossibleScore = 0;
 
     const allQuestions = isSectionWiseQuiz
       ? test.sections.flatMap(s => s.questions)
       : test.questions;
 
     allQuestions.forEach((question, index) => {
+      // Calculate max possible score based on positive marking value
+      const positiveMarks = question.positiveMarking?.enabled && question.positiveMarking.value 
+        ? parseFloat(question.positiveMarking.value) 
+        : 1;
+      maxPossibleScore += positiveMarks;
+
       if (answers[index] === question.correctAnswer) {
         correct++;
-        totalScore += (question.positiveMarking?.value || 1);
+        totalScore += positiveMarks;
       } else if (answers[index] !== undefined) {
         incorrect++;
-        const nm = question.negativeMarking?.enabled ? question.negativeMarking :
-          (test.negativeMarking?.enabled ? test.negativeMarking : null);
+        // Determine which negative marking rule applies
+        let negativeMarkingToApply = null;
+        if (question.negativeMarking && question.negativeMarking.enabled) {
+          negativeMarkingToApply = question.negativeMarking;
+        } else if (test.negativeMarking && test.negativeMarking.enabled) {
+          negativeMarkingToApply = test.negativeMarking;
+        }
 
-        if (nm) {
-          totalScore -= nm.type === 'fractional'
-            ? (question.positiveMarking?.value || 1) * nm.value
-            : nm.value;
+        if (negativeMarkingToApply) {
+          if (negativeMarkingToApply.type === 'fractional') {
+            totalScore -= (positiveMarks * negativeMarkingToApply.value);
+          } else if (negativeMarkingToApply.type === 'fixed') {
+            totalScore -= negativeMarkingToApply.value;
+          }
         }
       }
     });
 
     totalScore = Math.max(0, totalScore);
+    const finalScoreVal = Math.round(totalScore * 100) / 100;
+
+    // Calculate Percentage based on Max Possible Score
+    const percentage = maxPossibleScore > 0 
+      ? Math.round((finalScoreVal / maxPossibleScore) * 100) 
+      : 0;
+
     return {
       correct,
       incorrect,
-      totalScore: Math.round(totalScore * 100) / 100,
-      percentage: Math.round((totalScore / (totalQuestions * 1)) * 100)
+      totalScore: finalScoreVal,
+      maxPossibleScore,
+      percentage
     };
   };
 
   const handleSubmitTest = async () => {
     setLoading(true);
     try {
-      const score = calculateScore();
+      const scoreData = calculateScore();
       const now = new Date();
       const timeSpentInSeconds = startTime ? Math.floor((now - startTime) / 1000) : ((test.timeLimit * 60) - timeLeft);
       const actualStartTime = startTime || new Date(now.getTime() - (timeSpentInSeconds * 1000));
+
+      // --- PASS/FAIL LOGIC ---
+      // Check if a specific passing score is set in the test metadata
+      const passingThreshold = test.passingScore !== undefined && test.passingScore !== null && test.passingScore > 0
+        ? parseFloat(test.passingScore) 
+        : (scoreData.maxPossibleScore * 0.4); // Fallback to 40% if not set
+      
+      const isPassed = scoreData.totalScore >= passingThreshold;
 
       const attemptData = {
         testId: test.id,
@@ -319,10 +364,13 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
         userEmail: currentUser.email,
         userName: currentUser.displayName || currentUser.email,
         answers,
-        score: score.correct,
-        totalScore: score.totalScore,
+        score: scoreData.correct,
+        totalScore: scoreData.totalScore,
+        maxScore: scoreData.maxPossibleScore,
         totalQuestions,
-        percentage: score.percentage,
+        percentage: scoreData.percentage,
+        isPassed: isPassed,          // Saving status
+        passingScore: passingThreshold, // Saving threshold used
         timeSpent: timeSpentInSeconds,
         flaggedQuestions: Array.from(flaggedQuestions),
         startedAt: actualStartTime,
@@ -342,8 +390,9 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
       } catch (e) { console.warn("Could not update aggregate stats", e); }
 
       setIsTestCompleted(true);
-      if (score.percentage > 80) setShowConfetti(true);
+      if (isPassed) setShowConfetti(true);
       setCompletedAttempt({ ...attemptData, id: docRef.id });
+      if(onComplete) onComplete({ ...attemptData, id: docRef.id });
     } catch (error) {
       console.error('Submission Error:', error);
       showError('Failed to submit test. Please try again.', 'Submission Error');
@@ -383,6 +432,7 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
       <div className={`min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 transition-colors duration-300 ${mode('bg-slate-50', 'bg-zinc-950')}`}>
         
         <div className={`w-full max-w-3xl rounded-[2rem] p-8 sm:p-12 shadow-2xl border relative overflow-hidden transition-all ${mode('bg-white/80 border-slate-200/60 shadow-slate-200/50', 'bg-zinc-900/80 border-zinc-800/60 shadow-black/50')} backdrop-blur-xl`}>
+          
           <div className="relative z-10 text-center space-y-10">
             <div className="space-y-6">
               <span className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-extrabold uppercase tracking-widest border shadow-sm ${mode('bg-white border-emerald-100 text-emerald-600', 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400')}`}>
@@ -399,11 +449,12 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
               </div>
             </div>
 
+            {/* Stats Grid with Passing Score */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
               {[
                 { icon: FiClock, label: "Time Limit", value: `${test.timeLimit || 30}m` },
                 { icon: FiAward, label: "Difficulty", value: test.difficulty || 'Medium' },
-                { icon: FiCheckCircle, label: "Passing Score", value: "60%" }
+                { icon: FiCheckCircle, label: "Passing Score", value: test.passingScore ? `${test.passingScore}` : "40%" }
               ].map((item, i) => (
                 <div key={i} className={`p-5 rounded-2xl border transition-all duration-200 hover:-translate-y-1 hover:shadow-lg ${mode('bg-white/50 border-slate-100 shadow-sm hover:shadow-slate-200/40', 'bg-zinc-800/40 border-zinc-700/50 hover:shadow-black/40 hover:bg-zinc-800/60')}`}>
                   <item.icon className={`w-6 h-6 mx-auto mb-3 ${mode('text-emerald-500', 'text-emerald-400')}`} />
@@ -426,7 +477,7 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
               <button onClick={onBack} className={`px-8 py-4 rounded-xl font-bold transition-all duration-200 ${mode('bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-700', 'bg-transparent text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300')}`}>
                 Cancel
               </button>
-              <button onClick={() => setIsTestStarted(true)} className="group px-10 py-4 rounded-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-xl shadow-emerald-600/20 hover:shadow-emerald-600/40 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3">
+              <button onClick={() => setIsTestStarted(true)} className="group px-10 py-4 rounded-xl font-bold bg-emerald-600 text-white shadow-xl shadow-emerald-600/20 hover:shadow-emerald-600/40 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3">
                 Start Assessment <FiArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
@@ -460,6 +511,7 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
   // 3. Main Test Interface
   return (
     <div className={`min-h-screen flex flex-col h-screen overflow-hidden ${mode('bg-slate-50', 'bg-zinc-950')}`}>
+      {showConfetti && <Confetti recycle={false} numberOfPieces={400} />}
 
       {/* Top Bar */}
       <header className={`flex-none h-16 px-4 sm:px-6 border-b flex items-center justify-between z-20 ${mode('bg-white border-slate-200', 'bg-zinc-900 border-zinc-800')}`}>
@@ -579,7 +631,7 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
                   </button>
                 </div>
 
-                <h2 className={`text-lg sm:text-xl font-semibold leading-relaxed ${mode('text-slate-900', 'text-zinc-100')}`}>
+                <h2 className={`text-xl sm:text-2xl font-semibold leading-relaxed ${mode('text-slate-900', 'text-zinc-100')}`}>
                   {currentQuestion?.question}
                 </h2>
               </div>
@@ -599,21 +651,26 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
                       onClick={() => handleAnswerSelect(idx)}
                       className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-200 flex items-start gap-4 group ${isSelected
                         ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 dark:border-emerald-500'
-                        : mode('border-slate-100 hover:border-emerald-200 hover:bg-slate-50', 'border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800')
+                        : mode('border-slate-100 hover:border-emerald-200 hover:bg-slate-50', 'border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800/50')
                         }`}
                     >
                       <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold transition-colors shrink-0 ${isSelected
-                        ? 'bg-emerald-500 text-white'
+                        ? 'bg-emerald-500 text-white shadow-sm'
                         : mode('bg-slate-100 text-slate-500 group-hover:bg-white group-hover:shadow-sm', 'bg-zinc-800 text-zinc-400 group-hover:bg-zinc-700')
                         }`}>
                         {String.fromCharCode(65 + idx)}
                       </div>
-                      <span className={`text-sm sm:text-base font-medium pt-1 ${isSelected
-                        ? mode('text-emerald-900', 'text-emerald-100')
-                        : mode('text-slate-700', 'text-zinc-300')
+
+                      <div className="flex-1 pt-1">
+                        <span className={`text-base font-medium leading-relaxed ${
+                          isSelected
+                            ? mode('text-slate-900 font-bold', 'text-white font-bold')
+                            : mode('text-zinc-700 group-hover:text-zinc-900', 'text-zinc-300 group-hover:text-white')
                         }`}>
-                        {option}
-                      </span>
+                          {option}
+                        </span>
+                      </div>
+
                       {isSelected && (
                         <div className="ml-auto">
                            <FiCheckCircle className="w-5 h-5 text-emerald-500" />
@@ -623,8 +680,19 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
                   );
                 })}
               </div>
+              
+              {answers[currentQuestionIndex] !== undefined && (
+                <div className={`px-8 pb-6 flex justify-end`}>
+                   <button 
+                     onClick={handleClearAnswer} 
+                     className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-colors ${mode('text-zinc-400 hover:text-emerald-600', 'text-zinc-500 hover:text-emerald-400')}`}
+                   >
+                      <FiRefreshCw /> Clear Selection
+                   </button>
+                </div>
+             )}
             </div>
-
+            
             {/* Navigation Footer */}
             <div className="flex justify-between items-center">
               <button
@@ -651,9 +719,9 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
 
       </div>
 
-      {/* Dialogs */}
+      {/* Confirmation Modal */}
       {showSubmitConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className={`w-full max-w-md rounded-2xl p-6 shadow-2xl ${mode('bg-white', 'bg-zinc-900 border border-zinc-800')}`}>
             <h3 className={`text-xl font-bold mb-2 ${mode('text-slate-900', 'text-white')}`}>Ready to submit?</h3>
             <p className={`mb-6 ${mode('text-slate-600', 'text-zinc-400')}`}>

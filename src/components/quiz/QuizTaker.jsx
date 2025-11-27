@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { collection, addDoc } from 'firebase/firestore';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { collection, addDoc, doc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -8,9 +8,10 @@ import BeautifulPopup from '../common/BeautifulPopup';
 import { 
   FiArrowLeft, FiCheck, FiX, FiClock, FiAward, FiSend, 
   FiAlertCircle, FiChevronRight, FiChevronLeft, FiRefreshCw,
-  FiBarChart2
+  FiBarChart2, FiCheckCircle
 } from 'react-icons/fi';
 import { FaTrophy, FaMedal, FaChartPie } from 'react-icons/fa';
+import Confetti from 'react-confetti'; // Assuming you have this installed based on context
 
 const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
   const { currentUser } = useAuth();
@@ -26,6 +27,8 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
   const [startTime] = useState(Date.now());
   const [endTime, setEndTime] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [isTestStarted, setIsTestStarted] = useState(false); // Added to control start screen
+  const [showConfetti, setShowConfetti] = useState(false); // For passing celebration
 
   // --- DEFENSIVE LOGIC ---
   const isSectionWiseQuiz = useMemo(() => {
@@ -132,20 +135,30 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
       : quiz.questions;
 
     allQuestions.forEach((question, index) => {
+      // Determine points for this question (default to 1 if not specified)
+      const positiveMarks = question.positiveMarking?.enabled && question.positiveMarking.value 
+        ? parseFloat(question.positiveMarking.value) 
+        : 1;
+
       if (answers[index] === question.correctAnswer) {
         correctAnswers++;
-        totalScore += 1;
+        totalScore += positiveMarks;
       } else if (answers[index] !== undefined) {
         incorrectAnswers++;
         let negativeMarkingToApply = null;
+        
+        // Check Question-level specific override first
         if (question.negativeMarking && question.negativeMarking.enabled) {
           negativeMarkingToApply = question.negativeMarking;
-        } else if (quiz.negativeMarking && quiz.negativeMarking.enabled) {
+        } 
+        // Fallback to Quiz-level setting
+        else if (quiz.negativeMarking && quiz.negativeMarking.enabled) {
           negativeMarkingToApply = quiz.negativeMarking;
         }
+        
         if (negativeMarkingToApply) {
           if (negativeMarkingToApply.type === 'fractional') {
-            totalScore -= negativeMarkingToApply.value;
+            totalScore -= (positiveMarks * negativeMarkingToApply.value);
           } else if (negativeMarkingToApply.type === 'fixed') {
             totalScore -= negativeMarkingToApply.value;
           }
@@ -156,7 +169,21 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
     totalScore = Math.max(0, totalScore);
     const finalScoreVal = Math.round(totalScore * 100) / 100;
     const timeSpentSeconds = Math.floor((endTimeNow - startTime) / 1000);
-    const percentage = Math.round((finalScoreVal / allQuestions.length) * 100);
+    
+    // Calculate Percentage (Assuming approx max score based on question count for simple quizzes)
+    // For precise percentage with custom markings, calculate maxPossibleScore first
+    const maxPossibleScore = allQuestions.reduce((acc, q) => {
+       return acc + (q.positiveMarking?.enabled && q.positiveMarking.value ? parseFloat(q.positiveMarking.value) : 1);
+    }, 0);
+
+    const percentage = maxPossibleScore > 0 ? Math.round((finalScoreVal / maxPossibleScore) * 100) : 0;
+
+    // --- PASS/FAIL LOGIC ---
+    const passingThreshold = quiz.passingScore !== undefined && quiz.passingScore !== null
+      ? parseFloat(quiz.passingScore)
+      : (maxPossibleScore * 0.4); // Default 40% if not set
+    
+    const isPassed = finalScoreVal >= passingThreshold;
 
     setScore(correctAnswers);
     setFinalScore(finalScoreVal);
@@ -171,8 +198,11 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
         userEmail: currentUser.email,
         score: correctAnswers,
         totalScore: finalScoreVal,
+        maxScore: maxPossibleScore,
         totalQuestions: allQuestions.length,
         percentage: percentage,
+        isPassed: isPassed,          // Saved
+        passingScore: passingThreshold, // Saved snapshot
         timeSpent: timeSpentSeconds,
         answers: answers,
         negativeMarking: quiz.negativeMarking || null,
@@ -181,6 +211,19 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
       };
 
       await addDoc(collection(db, 'quiz-attempts'), attemptData);
+      
+      // Increment attempt count on the quiz document
+      try {
+        const collectionName = isSectionWiseQuiz ? 'section-quizzes' : 'quizzes';
+        await updateDoc(doc(db, collectionName, quiz.id), {
+            totalAttempts: increment(1)
+        });
+      } catch(e) { console.warn('Failed to update aggregate stats'); }
+
+      if (isPassed) {
+        setShowConfetti(true);
+      }
+
       setShowResults(true);
       setShowSubmitConfirm(false);
       
@@ -212,6 +255,55 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
     );
   }
 
+  // --- START SCREEN ---
+  if (!isTestStarted && !showResults) {
+     return (
+        <div className={`min-h-screen flex flex-col items-center justify-center p-4 ${mode('bg-slate-50', 'bg-zinc-950')}`}>
+           <div className={`w-full max-w-2xl rounded-3xl p-8 sm:p-12 shadow-2xl border relative overflow-hidden ${mode('bg-white border-slate-200', 'bg-zinc-900 border-zinc-800')}`}>
+              {/* Decoration */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl -mr-16 -mt-16" />
+              
+              <div className="relative z-10 text-center space-y-6">
+                 <div className={`w-20 h-20 mx-auto rounded-2xl flex items-center justify-center ${mode('bg-blue-50 text-blue-600', 'bg-blue-900/20 text-blue-400')}`}>
+                    <FiAward className="w-10 h-10" />
+                 </div>
+                 
+                 <div>
+                    <h1 className={`text-3xl font-black tracking-tight mb-2 ${mode('text-slate-900', 'text-white')}`}>{quiz.title}</h1>
+                    <p className={`text-lg ${mode('text-slate-600', 'text-zinc-400')}`}>{quiz.description || "Ready to challenge yourself?"}</p>
+                 </div>
+
+                 <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto">
+                    <div className={`p-4 rounded-2xl border ${mode('bg-slate-50 border-slate-100', 'bg-zinc-800/50 border-zinc-700')}`}>
+                       <div className={`text-xl font-bold ${mode('text-slate-900', 'text-white')}`}>{quiz.timeLimit || 30}m</div>
+                       <div className="text-xs uppercase font-bold text-slate-500">Time</div>
+                    </div>
+                    <div className={`p-4 rounded-2xl border ${mode('bg-slate-50 border-slate-100', 'bg-zinc-800/50 border-zinc-700')}`}>
+                       <div className={`text-xl font-bold ${mode('text-slate-900', 'text-white')}`}>{totalQuestions}</div>
+                       <div className="text-xs uppercase font-bold text-slate-500">Questions</div>
+                    </div>
+                    <div className={`p-4 rounded-2xl border ${mode('bg-slate-50 border-slate-100', 'bg-zinc-800/50 border-zinc-700')}`}>
+                       <div className={`text-xl font-bold ${mode('text-slate-900', 'text-white')}`}>
+                          {quiz.passingScore ? quiz.passingScore : '40%'}
+                       </div>
+                       <div className="text-xs uppercase font-bold text-slate-500">To Pass</div>
+                    </div>
+                 </div>
+
+                 <div className="flex justify-center gap-4 pt-4">
+                    <button onClick={onBack} className={`px-8 py-3 rounded-xl font-bold transition-colors ${mode('bg-gray-100 text-gray-600 hover:bg-gray-200', 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700')}`}>
+                       Back
+                    </button>
+                    <button onClick={() => setIsTestStarted(true)} className="px-10 py-3 rounded-xl font-bold bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transform hover:-translate-y-0.5 transition-all">
+                       Start Quiz
+                    </button>
+                 </div>
+              </div>
+           </div>
+        </div>
+     )
+  }
+
   // --- EMPTY STATE ---
   if (totalQuestions === 0) {
     return (
@@ -238,19 +330,22 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
   // --- RESULTS SCREEN ---
   if (showResults) {
     const percentage = Math.round((score / totalQuestions) * 100);
-    let gradeColor = percentage >= 80 ? 'text-emerald-500' : percentage >= 60 ? 'text-amber-500' : 'text-rose-500';
+    // Determine pass/fail based on the saved attempt data or calculation
+    const passingScore = quiz.passingScore !== undefined ? parseFloat(quiz.passingScore) : (totalQuestions * 0.4); // Fallback logic
+    const isPassed = finalScore >= passingScore;
+    
+    let gradeColor = isPassed ? 'text-emerald-500' : 'text-rose-500';
 
     return (
       <div className={`min-h-screen flex items-center justify-center p-4 ${mode('bg-zinc-50', 'bg-zinc-950')}`}>
+        {showConfetti && <Confetti recycle={false} numberOfPieces={400} />}
+        
         <div className={`max-w-2xl w-full rounded-3xl shadow-2xl border overflow-hidden relative ${mode('bg-white border-zinc-200', 'bg-zinc-900 border-zinc-800')}`}>
           
-          {/* Confetti Background Effect for High Score */}
-          {percentage >= 70 && (
-            <div className="absolute inset-0 pointer-events-none overflow-hidden">
-              <div className={`absolute -top-24 -left-24 w-64 h-64 rounded-full blur-3xl opacity-20 ${isDark ? 'bg-emerald-500' : 'bg-emerald-300'}`} />
-              <div className={`absolute -bottom-24 -right-24 w-64 h-64 rounded-full blur-3xl opacity-20 ${isDark ? 'bg-blue-500' : 'bg-blue-300'}`} />
-            </div>
-          )}
+          {/* Status Banner */}
+          <div className={`w-full py-3 text-center font-bold text-sm uppercase tracking-widest ${isPassed ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
+             {isPassed ? 'Assessment Passed' : 'Assessment Failed'}
+          </div>
 
           <div className="relative p-8 sm:p-12 text-center">
             
@@ -262,7 +357,7 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className={`text-5xl font-black tracking-tighter ${mode('text-zinc-900', 'text-white')}`}>{percentage}%</span>
-                <span className={`text-xs font-bold uppercase tracking-widest mt-1 ${mode('text-zinc-400', 'text-zinc-500')}`}>Accuracy</span>
+                <span className={`text-xs font-bold uppercase tracking-widest mt-1 ${mode('text-zinc-400', 'text-zinc-500')}`}>Score</span>
               </div>
               {percentage === 100 && (
                 <div className="absolute -right-2 -top-2 bg-yellow-400 text-white p-3 rounded-full shadow-lg animate-bounce">
@@ -272,16 +367,18 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
             </div>
 
             <h1 className={`text-3xl font-bold mb-2 ${mode('text-zinc-900', 'text-white')}`}>
-              {percentage >= 80 ? 'Outstanding!' : percentage >= 60 ? 'Good Job!' : 'Keep Practicing!'}
+              {isPassed ? 'Congratulations!' : 'Keep Practicing!'}
             </h1>
             <p className={`text-base mb-8 ${mode('text-zinc-500', 'text-zinc-400')}`}>
-              You answered <strong className={gradeColor}>{score}</strong> out of <strong>{totalQuestions}</strong> questions correctly.
+              You scored <strong className={gradeColor}>{finalScore}</strong> out of <strong>{totalQuestions}</strong> points.
+              <br/>
+              <span className="text-xs opacity-70">Required to pass: {passingScore}</span>
             </p>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-3 gap-4 mb-10">
               <div className={`p-4 rounded-2xl ${mode('bg-zinc-50', 'bg-zinc-800/50')}`}>
-                <FiCheck className="w-6 h-6 mx-auto mb-2 text-emerald-500" />
+                <FiCheckCircle className="w-6 h-6 mx-auto mb-2 text-emerald-500" />
                 <div className={`text-xl font-bold ${mode('text-zinc-900', 'text-white')}`}>{score}</div>
                 <div className={`text-xs font-medium uppercase ${mode('text-zinc-400', 'text-zinc-500')}`}>Correct</div>
               </div>
@@ -347,7 +444,7 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
 
   // --- MAIN QUIZ UI ---
   return (
-    <div className={`min-h-screen flex flex-col ${mode('bg-zinc-50', 'bg-zinc-950')}`}>
+    <div className={`min-h-screen flex flex-col h-screen overflow-hidden ${mode('bg-zinc-50', 'bg-zinc-950')}`}>
       
       {/* Top Bar */}
       <header className={`sticky top-0 z-20 border-b backdrop-blur-xl ${mode('bg-white/80 border-zinc-200', 'bg-zinc-900/80 border-zinc-800')}`}>
@@ -375,6 +472,7 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
           <div className="flex items-center gap-3 shrink-0">
             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-mono font-bold ${mode('bg-zinc-100 border-zinc-200 text-zinc-700', 'bg-zinc-800 border-zinc-700 text-zinc-300')}`}>
               <FiClock className="w-3.5 h-3.5" />
+              {/* Use simple countdown or elapsed time depending on logic preference. Currently showing elapsed time */}
               <span>{Math.floor((Date.now() - startTime) / 60000)}:{String(Math.floor((Date.now() - startTime) / 1000) % 60).padStart(2, '0')}</span>
             </div>
             <button 
