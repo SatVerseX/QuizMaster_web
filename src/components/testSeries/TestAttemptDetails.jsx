@@ -10,22 +10,26 @@ import {
   FiAlertCircle, 
   FiShare2, 
   FiDownload, 
-  FiAward,
   FiChevronRight,
   FiActivity,
   FiLayers,
-  FiZap
+  FiZap,
+  FiFileText,
+  FiShield
 } from "react-icons/fi";
+import { FaGamepad, FaBolt } from "react-icons/fa6"; // Importing specific icons for cleaner look
 import { motion, AnimatePresence } from "framer-motion";
 import Confetti from "react-confetti";
 import FlashcardGenerator from "../flashcards/FlashcardGenerator";
 import RemediationGenerator from "../quiz/RemediationGenerator"; 
+import ChallengeModal from "../gamification/ChallengeModal"; // Import Challenge Modal
 import TestAttemptHeader from "./TestAttemptHeader";
 import PerformanceOverview from "../test-analysis/PerformanceOverview";
 import SectionWiseAnalysis from "../test-analysis/SectionWiseAnalysis";
 import QuestionNavigator from "./QuestionNavigator";
 import DownloadModal from "./DownloadModal";
 import ShareModal from "./ShareModal";
+import VideoRecommendations from "../test-analysis/VideoRecommendations";
 
 // --- Helper for Gamified Badges ---
 const getPerformanceBadge = (percentage) => {
@@ -48,6 +52,7 @@ const TestAttemptDetails = ({
   // State
   const [showFlashcardGen, setShowFlashcardGen] = useState(false);
   const [showRemediationGen, setShowRemediationGen] = useState(false);
+  const [showChallengeModal, setShowChallengeModal] = useState(false); // New Challenge Modal State
   const [testDetails, setTestDetails] = useState(null);
   const [testSeries, setTestSeries] = useState(propTestSeries);
   const [loading, setLoading] = useState(true);
@@ -67,8 +72,6 @@ const TestAttemptDetails = ({
 
     // 2. If attempt object exists but IDs are missing, check if it's just an empty init object
     if (!attempt.id && !attempt.testId) {
-      // Only set error if it's not just a loading state
-      // console.warn("Empty attempt object received");
       return;
     }
 
@@ -306,39 +309,61 @@ const TestAttemptDetails = ({
           />
         </motion.div>
 
-        {/* Action Bar with Remediation Button */}
-        <div className="flex flex-wrap gap-3 mb-8">
+        {/* --- MODERN ACTION BAR --- */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex flex-wrap gap-4 mb-8">
+          
+          {/* 1. Generate Concept Notes (Purple) */}
           {incorrectQuestions.length > 0 && (
-            <>
-              <button
-                onClick={() => setShowFlashcardGen(true)}
-                className={`w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg transition-all transform hover:-translate-y-0.5 ${
-                  isDark 
-                    ? 'bg-zinc-800 text-white hover:bg-zinc-700 border border-zinc-700' 
-                    : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
-                }`}
-              >
-                <FiLayers className="w-4 h-4" /> 
-                Mistakes to Flashcards
-              </button>
-
-              {/* Remediation Button */}
-              <button
-                onClick={() => setShowRemediationGen(true)}
-                className={`w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg transition-all transform hover:-translate-y-0.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-indigo-500/20`}
-              >
-                <FiZap className="w-4 h-4 text-yellow-300" /> 
-                Generate Smart Remediation Quiz
-              </button>
-            </>
+            <button
+              onClick={() => showSuccess("Concept Notes generated! (Check console for JSON)", "Feature Preview")} // Placeholder until Modal is connected
+              className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/20 transition-all hover:-translate-y-0.5 active:scale-95"
+            >
+              <FiFileText className="w-4 h-4" /> 
+              Generate Concept Notes
+            </button>
           )}
-           
-           <div className="flex-grow hidden sm:block"></div>
+
+          {/* 2. Mistakes to Flashcards (White/Dark) */}
+          {incorrectQuestions.length > 0 && (
+            <button
+              onClick={() => setShowFlashcardGen(true)}
+              className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-bold shadow-md transition-all hover:-translate-y-0.5 active:scale-95 border ${
+                isDark 
+                  ? 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700' 
+                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              <FiLayers className="w-4 h-4" /> 
+              Mistakes to Flashcards
+            </button>
+          )}
+
+          {/* 3. Smart Remediation (Orange Gradient) */}
+          {incorrectQuestions.length > 0 && (
+            <button
+              onClick={() => setShowRemediationGen(true)}
+              className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 shadow-lg shadow-orange-500/20 transition-all hover:-translate-y-0.5 active:scale-95"
+            >
+              <FaBolt className="w-4 h-4" /> 
+              Smart Remediation
+            </button>
+          )}
+
+           {/* 4. Challenge Friend (Yellow/Gamified) - NEW */}
+           <button
+              onClick={() => setShowChallengeModal(true)}
+              className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-bold text-black bg-yellow-400 hover:bg-yellow-300 shadow-lg shadow-yellow-400/20 transition-all hover:-translate-y-0.5 active:scale-95"
+            >
+              <FaGamepad className="w-5 h-5" /> 
+              Challenge Friend
+            </button>
+
+           {/* 5. Retake (Blue) */}
            <button
             onClick={handleRetakeTest}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition-all transform hover:-translate-y-0.5"
+            className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition-all hover:-translate-y-0.5 active:scale-95 ml-auto"
           >
-            <FiRefreshCw className="w-4 h-4" /> Retake Challenge
+            <FiRefreshCw className="w-4 h-4" /> Retake
           </button>
         </div>
 
@@ -387,6 +412,14 @@ const TestAttemptDetails = ({
                     questionAnalysis={questionAnalysis}
                   />
                 </div>
+
+                {/* Video Recommendations Widget */}
+                {incorrectQuestions.length > 0 && (
+                  <VideoRecommendations 
+                    mistakes={incorrectQuestions}
+                    testTitle={safeAttempt.testTitle || "Quiz Review"}
+                  />
+                )}
              </div>
           </div>
 
@@ -474,6 +507,17 @@ const TestAttemptDetails = ({
                mistakes={incorrectQuestions}
                originalTitle={safeAttempt.testTitle}
                onClose={() => setShowRemediationGen(false)}
+            />
+          )}
+          
+          {/* Challenge Modal */}
+          {showChallengeModal && (
+            <ChallengeModal 
+               quizId={safeAttempt.testId}
+               quizTitle={safeAttempt.testTitle}
+               score={safeAttempt.score}
+               percentage={safeAttempt.percentage}
+               onClose={() => setShowChallengeModal(false)}
             />
           )}
         </AnimatePresence>

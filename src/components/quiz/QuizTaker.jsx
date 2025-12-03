@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { collection, addDoc, doc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -6,31 +6,64 @@ import { useTheme } from '../../contexts/ThemeContext';
 import usePopup from '../../hooks/usePopup';
 import BeautifulPopup from '../common/BeautifulPopup';
 import { 
-  FiArrowLeft, FiCheck, FiX, FiClock, FiAward, FiSend, 
+  FiArrowLeft, FiCheck, FiX, FiClock, FiSend, 
   FiAlertCircle, FiChevronRight, FiChevronLeft, FiRefreshCw,
-  FiBarChart2, FiCheckCircle
+  FiCheckCircle, FiHelpCircle
 } from 'react-icons/fi';
-import { FaTrophy, FaMedal, FaChartPie } from 'react-icons/fa';
-import Confetti from 'react-confetti'; // Assuming you have this installed based on context
+import { FaTrophy, FaChartPie } from 'react-icons/fa';
+import Confetti from 'react-confetti';
+import * as z from 'zod'; // Importing zod for validation
+
+// --- SCHEMA VALIDATION ---
+const QuizSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  questions: z.array(z.object({
+    question: z.string(),
+    options: z.array(z.string()),
+    correctAnswer: z.number().optional(), // Optional for client-side security if needed
+    image: z.string().nullable().optional()
+  })).optional(),
+  sections: z.array(z.any()).optional()
+});
 
 const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
   const { currentUser } = useAuth();
   const { isDark } = useTheme();
-  const { popupState, showError, showSuccess, hidePopup } = usePopup();
+  const { popupState, showError, hidePopup } = usePopup();
 
+  // --- STATE ---
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [showResults, setShowResults] = useState(false);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [score, setScore] = useState(0);
   const [finalScore, setFinalScore] = useState(0);
+  
+  // Timer State
   const [startTime] = useState(Date.now());
+  const [now, setNow] = useState(Date.now()); // Current timestamp for smooth ticker
   const [endTime, setEndTime] = useState(null);
+  
   const [saving, setSaving] = useState(false);
-  const [isTestStarted, setIsTestStarted] = useState(false); // Added to control start screen
-  const [showConfetti, setShowConfetti] = useState(false); // For passing celebration
+  const [isTestStarted, setIsTestStarted] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
 
-  // --- DEFENSIVE LOGIC ---
+  // Scroll ref for main content
+  const mainContentRef = useRef(null);
+
+  // --- TIMER EFFECT ---
+  useEffect(() => {
+    let interval;
+    if (isTestStarted && !showResults) {
+      interval = setInterval(() => {
+        setNow(Date.now());
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isTestStarted, showResults]);
+
+  // --- MEMOIZED HELPERS ---
   const isSectionWiseQuiz = useMemo(() => {
     return quiz?.sections && Array.isArray(quiz.sections) && quiz.sections.length > 0;
   }, [quiz]);
@@ -74,15 +107,26 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
 
   const currentQuestion = getCurrentQuestion();
 
+  // Defensive check for rendering
+  const safeCurrentQuestion = currentQuestion || { question: "Loading...", options: [] };
+
   const progressPercentage = useMemo(() =>
-    totalQuestions > 0 ? ((currentQuestionIndex + 1) / totalQuestions) * 100 : 0,
-    [currentQuestionIndex, totalQuestions]
+    totalQuestions > 0 ? ((Object.keys(answers).length) / totalQuestions) * 100 : 0,
+    [answers, totalQuestions]
   );
+
+  const formatTime = (ms) => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
 
   // --- HANDLERS ---
   const handleAnswerSelect = useCallback((optionIndex) => {
     setAnswers(prev => {
       const newAnswers = { ...prev };
+      // Toggle logic: if clicking same answer, clear it. Else set it.
       if (prev[currentQuestionIndex] === optionIndex) {
         delete newAnswers[currentQuestionIndex];
       } else {
@@ -103,22 +147,17 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
   const handleNextQuestion = useCallback(() => {
     if (currentQuestionIndex < totalQuestions - 1) {
       setCurrentQuestionIndex(prevIndex => prevIndex + 1);
+      // Scroll to top of content on change
+      if (mainContentRef.current) mainContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [currentQuestionIndex, totalQuestions]);
 
   const handlePreviousQuestion = useCallback(() => {
     if (currentQuestionIndex > 0) {
       setCurrentQuestionIndex(prevIndex => prevIndex - 1);
+      if (mainContentRef.current) mainContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [currentQuestionIndex]);
-
-  const handleSubmitConfirm = useCallback(() => {
-    setShowSubmitConfirm(true);
-  }, []);
-
-  const handleCancelSubmit = useCallback(() => {
-    setShowSubmitConfirm(false);
-  }, []);
 
   const submitQuiz = useCallback(async () => {
     if (!quiz) return;
@@ -127,7 +166,6 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
     setEndTime(endTimeNow);
 
     let correctAnswers = 0;
-    let incorrectAnswers = 0;
     let totalScore = 0;
 
     const allQuestions = isSectionWiseQuiz 
@@ -135,7 +173,6 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
       : quiz.questions;
 
     allQuestions.forEach((question, index) => {
-      // Determine points for this question (default to 1 if not specified)
       const positiveMarks = question.positiveMarking?.enabled && question.positiveMarking.value 
         ? parseFloat(question.positiveMarking.value) 
         : 1;
@@ -144,15 +181,11 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
         correctAnswers++;
         totalScore += positiveMarks;
       } else if (answers[index] !== undefined) {
-        incorrectAnswers++;
+        // Negative Marking Logic
         let negativeMarkingToApply = null;
-        
-        // Check Question-level specific override first
-        if (question.negativeMarking && question.negativeMarking.enabled) {
+        if (question.negativeMarking?.enabled) {
           negativeMarkingToApply = question.negativeMarking;
-        } 
-        // Fallback to Quiz-level setting
-        else if (quiz.negativeMarking && quiz.negativeMarking.enabled) {
+        } else if (quiz.negativeMarking?.enabled) {
           negativeMarkingToApply = quiz.negativeMarking;
         }
         
@@ -170,18 +203,15 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
     const finalScoreVal = Math.round(totalScore * 100) / 100;
     const timeSpentSeconds = Math.floor((endTimeNow - startTime) / 1000);
     
-    // Calculate Percentage (Assuming approx max score based on question count for simple quizzes)
-    // For precise percentage with custom markings, calculate maxPossibleScore first
+    // Max Score Calculation
     const maxPossibleScore = allQuestions.reduce((acc, q) => {
-       return acc + (q.positiveMarking?.enabled && q.positiveMarking.value ? parseFloat(q.positiveMarking.value) : 1);
+       return acc + (q.positiveMarking?.enabled ? parseFloat(q.positiveMarking.value) : 1);
     }, 0);
 
     const percentage = maxPossibleScore > 0 ? Math.round((finalScoreVal / maxPossibleScore) * 100) : 0;
-
-    // --- PASS/FAIL LOGIC ---
     const passingThreshold = quiz.passingScore !== undefined && quiz.passingScore !== null
       ? parseFloat(quiz.passingScore)
-      : (maxPossibleScore * 0.4); // Default 40% if not set
+      : (maxPossibleScore * 0.4); 
     
     const isPassed = finalScoreVal >= passingThreshold;
 
@@ -192,7 +222,6 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
       const attemptData = {
         quizId: quiz.id,
         quizTitle: quiz.title,
-        testSeriesId: quiz.testSeriesId || null,
         userId: currentUser.uid,
         userName: currentUser.displayName || 'Anonymous',
         userEmail: currentUser.email,
@@ -201,38 +230,31 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
         maxScore: maxPossibleScore,
         totalQuestions: allQuestions.length,
         percentage: percentage,
-        isPassed: isPassed,          // Saved
-        passingScore: passingThreshold, // Saved snapshot
+        isPassed: isPassed,
+        passingScore: passingThreshold,
         timeSpent: timeSpentSeconds,
         answers: answers,
-        negativeMarking: quiz.negativeMarking || null,
         completedAt: new Date(),
         createdAt: new Date()
       };
 
       await addDoc(collection(db, 'quiz-attempts'), attemptData);
       
-      // Increment attempt count on the quiz document
       try {
         const collectionName = isSectionWiseQuiz ? 'section-quizzes' : 'quizzes';
         await updateDoc(doc(db, collectionName, quiz.id), {
             totalAttempts: increment(1)
         });
-      } catch(e) { console.warn('Failed to update aggregate stats'); }
+      } catch(e) { console.warn('Failed to update stats'); }
 
-      if (isPassed) {
-        setShowConfetti(true);
-      }
+      if (isPassed) setShowConfetti(true);
 
       setShowResults(true);
       setShowSubmitConfirm(false);
       
     } catch (error) {
       console.error('Error saving quiz attempt:', error);
-      showError(
-        `Score calculated (${correctAnswers}/${allQuestions.length}), but save failed. Permission or Network error.`, 
-        'Save Error'
-      );
+      showError('Save failed due to network or permission issues.', 'Save Error');
       setShowResults(true);
       setShowSubmitConfirm(false);
     } finally {
@@ -240,202 +262,96 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
     }
   }, [quiz, answers, startTime, currentUser, isSectionWiseQuiz, showError]);
 
-  // --- STYLES & THEME HELPER ---
+  // --- STYLES HELPER ---
   const mode = (light, dark) => (isDark ? dark : light);
 
-  // --- LOADING STATE ---
-  if (!quiz) {
-    return (
-      <div className={`min-h-screen flex flex-col items-center justify-center space-y-4 ${mode('bg-zinc-50', 'bg-zinc-950')}`}>
-        <div className="relative">
-          <div className="w-16 h-16 border-4 border-rose-200 dark:border-rose-900/30 border-t-rose-600 rounded-full animate-spin"></div>
-        </div>
-        <p className={`text-sm font-medium animate-pulse ${mode('text-zinc-500', 'text-zinc-400')}`}>Loading Assessment...</p>
-      </div>
-    );
-  }
+  // --- LOADING / START SCREEN ---
+  if (!quiz) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
 
-  // --- START SCREEN ---
   if (!isTestStarted && !showResults) {
      return (
         <div className={`min-h-screen flex flex-col items-center justify-center p-4 ${mode('bg-slate-50', 'bg-zinc-950')}`}>
-           <div className={`w-full max-w-2xl rounded-3xl p-8 sm:p-12 shadow-2xl border relative overflow-hidden ${mode('bg-white border-slate-200', 'bg-zinc-900 border-zinc-800')}`}>
-              {/* Decoration */}
-              <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl -mr-16 -mt-16" />
+           <div className={`w-full max-w-xl rounded-3xl p-8 sm:p-10 shadow-xl border relative overflow-hidden text-center ${mode('bg-white border-slate-200', 'bg-zinc-900 border-zinc-800')}`}>
+              <div className={`w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-6 ${mode('bg-rose-50 text-rose-600', 'bg-rose-900/20 text-rose-400')}`}>
+                  <FiHelpCircle className="w-8 h-8" />
+              </div>
+              <h1 className={`text-2xl font-bold mb-2 ${mode('text-slate-900', 'text-white')}`}>{quiz.title}</h1>
+              <p className={`text-sm mb-8 ${mode('text-slate-500', 'text-zinc-400')}`}>{quiz.description || "You are about to start the assessment."}</p>
               
-              <div className="relative z-10 text-center space-y-6">
-                 <div className={`w-20 h-20 mx-auto rounded-2xl flex items-center justify-center ${mode('bg-blue-50 text-blue-600', 'bg-blue-900/20 text-blue-400')}`}>
-                    <FiAward className="w-10 h-10" />
-                 </div>
-                 
-                 <div>
-                    <h1 className={`text-3xl font-black tracking-tight mb-2 ${mode('text-slate-900', 'text-white')}`}>{quiz.title}</h1>
-                    <p className={`text-lg ${mode('text-slate-600', 'text-zinc-400')}`}>{quiz.description || "Ready to challenge yourself?"}</p>
-                 </div>
+              <div className="grid grid-cols-2 gap-4 mb-8">
+                <div className={`p-4 rounded-xl border ${mode('bg-slate-50', 'bg-zinc-800/50 border-zinc-700')}`}>
+                  <div className="text-xl font-bold">{totalQuestions}</div>
+                  <div className="text-xs text-zinc-500 uppercase font-bold">Questions</div>
+                </div>
+                <div className={`p-4 rounded-xl border ${mode('bg-slate-50', 'bg-zinc-800/50 border-zinc-700')}`}>
+                   {/* Fallback to 1 min per question if not set */}
+                  <div className="text-xl font-bold">{quiz.timeLimit || totalQuestions}m</div>
+                  <div className="text-xs text-zinc-500 uppercase font-bold">Duration</div>
+                </div>
+              </div>
 
-                 <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto">
-                    <div className={`p-4 rounded-2xl border ${mode('bg-slate-50 border-slate-100', 'bg-zinc-800/50 border-zinc-700')}`}>
-                       <div className={`text-xl font-bold ${mode('text-slate-900', 'text-white')}`}>{quiz.timeLimit || 30}m</div>
-                       <div className="text-xs uppercase font-bold text-slate-500">Time</div>
-                    </div>
-                    <div className={`p-4 rounded-2xl border ${mode('bg-slate-50 border-slate-100', 'bg-zinc-800/50 border-zinc-700')}`}>
-                       <div className={`text-xl font-bold ${mode('text-slate-900', 'text-white')}`}>{totalQuestions}</div>
-                       <div className="text-xs uppercase font-bold text-slate-500">Questions</div>
-                    </div>
-                    <div className={`p-4 rounded-2xl border ${mode('bg-slate-50 border-slate-100', 'bg-zinc-800/50 border-zinc-700')}`}>
-                       <div className={`text-xl font-bold ${mode('text-slate-900', 'text-white')}`}>
-                          {quiz.passingScore ? quiz.passingScore : '40%'}
-                       </div>
-                       <div className="text-xs uppercase font-bold text-slate-500">To Pass</div>
-                    </div>
-                 </div>
-
-                 <div className="flex justify-center gap-4 pt-4">
-                    <button onClick={onBack} className={`px-8 py-3 rounded-xl font-bold transition-colors ${mode('bg-gray-100 text-gray-600 hover:bg-gray-200', 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700')}`}>
-                       Back
-                    </button>
-                    <button onClick={() => setIsTestStarted(true)} className="px-10 py-3 rounded-xl font-bold bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transform hover:-translate-y-0.5 transition-all">
-                       Start Quiz
-                    </button>
-                 </div>
+              <div className="flex gap-3">
+                 <button onClick={onBack} className={`flex-1 py-3 rounded-xl font-bold text-sm ${mode('bg-slate-100 hover:bg-slate-200 text-slate-700', 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300')}`}>Cancel</button>
+                 <button onClick={() => setIsTestStarted(true)} className="flex-1 py-3 rounded-xl font-bold text-sm bg-rose-600 hover:bg-rose-700 text-white shadow-lg shadow-rose-500/20">Start Quiz</button>
               </div>
            </div>
         </div>
-     )
-  }
-
-  // --- EMPTY STATE ---
-  if (totalQuestions === 0) {
-    return (
-      <div className={`min-h-screen flex items-center justify-center p-4 ${mode('bg-zinc-50', 'bg-zinc-950')}`}>
-        <div className={`max-w-md w-full rounded-3xl p-8 text-center border shadow-xl ${mode('bg-white border-zinc-200', 'bg-zinc-900 border-zinc-800')}`}>
-          <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-6 ${mode('bg-rose-50 text-rose-600', 'bg-rose-900/20 text-rose-400')}`}>
-            <FiAlertCircle className="w-8 h-8" />
-          </div>
-          <h2 className={`text-2xl font-bold mb-2 ${mode('text-zinc-900', 'text-white')}`}>Empty Quiz</h2>
-          <p className={`text-sm mb-8 leading-relaxed ${mode('text-zinc-500', 'text-zinc-400')}`}>
-            This quiz currently has no questions. Please contact the administrator or try another quiz.
-          </p>
-          <button 
-            onClick={onBack} 
-            className="w-full py-3.5 px-6 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-zinc-900 font-bold rounded-xl transition-all transform active:scale-95 flex items-center justify-center gap-2"
-          >
-            <FiArrowLeft className="w-4 h-4" /> Return to Dashboard
-          </button>
-        </div>
-      </div>
-    );
+     );
   }
 
   // --- RESULTS SCREEN ---
   if (showResults) {
-    const percentage = Math.round((score / totalQuestions) * 100);
-    // Determine pass/fail based on the saved attempt data or calculation
-    const passingScore = quiz.passingScore !== undefined ? parseFloat(quiz.passingScore) : (totalQuestions * 0.4); // Fallback logic
-    const isPassed = finalScore >= passingScore;
-    
-    let gradeColor = isPassed ? 'text-emerald-500' : 'text-rose-500';
+    const percentage = Math.round((finalScore / (totalQuestions * 1)) * 100); // Simplified for display
+    const isPassed = finalScore >= (quiz.passingScore || 0);
 
     return (
-      <div className={`min-h-screen flex items-center justify-center p-4 ${mode('bg-zinc-50', 'bg-zinc-950')}`}>
+      <div className={`min-h-screen flex items-center justify-center p-4 overflow-y-auto ${mode('bg-zinc-50', 'bg-zinc-950')}`}>
         {showConfetti && <Confetti recycle={false} numberOfPieces={400} />}
-        
-        <div className={`max-w-2xl w-full rounded-3xl shadow-2xl border overflow-hidden relative ${mode('bg-white border-zinc-200', 'bg-zinc-900 border-zinc-800')}`}>
-          
-          {/* Status Banner */}
-          <div className={`w-full py-3 text-center font-bold text-sm uppercase tracking-widest ${isPassed ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
-             {isPassed ? 'Assessment Passed' : 'Assessment Failed'}
-          </div>
-
-          <div className="relative p-8 sm:p-12 text-center">
-            
-            {/* Score Circle */}
-            <div className="mb-8 relative inline-block">
-              <svg className="w-48 h-48 transform -rotate-90">
-                <circle cx="96" cy="96" r="88" stroke="currentColor" strokeWidth="12" fill="transparent" className={isDark ? "text-zinc-800" : "text-zinc-100"} />
-                <circle cx="96" cy="96" r="88" stroke="currentColor" strokeWidth="12" fill="transparent" strokeDasharray={553} strokeDashoffset={553 - (553 * percentage) / 100} className={`${gradeColor} transition-all duration-1000 ease-out`} strokeLinecap="round" />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className={`text-5xl font-black tracking-tighter ${mode('text-zinc-900', 'text-white')}`}>{percentage}%</span>
-                <span className={`text-xs font-bold uppercase tracking-widest mt-1 ${mode('text-zinc-400', 'text-zinc-500')}`}>Score</span>
-              </div>
-              {percentage === 100 && (
-                <div className="absolute -right-2 -top-2 bg-yellow-400 text-white p-3 rounded-full shadow-lg animate-bounce">
-                  <FaTrophy className="w-5 h-5" />
+        <div className={`max-w-xl w-full rounded-3xl shadow-2xl border overflow-hidden ${mode('bg-white border-zinc-200', 'bg-zinc-900 border-zinc-800')}`}>
+          <div className={`p-8 text-center`}>
+             <div className="inline-block p-4 rounded-full bg-zinc-50 dark:bg-zinc-800 mb-6">
+                <FaTrophy className={`w-12 h-12 ${isPassed ? 'text-yellow-500' : 'text-zinc-400'}`} />
+             </div>
+             <h2 className={`text-3xl font-bold mb-2 ${mode('text-zinc-900', 'text-white')}`}>{isPassed ? 'Great Job!' : 'Assessment Complete'}</h2>
+             <p className={`text-zinc-500 mb-8`}>You scored {finalScore} points</p>
+             
+             <div className="grid grid-cols-2 gap-4 mb-8">
+                <div className={`p-4 rounded-2xl ${mode('bg-emerald-50 text-emerald-900', 'bg-emerald-900/20 text-emerald-200')}`}>
+                   <div className="text-2xl font-bold">{score}</div>
+                   <div className="text-xs uppercase opacity-70 font-bold">Correct</div>
                 </div>
-              )}
-            </div>
-
-            <h1 className={`text-3xl font-bold mb-2 ${mode('text-zinc-900', 'text-white')}`}>
-              {isPassed ? 'Congratulations!' : 'Keep Practicing!'}
-            </h1>
-            <p className={`text-base mb-8 ${mode('text-zinc-500', 'text-zinc-400')}`}>
-              You scored <strong className={gradeColor}>{finalScore}</strong> out of <strong>{totalQuestions}</strong> points.
-              <br/>
-              <span className="text-xs opacity-70">Required to pass: {passingScore}</span>
-            </p>
-
-            {/* Stats Grid */}
-            <div className="grid grid-cols-3 gap-4 mb-10">
-              <div className={`p-4 rounded-2xl ${mode('bg-zinc-50', 'bg-zinc-800/50')}`}>
-                <FiCheckCircle className="w-6 h-6 mx-auto mb-2 text-emerald-500" />
-                <div className={`text-xl font-bold ${mode('text-zinc-900', 'text-white')}`}>{score}</div>
-                <div className={`text-xs font-medium uppercase ${mode('text-zinc-400', 'text-zinc-500')}`}>Correct</div>
-              </div>
-              <div className={`p-4 rounded-2xl ${mode('bg-zinc-50', 'bg-zinc-800/50')}`}>
-                <FiX className="w-6 h-6 mx-auto mb-2 text-rose-500" />
-                <div className={`text-xl font-bold ${mode('text-zinc-900', 'text-white')}`}>{totalQuestions - score}</div>
-                <div className={`text-xs font-medium uppercase ${mode('text-zinc-400', 'text-zinc-500')}`}>Wrong</div>
-              </div>
-              <div className={`p-4 rounded-2xl ${mode('bg-zinc-50', 'bg-zinc-800/50')}`}>
-                <FiClock className="w-6 h-6 mx-auto mb-2 text-blue-500" />
-                <div className={`text-xl font-bold ${mode('text-zinc-900', 'text-white')}`}>
-                  {Math.floor((endTime - startTime) / 60000)}<span className="text-sm">m</span>
+                <div className={`p-4 rounded-2xl ${mode('bg-rose-50 text-rose-900', 'bg-rose-900/20 text-rose-200')}`}>
+                   <div className="text-2xl font-bold">{totalQuestions - score}</div>
+                   <div className="text-xs uppercase opacity-70 font-bold">Incorrect</div>
                 </div>
-                <div className={`text-xs font-medium uppercase ${mode('text-zinc-400', 'text-zinc-500')}`}>Time</div>
-              </div>
-            </div>
+             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button 
-                onClick={onBack} 
-                className={`px-8 py-4 rounded-xl font-bold text-sm transition-all border ${mode('bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50', 'bg-zinc-900 border-zinc-700 text-zinc-300 hover:bg-zinc-800')}`}
-              >
-                Back to Dashboard
-              </button>
-              <button 
-                onClick={() => onViewLeaderboard && onViewLeaderboard(quiz)} 
-                className="px-8 py-4 rounded-xl font-bold text-sm text-white bg-rose-600 hover:bg-rose-700 shadow-lg shadow-rose-500/25 transition-all transform active:scale-95 flex items-center justify-center gap-2"
-              >
-                <FaChartPie className="w-4 h-4" /> View Leaderboard
-              </button>
-            </div>
+             <div className="flex flex-col gap-3">
+               <button onClick={onBack} className={`w-full py-3 rounded-xl font-bold border ${mode('bg-white border-zinc-200 text-zinc-700', 'bg-zinc-900 border-zinc-700 text-zinc-300')}`}>
+                 Return to Dashboard
+               </button>
+               <button onClick={() => onViewLeaderboard && onViewLeaderboard(quiz)} className="w-full py-3 rounded-xl font-bold bg-zinc-900 text-white dark:bg-white dark:text-black flex items-center justify-center gap-2">
+                 <FaChartPie /> View Leaderboard
+               </button>
+             </div>
           </div>
         </div>
-        <BeautifulPopup {...popupState} onClose={hidePopup} />
       </div>
     );
   }
 
-  // --- CONFIRM SUBMIT MODAL ---
+  // --- SUBMIT CONFIRMATION MODAL ---
   if (showSubmitConfirm) {
     return (
-      <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/60`}>
-        <div className={`w-full max-w-sm rounded-3xl p-8 shadow-2xl border transform transition-all scale-100 ${mode('bg-white border-zinc-200', 'bg-zinc-900 border-zinc-800')}`}>
-          <div className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-6 ${mode('bg-rose-50 text-rose-600', 'bg-rose-900/20 text-rose-500')}`}>
-             <FiSend className="w-7 h-7 ml-1" />
-          </div>
-          <h3 className={`text-2xl font-bold text-center mb-2 ${mode('text-zinc-900', 'text-white')}`}>Submit Assessment?</h3>
-          <p className={`text-center text-sm mb-8 ${mode('text-zinc-500', 'text-zinc-400')}`}>
-            You have answered <strong className="text-rose-600">{Object.keys(answers).length}</strong> out of <strong className="text-zinc-900 dark:text-white">{totalQuestions}</strong> questions.
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className={`w-full max-w-sm rounded-2xl p-6 shadow-2xl border ${mode('bg-white border-zinc-200', 'bg-zinc-900 border-zinc-800')}`}>
+          <h3 className={`text-lg font-bold mb-2 ${mode('text-zinc-900', 'text-white')}`}>Submit Assessment?</h3>
+          <p className={`text-sm mb-6 ${mode('text-zinc-500', 'text-zinc-400')}`}>
+            You have answered <span className="font-bold text-rose-600">{Object.keys(answers).length}</span> out of {totalQuestions} questions.
           </p>
-          <div className="flex gap-4">
-            <button onClick={handleCancelSubmit} className={`flex-1 py-3 rounded-xl font-bold ${mode('bg-gray-100 text-gray-700 hover:bg-gray-200', 'bg-slate-800 text-slate-300 hover:bg-slate-700')}`}>
-              Cancel
-            </button>
-            <button onClick={submitQuiz} className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg">
-              {saving ? 'Submitting...' : 'Confirm'}
-            </button>
+          <div className="flex gap-3">
+            <button onClick={() => setShowSubmitConfirm(false)} className={`flex-1 py-2.5 rounded-lg font-medium text-sm ${mode('bg-zinc-100 text-zinc-600', 'bg-zinc-800 text-zinc-400')}`}>Cancel</button>
+            <button onClick={submitQuiz} className="flex-1 py-2.5 rounded-lg font-medium text-sm bg-rose-600 text-white hover:bg-rose-700">Submit</button>
           </div>
         </div>
       </div>
@@ -444,184 +360,176 @@ const QuizTaker = ({ quiz, onBack, onViewLeaderboard }) => {
 
   // --- MAIN QUIZ UI ---
   return (
-    <div className={`min-h-screen flex flex-col h-screen overflow-hidden ${mode('bg-zinc-50', 'bg-zinc-950')}`}>
+    <div className={`flex flex-col h-screen ${mode('bg-zinc-50', 'bg-zinc-950')}`}>
       
-      {/* Top Bar */}
-      <header className={`sticky top-0 z-20 border-b backdrop-blur-xl ${mode('bg-white/80 border-zinc-200', 'bg-zinc-900/80 border-zinc-800')}`}>
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-          
-          <div className="flex items-center gap-4 overflow-hidden">
-            <button 
-              onClick={onBack} 
-              className={`p-2 rounded-full transition-colors ${mode('hover:bg-zinc-100 text-zinc-500', 'hover:bg-zinc-800 text-zinc-400')}`}
-            >
-              <FiArrowLeft className="w-5 h-5" />
-            </button>
-            <div className="flex flex-col min-w-0">
-              <h1 className={`text-sm font-bold truncate ${mode('text-zinc-900', 'text-white')}`}>
-                {quiz.title}
-              </h1>
-              {currentSectionInfo && (
-                <span className={`text-xs ${mode('text-zinc-500', 'text-zinc-500')}`}>
-                  {currentSectionInfo.section.name} • Q{currentSectionInfo.questionInSection}
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 shrink-0">
-            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-mono font-bold ${mode('bg-zinc-100 border-zinc-200 text-zinc-700', 'bg-zinc-800 border-zinc-700 text-zinc-300')}`}>
-              <FiClock className="w-3.5 h-3.5" />
-              {/* Use simple countdown or elapsed time depending on logic preference. Currently showing elapsed time */}
-              <span>{Math.floor((Date.now() - startTime) / 60000)}:{String(Math.floor((Date.now() - startTime) / 1000) % 60).padStart(2, '0')}</span>
-            </div>
-            <button 
-               onClick={handleSubmitConfirm}
-               className="hidden sm:flex items-center gap-2 px-5 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold transition-all shadow-sm active:scale-95"
-            >
-              Submit
-            </button>
+      {/* 1. Header (Fixed) */}
+      <header className={`shrink-0 h-16 border-b flex items-center justify-between px-4 sm:px-6 z-20 ${mode('bg-white border-zinc-200', 'bg-zinc-900 border-zinc-800')}`}>
+        <div className="flex items-center gap-3 w-1/3">
+          <button onClick={onBack} className={`p-2 rounded-lg transition-colors ${mode('hover:bg-zinc-100 text-zinc-500', 'hover:bg-zinc-800 text-zinc-400')}`}>
+            <FiArrowLeft className="w-5 h-5" />
+          </button>
+          <div className="hidden sm:block">
+            <h1 className={`text-sm font-bold truncate max-w-[200px] ${mode('text-zinc-900', 'text-white')}`}>{quiz.title}</h1>
           </div>
         </div>
 
-        {/* Progress Line */}
-        <div className="w-full h-1 bg-zinc-200 dark:bg-zinc-800">
-           <div 
-             className="h-full bg-rose-500 transition-all duration-500 ease-out" 
-             style={{ width: `${progressPercentage}%` }}
-           />
+        <div className="flex items-center justify-center w-1/3">
+           <div className={`flex items-center gap-2 px-4 py-1.5 rounded-full border shadow-sm ${mode('bg-zinc-50 border-zinc-200 text-zinc-700', 'bg-zinc-800 border-zinc-700 text-zinc-200')}`}>
+              <FiClock className={`w-4 h-4 ${mode('text-rose-500', 'text-rose-400')}`} />
+              <span className="font-mono font-bold text-sm tracking-wide">
+                {formatTime(now - startTime)}
+              </span>
+           </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-3 w-1/3">
+           <button 
+             onClick={() => setShowSubmitConfirm(true)}
+             className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold rounded-lg transition-all shadow-sm active:scale-95"
+           >
+             Finish
+           </button>
         </div>
       </header>
+      
+      {/* Progress Bar */}
+      <div className="h-1 w-full bg-zinc-200 dark:bg-zinc-800 shrink-0">
+         <div className="h-full bg-rose-500 transition-all duration-300 ease-out" style={{ width: `${progressPercentage}%` }} />
+      </div>
 
-      {/* Main Content */}
-      <main className="flex-1 w-full max-w-4xl mx-auto p-4 sm:p-6 flex flex-col">
-        
-        {/* Question Card */}
-        <div className={`flex-1 rounded-3xl border shadow-sm overflow-hidden flex flex-col ${mode('bg-white border-zinc-200', 'bg-zinc-900 border-zinc-800')}`}>
+      {/* 2. Scrollable Content Area */}
+      <div 
+        ref={mainContentRef}
+        className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6"
+      >
+        <div className="max-w-3xl mx-auto w-full space-y-6 pb-20">
            
-           {/* Question Header */}
-           <div className={`p-6 sm:p-8 border-b ${mode('border-zinc-100 bg-zinc-50/50', 'border-zinc-800 bg-zinc-900/50')}`}>
-              <div className="flex justify-between items-start gap-4 mb-4">
-                <span className={`inline-flex items-center justify-center h-8 px-3 rounded-lg text-xs font-bold uppercase tracking-wider border ${mode('bg-white border-zinc-200 text-zinc-500', 'bg-zinc-800 border-zinc-700 text-zinc-400')}`}>
-                  Question {currentQuestionIndex + 1}
-                </span>
-                <div className={`text-xs font-medium ${mode('text-zinc-400', 'text-zinc-500')}`}>
-                  {Object.keys(answers).length} Answered
-                </div>
-              </div>
-              
-              <h2 className={`text-xl sm:text-2xl font-bold leading-snug ${mode('text-zinc-900', 'text-white')}`}>
-                 {currentQuestion?.question || "Question content loading..."}
-              </h2>
-           </div>
-
-           {/* Image (if exists) */}
-           {currentQuestion?.image && (
-             <div className={`relative h-64 w-full border-b ${mode('bg-zinc-100 border-zinc-200', 'bg-zinc-950 border-zinc-800')}`}>
-                <img 
-                  src={currentQuestion.image} 
-                  alt="Question Reference" 
-                  className="w-full h-full object-contain p-4"
-                />
+           {/* Section Info (Optional) */}
+           {currentSectionInfo && (
+             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">
+                <span className="bg-zinc-200 dark:bg-zinc-800 px-2 py-0.5 rounded text-[10px]">Section {currentSectionInfo.sectionIndex + 1}</span>
+                {currentSectionInfo.section.name}
              </div>
            )}
 
-           {/* Options List */}
-           <div className="p-6 sm:p-8 space-y-3 overflow-y-auto">
-              {currentQuestion?.options?.map((option, index) => {
-                 const isSelected = answers[currentQuestionIndex] === index;
-                 return (
-                    <button
-                      key={index}
-                      onClick={() => handleAnswerSelect(index)}
-                      className={`group relative w-full text-left p-4 sm:p-5 rounded-2xl border-2 transition-all duration-200 flex items-start gap-4 outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 ${
-                        isSelected 
-                          ? mode('border-rose-500 bg-rose-50', 'border-rose-500 bg-rose-500/20') + ' z-10'
-                          : mode('border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50', 'border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800/50')
-                      }`}
-                    >
-                       {/* Keycap/Letter */}
-                       <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold transition-colors ${
-                          isSelected 
-                            ? 'bg-rose-600 text-white shadow-sm' 
-                            : mode('bg-zinc-100 text-zinc-500 group-hover:bg-white group-hover:shadow-sm', 'bg-zinc-800 text-zinc-400 group-hover:bg-zinc-700')
-                       }`}>
-                          {String.fromCharCode(65 + index)}
-                       </div>
-                       
-                       <div className="flex-1 pt-1">
-                          <span className={`text-base font-medium leading-relaxed ${
+           {/* Question Card */}
+           <div className={`rounded-2xl border shadow-sm overflow-hidden ${mode('bg-white border-zinc-200', 'bg-zinc-900 border-zinc-800')}`}>
+              
+              {/* Question Header */}
+              <div className={`p-6 sm:p-8 border-b ${mode('border-zinc-100', 'border-zinc-800')}`}>
+                 <div className="flex justify-between items-start mb-4">
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wide border ${mode('bg-zinc-50 border-zinc-200 text-zinc-500', 'bg-zinc-800 border-zinc-700 text-zinc-400')}`}>
+                       Question {currentQuestionIndex + 1} of {totalQuestions}
+                    </span>
+                    {answers[currentQuestionIndex] !== undefined && (
+                      <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-600">
+                        <FiCheckCircle className="w-3.5 h-3.5" /> Answered
+                      </span>
+                    )}
+                 </div>
+
+                 <h2 className={`text-lg sm:text-xl font-bold leading-relaxed ${mode('text-zinc-900', 'text-white')}`}>
+                    {safeCurrentQuestion.question}
+                 </h2>
+              </div>
+
+              {/* Optional Image */}
+              {safeCurrentQuestion.image && (
+                <div className="w-full bg-zinc-100 dark:bg-black p-4 flex justify-center border-b border-zinc-200 dark:border-zinc-800">
+                   <img src={safeCurrentQuestion.image} alt="Reference" className="max-h-64 object-contain rounded-lg" />
+                </div>
+              )}
+
+              {/* Options */}
+              <div className="p-6 sm:p-8 space-y-3">
+                 {safeCurrentQuestion.options?.map((option, idx) => {
+                    const isSelected = answers[currentQuestionIndex] === idx;
+                    return (
+                       <button
+                         key={idx}
+                         onClick={() => handleAnswerSelect(idx)}
+                         className={`relative w-full text-left p-4 rounded-xl border-2 transition-all duration-200 flex items-start gap-4 group ${
+                           isSelected 
+                             ? 'border-rose-500 bg-rose-50/50 dark:bg-rose-900/10 z-10' 
+                             : mode('border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50', 'border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800/50')
+                         }`}
+                       >
+                          <div className={`shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold transition-colors mt-0.5 ${
                              isSelected 
-                               ? mode('text-slate-900 font-bold', 'text-white font-bold') 
-                               : mode('text-zinc-700 group-hover:text-zinc-900', 'text-zinc-300 group-hover:text-white')
+                               ? 'bg-rose-500 text-white shadow-sm' 
+                               : mode('bg-zinc-100 text-zinc-500 group-hover:bg-white', 'bg-zinc-800 text-zinc-400 group-hover:bg-zinc-700')
+                          }`}>
+                             {String.fromCharCode(65 + idx)}
+                          </div>
+                          
+                          <div className={`flex-1 text-sm sm:text-base font-medium leading-relaxed ${
+                             isSelected ? mode('text-rose-900', 'text-rose-100') : mode('text-zinc-700', 'text-zinc-300')
                           }`}>
                              {option}
-                          </span>
-                       </div>
+                          </div>
 
-                       {/* Check Icon for Selected */}
-                       <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
-                          isSelected 
-                            ? 'border-rose-500 bg-rose-500 text-white scale-100 opacity-100' 
-                            : 'border-zinc-300 dark:border-zinc-700 bg-transparent scale-90 opacity-0'
-                       }`}>
-                          <FiCheck className="w-3.5 h-3.5" strokeWidth={3} />
-                       </div>
+                          {isSelected && (
+                             <div className="absolute top-4 right-4 text-rose-500 animate-in fade-in zoom-in duration-200">
+                                <FiCheckCircle className="w-5 h-5 fill-rose-500 text-white" />
+                             </div>
+                          )}
+                       </button>
+                    );
+                 })}
+              </div>
+              
+              {/* Reset Selection */}
+              {answers[currentQuestionIndex] !== undefined && (
+                 <div className="px-6 pb-6 flex justify-end">
+                    <button 
+                      onClick={handleClearAnswer} 
+                      className="text-xs font-bold text-zinc-400 hover:text-rose-500 flex items-center gap-1.5 transition-colors"
+                    >
+                       <FiRefreshCw className="w-3 h-3" /> Clear Selection
                     </button>
-                 );
-              })}
+                 </div>
+              )}
            </div>
 
-           {/* Clear Answer Button */}
-           {answers[currentQuestionIndex] !== undefined && (
-              <div className={`px-8 pb-6 flex justify-end`}>
-                 <button 
-                   onClick={handleClearAnswer} 
-                   className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-colors ${mode('text-zinc-400 hover:text-rose-600', 'text-zinc-500 hover:text-rose-400')}`}
-                 >
-                    <FiRefreshCw /> Clear Selection
-                 </button>
-              </div>
-           )}
         </div>
-      </main>
+      </div>
 
-      {/* Bottom Navigation Bar */}
-      <div className={`sticky bottom-0 z-20 border-t p-4 ${mode('bg-white border-zinc-200', 'bg-zinc-900 border-zinc-800')}`}>
-         <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
+      {/* 3. Footer (Fixed) */}
+      <footer className={`shrink-0 border-t p-4 z-20 ${mode('bg-white border-zinc-200', 'bg-zinc-900 border-zinc-800')}`}>
+         <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
             <button
                onClick={handlePreviousQuestion}
                disabled={currentQuestionIndex === 0}
-               className={`flex-1 sm:flex-none px-6 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${
+               className={`px-5 py-2.5 rounded-lg font-bold text-sm flex items-center gap-2 transition-all ${
                   currentQuestionIndex === 0
-                     ? mode('text-zinc-300 bg-zinc-100 cursor-not-allowed', 'text-zinc-600 bg-zinc-800 cursor-not-allowed')
-                     : mode('text-zinc-700 bg-white border border-zinc-200 hover:bg-zinc-50 hover:border-zinc-300', 'text-zinc-200 bg-zinc-800 border border-zinc-700 hover:bg-zinc-700')
+                     ? 'opacity-50 cursor-not-allowed text-zinc-400'
+                     : mode('hover:bg-zinc-100 text-zinc-700', 'hover:bg-zinc-800 text-zinc-300')
                }`}
             >
-               <FiChevronLeft className="w-4 h-4" /> Prev
+               <FiChevronLeft className="w-4 h-4" /> Previous
             </button>
 
-            <div className="hidden sm:block text-xs font-bold uppercase tracking-widest text-zinc-400">
-               Question {currentQuestionIndex + 1} of {totalQuestions}
+            <div className="hidden sm:block text-xs font-bold text-zinc-400 uppercase tracking-widest">
+               {Object.keys(answers).length} of {totalQuestions} answered
             </div>
 
             {currentQuestionIndex === totalQuestions - 1 ? (
                <button
-                  onClick={handleSubmitConfirm}
-                  className="flex-1 sm:flex-none px-8 py-3 rounded-xl font-bold text-sm text-white bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-500/20 transition-all transform active:scale-95 flex items-center justify-center gap-2"
+                  onClick={() => setShowSubmitConfirm(true)}
+                  className="px-6 py-2.5 rounded-lg font-bold text-sm text-white bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all flex items-center gap-2"
                >
-                  Finish <FiSend className="w-4 h-4" />
+                  Review & Submit <FiSend className="w-4 h-4" />
                </button>
             ) : (
                <button
                   onClick={handleNextQuestion}
-                  className="flex-1 sm:flex-none px-8 py-3 rounded-xl font-bold text-sm text-white bg-rose-600 hover:bg-rose-700 shadow-lg shadow-rose-500/20 transition-all transform active:scale-95 flex items-center justify-center gap-2"
+                  className="px-6 py-2.5 rounded-lg font-bold text-sm text-white bg-rose-600 hover:bg-rose-700 shadow-lg shadow-rose-600/20 transition-all flex items-center gap-2"
                >
-                  Next <FiChevronRight className="w-4 h-4" />
+                  Next Question <FiChevronRight className="w-4 h-4" />
                </button>
             )}
          </div>
-      </div>
+      </footer>
 
       <BeautifulPopup {...popupState} onClose={hidePopup} />
     </div>

@@ -74,7 +74,7 @@ const TestSeriesVoiceExplainer = ({ testSeries, testResults, reviewData }) => {
       // Using a safe fallback logic if direct TTS isn't available in standard SDK yet
       // In a real scenario, you might call OpenAI TTS or ElevenLabs here.
       // Below assumes a hypothetical 'gemini-2.5-flash-preview-tts' exists as per context
-      const ttsModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash-preview-tts" });
+      const ttsModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash-native-audio-dialog" });
       
       // Defensive try/catch for the specific TTS call
       try {

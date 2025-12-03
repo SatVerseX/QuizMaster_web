@@ -21,7 +21,7 @@ class VoiceExplanationService {
       // Note: As of late 2024, specific TTS endpoints might vary. 
       // This implementation targets a generative model that can output audio data.
       const model = this.genAI.getGenerativeModel({ 
-        model: "gemini-2.5-flash-preview-tts" // Verify this model name in your Google AI Studio
+        model: "gemini-2.5-flash-native-audio-dialog" // Verify this model name in your Google AI Studio
       });
 
       // Construct a prompt that instructs the model on HOW to speak

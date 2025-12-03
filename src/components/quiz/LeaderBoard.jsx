@@ -181,9 +181,6 @@ const Leaderboard = ({ quizId, quizTitle, onBack }) => {
             <button onClick={() => setFilter('best')} className={styles.tab(filter === 'best')}>
               <FaCrown className="w-4 h-4" /> Hall of Fame
             </button>
-            <button onClick={() => setFilter('recent')} className={styles.tab(filter === 'recent')}>
-              <FiClock className="w-4 h-4" /> Recent Activity
-            </button>
           </div>
 
           <div className="p-6 md:p-8">

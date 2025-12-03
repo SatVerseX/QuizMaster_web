@@ -71,6 +71,139 @@ const explanationInputSchema = z.object({
   userAnswer: z.string().optional().nullable(),
 });
 
+// Schema for Study Notes
+const studyNotesSchema = {
+  type: "object",
+  properties: {
+    summary: { type: "string" },
+    concepts: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          explanation: { type: "string" },
+          keyPoints: { type: "array", items: { type: "string" } },
+          example: { type: "string" },
+          commonMistake: { type: "string" }
+        },
+        required: ["title", "explanation", "keyPoints", "commonMistake"]
+      }
+    }
+  },
+  required: ["summary", "concepts"]
+};
+
+// Schema for Video Recommendations
+const videoRecSchema = {
+  type: "object",
+  properties: {
+    concepts: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          conceptName: { type: "string" },
+          reason: { type: "string" },
+          youtubeQuery: { type: "string" },
+          difficulty: { type: "string", enum: ["Beginner", "Intermediate", "Advanced"] }
+        },
+        required: ["conceptName", "reason", "youtubeQuery"]
+      }
+    }
+  },
+  required: ["concepts"]
+};
+
+/**
+ * Generates detailed study notes based on incorrect answers.
+ */
+export const generateConceptNotes = async (mistakes, testTitle) => {
+  try {
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-2.5-pro", // Fast and efficient for summarization
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: studyNotesSchema
+      }
+    });
+
+    // Limit context to prevent token overflow, prioritizing recent mistakes
+    const context = mistakes.slice(0, 15).map(m => ({
+      question: m.question,
+      correctAnswer: m.options ? m.options[m.correctAnswer] : "N/A",
+      userAnswer: m.options && m.userAnswer !== undefined ? m.options[m.userAnswer] : "Skipped"
+    }));
+
+    const prompt = `
+      Act as an expert tutor. The student took a test on "${testTitle}" and made mistakes on the following questions:
+      ${JSON.stringify(context)}
+
+      Task:
+      1. Identify the top 3-5 underlying concepts the student is weak in based on these mistakes.
+      2. For each concept, write a detailed study note.
+      3. Include a 'Common Mistake' section explaining why students usually get this wrong.
+      4. Keep the tone educational and encouraging.
+      
+      Output strictly valid JSON matching the schema.
+    `;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return cleanAndParseJSON(response.text());
+
+  } catch (error) {
+    console.error("Study Note Generation Failed:", error);
+    throw new Error("Failed to generate study notes. Please try again.");
+  }
+};
+
+/**
+ * Analyzes incorrect questions to suggest relevant YouTube video topics.
+ * Groups similar mistakes into core concepts.
+ */
+export const generateVideoRecommendations = async (mistakes, testTitle) => {
+  try {
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-2.5-flash",
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: videoRecSchema
+      }
+    });
+
+    // Limit context to prevent token overflow, focus on up to 10 mistakes
+    const context = mistakes.slice(0, 10).map(m => ({
+      question: m.question,
+      correctAnswer: m.options ? m.options[m.correctAnswer] : "N/A",
+      userAnswer: m.options && m.userAnswer !== undefined ? m.options[m.userAnswer] : "Skipped"
+    }));
+
+    const prompt = `
+      Analyze the following incorrect answers from a test on "${testTitle}".
+      Identify the top 3-4 underlying weak concepts or topics the student needs to study.
+      
+      Mistakes Context:
+      ${JSON.stringify(context)}
+
+      For each concept:
+      1. Name the concept clearly.
+      2. Explain briefly why they might be struggling based on the wrong answer chosen.
+      3. Provide a highly specific YouTube search query to find a tutorial video (e.g., "organic chemistry sn1 vs sn2 reaction mechanism tutorial").
+      4. Assess the difficulty level of the concept.
+    `;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const data = cleanAndParseJSON(response.text());
+    
+    return { success: true, data: data.concepts || [] };
+  } catch (error) {
+    console.error("Video recommendation generation failed:", error);
+    return { success: false, error: error.message };
+  }
+};
+
 /**
  * Generates an educational explanation for a specific question.
  * Used in the AI Explanation Modal.

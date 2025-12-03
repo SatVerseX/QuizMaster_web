@@ -2,146 +2,100 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 class LiveVoiceAssistant {
   constructor(apiKey) {
-    if (!apiKey) throw new Error("API Key is required for LiveVoiceAssistant");
+    if (!apiKey) throw new Error("API Key is required");
     
+    // Use standard 1.5 Flash model
     this.genAI = new GoogleGenerativeAI(apiKey);
-    // Using the specialized model for low-latency audio interaction
-    this.model = this.genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash-preview-native-audio-dialog',
-    });
+    this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
     
-    this.session = null;
-    this.mediaRecorder = null;
-    this.audioChunks = [];
-    this.stream = null;
+    this.chat = null;
+    this.recognition = null;
+    this.synthesis = window.speechSynthesis;
   }
 
-  /**
-   * Initializes the chat session with system instructions.
-   */
   async startSession(systemPrompt) {
-    try {
-      this.session = await this.model.startChat({
-        systemInstruction: systemPrompt || "You are a helpful tutor assisting a student with quiz questions.",
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 500, // Keep responses concise for voice
-        }
-      });
-      return this.session;
-    } catch (error) {
-      console.error('Failed to start live session:', error);
-      throw new Error("Could not initialize AI session. Check API Key.");
-    }
+    // Start a standard chat session
+    this.chat = this.model.startChat({
+      history: [
+        {
+          role: "user",
+          parts: [{ text: `System Instruction: ${systemPrompt}` }],
+        },
+        {
+          role: "model",
+          parts: [{ text: "Understood. I am ready to help the student as a tutor." }],
+        },
+      ],
+    });
   }
 
   /**
-   * Requests microphone access and begins recording.
+   * Starts listening using browser SpeechRecognition
    */
-  async startListening() {
-    try {
-      this.audioChunks = [];
-      
-      // Browser permissions check
-      this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      
-      // Initialize MediaRecorder
-      this.mediaRecorder = new MediaRecorder(this.stream, {
-        mimeType: 'audio/webm;codecs=opus'
-      });
-
-      this.mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          this.audioChunks.push(event.data);
-        }
-      };
-
-      this.mediaRecorder.start();
-      return true;
-    } catch (error) {
-      console.error("Microphone Access Error:", error);
-      throw new Error("Microphone access denied. Please enable permissions.");
-    }
-  }
-
-  /**
-   * Stops recording and returns the audio Blob.
-   * @returns {Promise<Blob>}
-   */
-  async stopListening() {
+  startListening() {
     return new Promise((resolve, reject) => {
-      if (!this.mediaRecorder || this.mediaRecorder.state === 'inactive') {
-        resolve(null);
+      // Browser compatibility check
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      
+      if (!SpeechRecognition) {
+        reject(new Error("Browser does not support Speech Recognition"));
         return;
       }
 
-      this.mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
-        this.cleanup(); // Release stream
-        resolve(audioBlob);
+      this.recognition = new SpeechRecognition();
+      this.recognition.lang = 'en-US';
+      this.recognition.interimResults = false;
+      this.recognition.maxAlternatives = 1;
+
+      this.recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        resolve(transcript);
       };
 
-      this.mediaRecorder.stop();
+      this.recognition.onerror = (event) => {
+        reject(new Error(`Speech recognition error: ${event.error}`));
+      };
+
+      this.recognition.start();
     });
   }
 
+  stopListening() {
+    if (this.recognition) {
+      this.recognition.stop();
+    }
+  }
+
   /**
-   * Sends audio data to the model and gets a response.
-   * @param {Blob} audioBlob 
+   * Sends text to Gemini and speaks the response
    */
-  async sendAudioInput(audioBlob) {
-    if (!this.session) throw new Error('Session not initialized');
-    
+  async sendInput(text) {
+    if (!this.chat) throw new Error("Session not initialized");
+
     try {
-      // Convert Blob to Base64 as Gemini API currently expects inline data parts
-      const base64Audio = await this.blobToBase64(audioBlob);
-      
-      // Prepare the multimodal part
-      const audioPart = {
-        inlineData: {
-          data: base64Audio,
-          mimeType: 'audio/webm'
-        }
-      };
+      // 1. Get text response from Gemini
+      const result = await this.chat.sendMessage(text);
+      const responseText = result.response.text();
 
-      const result = await this.session.sendMessage([audioPart]);
-      const response = await result.response;
-      
-      // The response might text, or if configured, audio data.
-      // For this implementation, we return the text, which the UI can then TTS if needed.
-      return response.text();
+      // 2. Speak response using Web Speech API
+      this.speak(responseText);
 
+      return responseText;
     } catch (error) {
-      console.error('Error sending audio message:', error);
+      console.error("AI Error:", error);
       throw error;
     }
   }
 
-  /**
-   * Helper: Convert Blob to Base64 string (stripping header)
-   */
-  blobToBase64(blob) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result;
-        // Remove data URL prefix (e.g., "data:audio/webm;base64,")
-        const base64Data = base64String.split(',')[1];
-        resolve(base64Data);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  }
-
-  /**
-   * Cleanup media streams to turn off the microphone light.
-   */
-  cleanup() {
-    if (this.stream) {
-      this.stream.getTracks().forEach(track => track.stop());
-      this.stream = null;
+  speak(text) {
+    if (this.synthesis.speaking) {
+      this.synthesis.cancel();
     }
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.1;
+    utterance.pitch = 1;
+    this.synthesis.speak(utterance);
   }
 }
 
