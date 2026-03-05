@@ -14,6 +14,25 @@
   </a>
 </p>
 
+<div align="center">
+  <table>
+    <tr>
+      <td><img src="https://github.com/user-attachments/assets/f423b191-aab2-4491-8de1-4aa0e16b5d81" width="400"/></td>
+      <td><img src="https://github.com/user-attachments/assets/0d4a3d2d-ccd5-4309-8cff-c9b9862035fd" width="400"/></td>
+      <td><img src="https://github.com/user-attachments/assets/73905488-4b1a-4727-a266-25de349b9f20" width="400"/></td>
+      <td><img src="https://github.com/user-attachments/assets/16370b90-62d5-41b5-9807-0b8a681c5884" width="400"/></td>
+      <td><img src="https://github.com/user-attachments/assets/7c4893e7-d3dc-4745-b50d-51833d77eb0f" width="400"/></td>
+      <td><img src="https://github.com/user-attachments/assets/62c92287-5fcd-49f4-a725-df5a2c8073f1" width="400"/></td>
+      <td><img src="https://github.com/user-attachments/assets/c3ffd799-4812-48dc-a47c-ddd81d8fa527" width="400"/></td>
+      <td><img src="https://github.com/user-attachments/assets/75b793b3-d241-4564-8276-4a7d02b9dc5a" width="400"/></td>
+      <td><img src="https://github.com/user-attachments/assets/a8ab0674-0f11-4356-b835-f0b0335b0c36" width="400"/></td>
+      <td><img src="https://github.com/user-attachments/assets/e1ccc792-c8bd-4b60-bcfd-75af0acc7087" width="400"/></td>
+      <td><img src="https://github.com/user-attachments/assets/8735615e-4d17-4837-9b74-df140211fc76" width="400"/></td>
+      <td><img src="https://github.com/user-attachments/assets/0d71cb12-054b-400a-be3f-235313609f15" width="400"/></td>
+    </tr>
+  </table>
+</div>
+
 <p align="center">
   <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white" alt="React 19"/>
   <img src="https://img.shields.io/badge/Vite-5-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite"/>
@@ -245,32 +264,6 @@ quizmaster/
 | `AuthContext.jsx` | Firebase auth state management across the app |
 | `SubscriptionContext.jsx` | Manages subscription status and access control |
 | `ThemeContext.jsx` | Dark/light theme switching with system preference detection |
-
----
-
-## 📸 Screenshots
-
-<details>
-<summary><strong>🖼️ Click to view all screenshots</strong></summary>
-
-<br/>
-
-| | |
-|:---:|:---:|
-| ![Landing Page](https://github.com/user-attachments/assets/f423b191-aab2-4491-8de1-4aa0e16b5d81) | ![Test Series](https://github.com/user-attachments/assets/0d4a3d2d-ccd5-4309-8cff-c9b9862035fd) |
-| **🏠 Landing Page** | **📋 Test Series** |
-| ![Quiz Interface](https://github.com/user-attachments/assets/73905488-4b1a-4727-a266-25de349b9f20) | ![Test Taking](https://github.com/user-attachments/assets/16370b90-62d5-41b5-9807-0b8a681c5884) |
-| **📝 Quiz Interface** | **✍️ Test Taking** |
-| ![Results & Analysis](https://github.com/user-attachments/assets/7c4893e7-d3dc-4745-b50d-51833d77eb0f) | ![Analytics Dashboard](https://github.com/user-attachments/assets/62c92287-5fcd-49f4-a725-df5a2c8073f1) |
-| **📊 Results & Analysis** | **📈 Analytics Dashboard** |
-| ![Leaderboard](https://github.com/user-attachments/assets/c3ffd799-4812-48dc-a47c-ddd81d8fa527) | ![Flashcards](https://github.com/user-attachments/assets/75b793b3-d241-4564-8276-4a7d02b9dc5a) |
-| **🏆 Leaderboard** | **🗂️ Flashcards** |
-| ![Study Planner](https://github.com/user-attachments/assets/a8ab0674-0f11-4356-b835-f0b0335b0c36) | ![Gamification](https://github.com/user-attachments/assets/e1ccc792-c8bd-4b60-bcfd-75af0acc7087) |
-| **📅 AI Study Planner** | **🏅 Gamification & Achievements** |
-| ![Admin Panel](https://github.com/user-attachments/assets/8735615e-4d17-4837-9b74-df140211fc76) | ![Payment & Subscription](https://github.com/user-attachments/assets/0d71cb12-054b-400a-be3f-235313609f15) |
-| **⚙️ Admin Panel** | **💳 Payment & Subscription** |
-
-</details>
 
 ---
 
