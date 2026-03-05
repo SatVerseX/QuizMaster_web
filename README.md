@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="https://img.icons8.com/3d-fluency/94/quiz.png" alt="QuizMaster Logo" width="80"/>
-</p>
+
 
 <h1 align="center">🎓 QuizMaster — Test Series Platform</h1>
 
