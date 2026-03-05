@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { 
-  Clock, 
-  Tag, 
-  ArrowRight, 
-  ShoppingBag, 
-  Activity, 
-  Flame, 
-  Crown, 
-  Timer, 
-  Sparkles 
+import {
+  Clock,
+  Tag,
+  ArrowRight,
+  ShoppingBag,
+  Activity,
+  Flame,
+  Crown,
+  Timer,
+  Sparkles
 } from 'lucide-react';
 import { collection, getDocs, query } from "firebase/firestore";
 import { db } from "../../lib/firebase";
@@ -86,41 +86,41 @@ const FeaturedOffers = ({
 
     // Helper to process offer data structure
     const processOffer = (offer, isDb = false) => {
-       const isFreeSeries =
-          offer.originalPrice === 0 ||
-          offer.discountedPrice === 0 ||
-          offer.price === 0 ||
-          (offer.testSeriesId && offer.isPaid === false);
+      const isFreeSeries =
+        offer.originalPrice === 0 ||
+        offer.discountedPrice === 0 ||
+        offer.price === 0 ||
+        (offer.testSeriesId && offer.isPaid === false);
 
-        const originalPrice = isFreeSeries ? 0 : (isDb ? offer.originalPrice : (offer.originalPrice || offer.price || 0));
-        const discountedPrice = isFreeSeries ? 0 : (isDb ? offer.discountedPrice : (offer.discountedPrice || offer.price || 0));
-        
-        // Calculate discount safely
-        let discount = 0;
-        if (isFreeSeries) {
-            discount = 100;
-        } else if (isDb) {
-            discount = offer.discountPercentage || 0;
-        } else {
-            discount = offer.discount || 
-              (originalPrice > 0 ? Math.round(((originalPrice - discountedPrice) / originalPrice) * 100) : 0);
-        }
+      const originalPrice = isFreeSeries ? 0 : (isDb ? offer.originalPrice : (offer.originalPrice || offer.price || 0));
+      const discountedPrice = isFreeSeries ? 0 : (isDb ? offer.discountedPrice : (offer.discountedPrice || offer.price || 0));
 
-        return {
-          id: offer.id,
-          title: offer.title,
-          originalPrice,
-          discountedPrice,
-          discountPercentage: discount,
-          endDate: offer.endDate || offer.expiryDate || new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
-          description: offer.description || "Complete preparation package",
-          image: offer.image || offer.imageUrl || "",
-          badge: isFreeSeries ? "Free Series" : offer.badge || "Special Offer",
-          category: offer.category || "Test Series",
-          isFree: isFreeSeries,
-          testSeriesId: offer.testSeriesId || offer.id,
-          isPaid: !isFreeSeries,
-        };
+      // Calculate discount safely
+      let discount = 0;
+      if (isFreeSeries) {
+        discount = 100;
+      } else if (isDb) {
+        discount = offer.discountPercentage || 0;
+      } else {
+        discount = offer.discount ||
+          (originalPrice > 0 ? Math.round(((originalPrice - discountedPrice) / originalPrice) * 100) : 0);
+      }
+
+      return {
+        id: offer.id,
+        title: offer.title,
+        originalPrice,
+        discountedPrice,
+        discountPercentage: discount,
+        endDate: offer.endDate || offer.expiryDate || new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+        description: offer.description || "Complete preparation package",
+        image: offer.image || offer.imageUrl || "",
+        badge: isFreeSeries ? "Free Series" : offer.badge || "Special Offer",
+        category: offer.category || "Test Series",
+        isFree: isFreeSeries,
+        testSeriesId: offer.testSeriesId || offer.id,
+        isPaid: !isFreeSeries,
+      };
     };
 
     // Merge props offers and db offers
@@ -140,15 +140,15 @@ const FeaturedOffers = ({
   // --- TIMER LOGIC ---
   useEffect(() => {
     if (featuredOffers.length === 0) return;
-    
+
     const updateTimer = () => {
       const now = new Date().getTime();
       const newTimeLeft = {};
-      
+
       featuredOffers.forEach((offer, index) => {
         const endDate = offer.endDate instanceof Date ? offer.endDate : new Date(offer.endDate);
         const distance = endDate.getTime() - now;
-        
+
         if (distance > 0) {
           newTimeLeft[index] = {
             days: Math.floor(distance / (1000 * 60 * 60 * 24)),
@@ -180,7 +180,7 @@ const FeaturedOffers = ({
   // --- HANDLERS ---
   const currentOfferData = featuredOffers[currentOffer] || {};
   const ct = timeLeft[currentOffer] || { days: 0, hours: 0, minutes: 0, seconds: 0 };
-  
+
   const handleOfferClick = () => {
     if (currentOfferData?.isFree) {
       const minimalSeries = { id: currentOfferData.testSeriesId || currentOfferData.id, isPaid: false };
@@ -217,7 +217,7 @@ const FeaturedOffers = ({
       <div className="flex items-center justify-between mb-6 px-2">
         <div className="flex items-center gap-3">
           <div className={`p-2.5 rounded-xl ${isDark ? "bg-orange-500/10 text-orange-400" : "bg-orange-50 text-orange-600"} shadow-sm`}>
-             <Flame size={20} className="animate-pulse-slow" />
+            <Flame size={20} className="animate-pulse-slow" />
           </div>
           <div>
             <h2 className={`text-xl font-bold tracking-tight ${isDark ? "text-white" : "text-gray-900"}`}>
@@ -228,7 +228,7 @@ const FeaturedOffers = ({
             </p>
           </div>
         </div>
-        
+
         {/* Pagination Dots */}
         {featuredOffers.length > 1 && (
           <div className="flex gap-2 bg-gray-100 dark:bg-gray-800 p-1.5 rounded-full">
@@ -236,11 +236,10 @@ const FeaturedOffers = ({
               <button
                 key={index}
                 onClick={() => setCurrentOffer(index)}
-                className={`h-2 rounded-full transition-all duration-500 ease-out ${
-                  index === currentOffer
-                    ? "w-8 bg-indigo-600 shadow-sm"
-                    : "w-2 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500"
-                }`}
+                className={`h-2 rounded-full transition-all duration-500 ease-out ${index === currentOffer
+                  ? "w-8 bg-indigo-600 shadow-sm"
+                  : "w-2 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500"
+                  }`}
                 aria-label={`Go to offer ${index + 1}`}
               />
             ))}
@@ -249,12 +248,12 @@ const FeaturedOffers = ({
       </div>
 
       {/* Main Card */}
-      <div 
+      <div
         className="perspective-1000 group relative"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <div 
+        <div
           onClick={handleOfferClick}
           className={`
             relative w-full overflow-hidden rounded-3xl shadow-2xl 
@@ -266,7 +265,7 @@ const FeaturedOffers = ({
           style={{ minHeight: '420px' }}
         >
           <div className="grid grid-cols-1 lg:grid-cols-2 h-full min-h-[420px]">
-            
+
             {/* LEFT: Visuals */}
             <div className="relative h-64 lg:h-full overflow-hidden">
               {currentOfferData.image ? (
@@ -277,27 +276,27 @@ const FeaturedOffers = ({
                 />
               ) : (
                 <div className={`absolute inset-0 bg-gradient-to-br ${isDark ? "from-gray-700 to-gray-900" : "from-gray-100 to-gray-200"} flex items-center justify-center`}>
-                   <Crown size={64} className="text-gray-400 opacity-50" />
+                  <Crown size={64} className="text-gray-400 opacity-50" />
                 </div>
               )}
-              
+
               {/* Gradient Overlay */}
               <div className={`absolute inset-0 bg-gradient-to-t ${isDark ? 'from-gray-900 via-transparent' : 'from-gray-900/60 via-transparent'} opacity-90 lg:opacity-40`} />
-              
+
               {/* Badges */}
               <div className="absolute top-6 left-6 flex flex-col gap-3">
-                 {currentOfferData.badge && (
-                   <div className="bg-white/95 dark:bg-gray-900/90 backdrop-blur-md text-indigo-600 dark:text-indigo-400 px-4 py-1.5 rounded-full text-xs font-bold shadow-lg flex items-center gap-2 w-fit transform transition-transform group-hover:translate-x-1">
-                      <Crown size={12} fill="currentColor" />
-                      {currentOfferData.badge}
-                   </div>
-                 )}
-                 {(currentOfferData.discountPercentage > 0 || currentOfferData.isFree) && (
-                    <div className="bg-red-500 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-lg w-fit flex items-center gap-1.5 animate-bounce-slow">
-                      <Sparkles size={12} fill="currentColor" />
-                      {currentOfferData.isFree ? '100% OFF' : `${currentOfferData.discountPercentage}% OFF`}
-                    </div>
-                 )}
+                {currentOfferData.badge && (
+                  <div className="bg-white/95 dark:bg-gray-900/90 backdrop-blur-md text-indigo-600 dark:text-indigo-400 px-4 py-1.5 rounded-full text-xs font-bold shadow-lg flex items-center gap-2 w-fit transform transition-transform group-hover:translate-x-1">
+                    <Crown size={12} fill="currentColor" />
+                    {currentOfferData.badge}
+                  </div>
+                )}
+                {(currentOfferData.discountPercentage > 0 || currentOfferData.isFree) && (
+                  <div className="bg-red-500 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-lg w-fit flex items-center gap-1.5 animate-bounce-slow">
+                    <Sparkles size={12} fill="currentColor" />
+                    {currentOfferData.isFree ? '100% OFF' : `${currentOfferData.discountPercentage}% OFF`}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -306,23 +305,23 @@ const FeaturedOffers = ({
               relative flex flex-col justify-center p-6 md:p-10 lg:p-12
               bg-gradient-to-br ${isDark ? 'from-gray-800 to-gray-900' : 'from-white to-gray-50'}
             `}>
-              
+
               {/* Timer */}
               <div className={`
                 mb-8 inline-flex items-center gap-3 px-4 py-2 rounded-xl border w-fit
-                ${isDark 
-                  ? "bg-indigo-500/10 border-indigo-500/20 text-indigo-300" 
+                ${isDark
+                  ? "bg-indigo-500/10 border-indigo-500/20 text-indigo-300"
                   : "bg-indigo-50 border-indigo-100 text-indigo-700"}
               `}>
                 <Timer size={16} className="animate-pulse" />
                 <div className="flex items-center gap-1 font-mono text-sm font-bold">
-                   <span className="bg-indigo-600 text-white rounded px-1.5 py-0.5">{ct.days}d</span>
-                   <span>:</span>
-                   <span className="bg-gray-700 text-white rounded px-1.5 py-0.5">{ct.hours.toString().padStart(2,'0')}</span>
-                   <span>:</span>
-                   <span className="bg-gray-700 text-white rounded px-1.5 py-0.5">{ct.minutes.toString().padStart(2,'0')}</span>
-                   <span>:</span>
-                   <span className="bg-red-500 text-white rounded px-1.5 py-0.5 min-w-[28px] text-center">{ct.seconds.toString().padStart(2,'0')}</span>
+                  <span className="bg-indigo-600 text-white rounded px-1.5 py-0.5">{ct.days}d</span>
+                  <span>:</span>
+                  <span className="bg-gray-700 text-white rounded px-1.5 py-0.5">{ct.hours.toString().padStart(2, '0')}</span>
+                  <span>:</span>
+                  <span className="bg-gray-700 text-white rounded px-1.5 py-0.5">{ct.minutes.toString().padStart(2, '0')}</span>
+                  <span>:</span>
+                  <span className="bg-red-500 text-white rounded px-1.5 py-0.5 min-w-[28px] text-center">{ct.seconds.toString().padStart(2, '0')}</span>
                 </div>
               </div>
 
@@ -343,46 +342,46 @@ const FeaturedOffers = ({
                     Special Price
                   </p>
                   <div className="flex items-baseline gap-3">
-                     {currentOfferData.isFree ? (
-                       <span className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600">
-                         FREE
-                       </span>
-                     ) : (
-                       <>
-                         <span className={`text-4xl font-black ${isDark ? "text-white" : "text-gray-900"}`}>
-                           ₹{currentOfferData.discountedPrice?.toLocaleString()}
-                         </span>
-                         {currentOfferData.originalPrice > 0 && (
-                           <span className="text-lg text-gray-400 line-through decoration-red-500/40 decoration-2">
-                             ₹{currentOfferData.originalPrice?.toLocaleString()}
-                           </span>
-                         )}
-                       </>
-                     )}
+                    {currentOfferData.isFree ? (
+                      <span className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600">
+                        FREE
+                      </span>
+                    ) : (
+                      <>
+                        <span className={`text-4xl font-black ${isDark ? "text-white" : "text-gray-900"}`}>
+                          ₹{currentOfferData.discountedPrice?.toLocaleString()}
+                        </span>
+                        {currentOfferData.originalPrice > 0 && (
+                          <span className="text-lg text-gray-400 line-through decoration-red-500/40 decoration-2">
+                            ₹{currentOfferData.originalPrice?.toLocaleString()}
+                          </span>
+                        )}
+                      </>
+                    )}
                   </div>
                 </div>
 
                 <button className={`
                   group flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-sm tracking-wide transition-all shadow-xl hover:shadow-2xl transform hover:-translate-y-1
-                  ${isDark 
-                    ? "bg-white text-gray-900 hover:bg-gray-100 shadow-white/5" 
+                  ${isDark
+                    ? "bg-white text-gray-900 hover:bg-gray-100 shadow-white/5"
                     : "bg-gray-900 text-white hover:bg-gray-800 shadow-gray-900/20"}
                 `}>
                   <span>{currentOfferData.isFree ? "Start Learning" : "Grab Deal"}</span>
                   <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
                 </button>
               </div>
-              
+
               {/* Decorative Background Elements */}
               <div className={`absolute right-0 bottom-0 opacity-5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                 <ShoppingBag size={200} strokeWidth={0.5} />
+                <ShoppingBag size={200} strokeWidth={0.5} />
               </div>
 
             </div>
           </div>
         </div>
       </div>
-      
+
       {/* CSS for custom animations */}
       <style>{`
         .animate-bounce-slow {

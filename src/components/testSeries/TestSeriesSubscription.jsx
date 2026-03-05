@@ -6,10 +6,10 @@ import { doc, updateDoc, arrayUnion, setDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import usePopup from '../../hooks/usePopup';
 import BeautifulPopup from '../common/BeautifulPopup';
-import { 
-  FiCheck, 
-  FiCreditCard, 
-  FiLock, 
+import {
+  FiCheck,
+  FiCreditCard,
+  FiLock,
   FiBookOpen,
   FiUsers,
   FiStar,
@@ -21,7 +21,9 @@ import {
   FiInfo,
   FiCheckCircle,
   FiZap,
-  FiClock
+  FiClock,
+  FiDownload,
+  FiPackage
 } from 'react-icons/fi';
 
 const TestSeriesSubscription = ({ testSeries, onSuccess, onCancel }) => {
@@ -31,7 +33,7 @@ const TestSeriesSubscription = ({ testSeries, onSuccess, onCancel }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isTestMode, setIsTestMode] = useState(false);
-  
+
   useEffect(() => {
     const checkTestMode = () => {
       const host = window.location.hostname;
@@ -52,7 +54,7 @@ const TestSeriesSubscription = ({ testSeries, onSuccess, onCancel }) => {
   const handleSubscribe = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       if (!currentUser) {
         setError('Please sign in to continue with your subscription.');
@@ -130,7 +132,7 @@ const TestSeriesSubscription = ({ testSeries, onSuccess, onCancel }) => {
 
       const razorpay = new window.Razorpay(options);
       razorpay.open();
-      
+
     } catch (error) {
       console.error(error);
       setError(error.message || 'An unexpected error occurred.');
@@ -142,63 +144,64 @@ const TestSeriesSubscription = ({ testSeries, onSuccess, onCancel }) => {
   // --- Calculations ---
   const originalPrice = testSeries.originalPrice || 0;
   const currentPrice = testSeries.discountedPrice ?? testSeries.price;
-  const discountPercentage = originalPrice > currentPrice 
-    ? Math.round(((originalPrice - currentPrice) / originalPrice) * 100) 
+  const discountPercentage = originalPrice > currentPrice
+    ? Math.round(((originalPrice - currentPrice) / originalPrice) * 100)
     : 0;
 
   return (
-    <div className={`min-h-screen w-full flex justify-center items-center p-4 md:p-8 transition-colors duration-300 ${
-      isDark ? 'bg-[#0B1120] text-gray-100' : 'bg-gray-50 text-gray-800'
-    }`}>
-      
+    <div className={`min-h-screen w-full flex justify-center items-center p-4 md:p-8 transition-colors duration-300 ${isDark ? 'bg-[#0B1120] text-gray-100' : 'bg-gray-50 text-gray-800'
+      }`}>
+
       <div className="max-w-6xl w-full">
-        
+
         {/* Back Navigation */}
-        <button 
+        <button
           onClick={onCancel}
-          className={`flex items-center gap-2 mb-8 font-medium transition-colors ${
-            isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'
-          }`}
+          className={`flex items-center gap-2 mb-8 font-medium transition-colors ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'
+            }`}
         >
           <FiArrowLeft /> Back to Series
         </button>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
-          
+
           {/* LEFT COLUMN: Value Proposition */}
           <div className="lg:col-span-2 space-y-8">
-            
+
             {/* Header Section */}
             <div>
               <div className="flex items-center gap-3 mb-4">
-                <span className={`px-3 py-1 text-xs font-bold tracking-wider uppercase rounded-full ${
-                  isDark ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-100 text-blue-700'
-                }`}>
+                <span className={`px-3 py-1 text-xs font-bold tracking-wider uppercase rounded-full ${isDark ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-100 text-blue-700'
+                  }`}>
                   Premium Test Series
                 </span>
+                {testSeries.isCombo && (
+                  <span className={`px-3 py-1 text-xs font-bold tracking-wider uppercase rounded-full flex items-center gap-1 ${isDark ? 'bg-purple-500/10 text-purple-400' : 'bg-purple-100 text-purple-700'
+                    }`}>
+                    <FiPackage className="w-3 h-3" />
+                    Combo Pack
+                  </span>
+                )}
                 {isTestMode && (
                   <span className="px-3 py-1 text-xs font-bold uppercase rounded-full bg-yellow-500/10 text-yellow-600 border border-yellow-500/20">
                     Test Mode
                   </span>
                 )}
               </div>
-              
-              <h1 className={`text-3xl md:text-4xl font-bold mb-4 leading-tight ${
-                isDark ? 'text-white' : 'text-gray-900'
-              }`}>
+
+              <h1 className={`text-3xl md:text-4xl font-bold mb-4 leading-tight ${isDark ? 'text-white' : 'text-gray-900'
+                }`}>
                 {testSeries.title}
               </h1>
-              <p className={`text-lg leading-relaxed ${
-                isDark ? 'text-gray-400' : 'text-gray-600'
-              }`}>
+              <p className={`text-lg leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-600'
+                }`}>
                 {testSeries.description}
               </p>
             </div>
 
             {/* Stats Row */}
-            <div className={`grid grid-cols-3 gap-4 p-6 rounded-2xl border ${
-              isDark ? 'bg-gray-800/50 border-gray-700' : 'bg-white border-gray-200 shadow-sm'
-            }`}>
+            <div className={`grid grid-cols-3 gap-4 p-6 rounded-2xl border ${isDark ? 'bg-gray-800/50 border-gray-700' : 'bg-white border-gray-200 shadow-sm'
+              }`}>
               <div className="text-center border-r border-gray-200 dark:border-gray-700 last:border-0">
                 <div className={`text-2xl font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   {testSeries.totalQuizzes || 0}
@@ -233,40 +236,75 @@ const TestSeriesSubscription = ({ testSeries, onSuccess, onCancel }) => {
                   { icon: FiClock, text: "Lifetime access to course materials" },
                   { icon: FiAward, text: "Certificate of completion" }
                 ].map((feature, idx) => (
-                  <div key={idx} className={`flex items-start gap-3 p-4 rounded-xl transition-all hover:translate-x-1 ${
-                    isDark ? 'hover:bg-gray-800/50' : 'hover:bg-gray-50'
-                  }`}>
-                    <div className={`mt-1 p-2 rounded-lg ${
-                      isDark ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-100 text-blue-600'
+                  <div key={idx} className={`flex items-start gap-3 p-4 rounded-xl transition-all hover:translate-x-1 ${isDark ? 'hover:bg-gray-800/50' : 'hover:bg-gray-50'
                     }`}>
+                    <div className={`mt-1 p-2 rounded-lg ${isDark ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-100 text-blue-600'
+                      }`}>
                       <feature.icon className="w-4 h-4" />
                     </div>
-                    <span className={`text-sm font-medium leading-relaxed ${
-                      isDark ? 'text-gray-300' : 'text-gray-700'
-                    }`}>
+                    <span className={`text-sm font-medium leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'
+                      }`}>
                       {feature.text}
                     </span>
                   </div>
                 ))}
               </div>
             </div>
+
+            {/* Combo Value Breakdown */}
+            {testSeries.isCombo && testSeries.comboIncludes && testSeries.comboIncludes.length > 0 && (
+              <div className={`p-6 rounded-2xl border ${isDark ? 'bg-purple-500/5 border-purple-500/20' : 'bg-purple-50 border-purple-200'}`}>
+                <h3 className={`text-lg font-bold mb-4 flex items-center gap-2 ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>
+                  <FiPackage className="w-5 h-5" />
+                  Combo Pack Includes
+                </h3>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {testSeries.comboIncludes.map((item, idx) => {
+                    const comboLabels = {
+                      mock_tests: { icon: '📋', label: 'Full-Length Mock Tests' },
+                      practice_sheets: { icon: '📝', label: 'Practice Sheets' },
+                      study_material: { icon: '📚', label: 'Study Material' },
+                      notes: { icon: '📒', label: 'Notes & Summaries' }
+                    };
+                    const info = comboLabels[item] || { icon: '📦', label: item };
+                    return (
+                      <div key={idx} className={`flex items-center gap-3 p-3 rounded-xl ${isDark ? 'bg-purple-500/10' : 'bg-white'}`}>
+                        <span className="text-xl">{info.icon}</span>
+                        <span className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+                          {info.label}
+                        </span>
+                        <FiCheck className="w-4 h-4 text-green-500 ml-auto" />
+                      </div>
+                    );
+                  })}
+                </div>
+                {testSeries.resources && testSeries.resources.length > 0 && (
+                  <div className={`mt-4 pt-4 border-t ${isDark ? 'border-purple-500/20' : 'border-purple-200'}`}>
+                    <div className={`flex items-center gap-2 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                      <FiDownload className="w-4 h-4 text-blue-500" />
+                      <span className="text-sm font-medium">
+                        {testSeries.resources.length} downloadable resource{testSeries.resources.length > 1 ? 's' : ''} included
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* RIGHT COLUMN: Checkout Card */}
           <div className="lg:col-span-1">
             <div className="sticky top-8">
-              
+
               {/* Main Card */}
-              <div className={`rounded-3xl p-6 shadow-2xl relative overflow-hidden border ${
-                isDark 
-                  ? 'bg-gray-800 border-gray-700 shadow-black/50' 
-                  : 'bg-white border-gray-100 shadow-blue-900/5'
-              }`}>
-                
+              <div className={`rounded-3xl p-6 shadow-2xl relative overflow-hidden border ${isDark
+                ? 'bg-gray-800 border-gray-700 shadow-black/50'
+                : 'bg-white border-gray-100 shadow-blue-900/5'
+                }`}>
+
                 {/* Decorative Gradient Blur */}
-                <div className={`absolute top-0 right-0 w-40 h-40 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 pointer-events-none ${
-                  isDark ? 'opacity-20' : 'opacity-10'
-                }`} />
+                <div className={`absolute top-0 right-0 w-40 h-40 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 pointer-events-none ${isDark ? 'opacity-20' : 'opacity-10'
+                  }`} />
 
                 <h3 className={`text-lg font-semibold mb-6 ${isDark ? 'text-gray-200' : 'text-gray-600'}`}>
                   Summary
@@ -303,11 +341,10 @@ const TestSeriesSubscription = ({ testSeries, onSuccess, onCancel }) => {
                 <button
                   onClick={handleSubscribe}
                   disabled={loading}
-                  className={`w-full py-4 px-6 rounded-xl font-bold text-white shadow-lg transform transition-all duration-200 hover:-translate-y-1 active:translate-y-0 flex items-center justify-center gap-3 ${
-                    loading 
-                      ? 'bg-gray-500 cursor-not-allowed' 
-                      : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-blue-500/25'
-                  }`}
+                  className={`w-full py-4 px-6 rounded-xl font-bold text-white shadow-lg transform transition-all duration-200 hover:-translate-y-1 active:translate-y-0 flex items-center justify-center gap-3 ${loading
+                    ? 'bg-gray-500 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-blue-500/25'
+                    }`}
                 >
                   {loading ? (
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -335,9 +372,8 @@ const TestSeriesSubscription = ({ testSeries, onSuccess, onCancel }) => {
               </div>
 
               {/* Guarantee Badge */}
-              <div className={`mt-6 p-4 rounded-2xl flex items-center gap-3 ${
-                isDark ? 'bg-gray-800/50 text-gray-400' : 'bg-gray-100 text-gray-600'
-              }`}>
+              <div className={`mt-6 p-4 rounded-2xl flex items-center gap-3 ${isDark ? 'bg-gray-800/50 text-gray-400' : 'bg-gray-100 text-gray-600'
+                }`}>
                 <div className="p-2 bg-gray-200 dark:bg-gray-700 rounded-full">
                   <FiShield className="w-5 h-5" />
                 </div>
@@ -356,7 +392,7 @@ const TestSeriesSubscription = ({ testSeries, onSuccess, onCancel }) => {
         {...popupState}
         onClose={hidePopup}
       />
-    </div>
+    </div >
   );
 };
 

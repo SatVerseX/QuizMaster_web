@@ -10,9 +10,9 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { db } from "../../lib/firebase";
-import { 
-  Activity, 
-  BookOpen, 
+import {
+  Activity,
+  BookOpen,
   Sparkles,
   ChevronRight,
   Crown,
@@ -36,11 +36,11 @@ const EnhancedHomepage = ({
   userSubscriptions: propUserSubscriptions,
   hasUserSubscribed = () => false,
   isCreator = () => false,
-  recordFreeView = () => {},
-  onCreateSeries = () => {},
-  onViewSeries = () => {},
-  onSubscribeSeries = () => {},
-  onViewTests = () => {},
+  recordFreeView = () => { },
+  onCreateSeries = () => { },
+  onViewSeries = () => { },
+  onSubscribeSeries = () => { },
+  onViewTests = () => { },
 }) => {
   const { currentUser, isAdmin } = useAuth();
   const { isDark } = useTheme();
@@ -121,7 +121,7 @@ const EnhancedHomepage = ({
           id: doc.id,
           ...doc.data(),
         }));
-        
+
         const seriesWithCounts = await fetchTestCounts(seriesData);
         setSeries(seriesWithCounts);
         setLoading(false);
@@ -183,7 +183,7 @@ const EnhancedHomepage = ({
     <div className={`${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'} border-b mb-8`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          
+
           {/* Welcome Text */}
           <div>
             <div className="flex items-center gap-2 mb-2">
@@ -232,16 +232,16 @@ const EnhancedHomepage = ({
 
   return (
     <div className={`min-h-screen pb-12 ${isDark ? "bg-black" : "bg-zinc-50/50"}`}>
-      
+
       {/* New Dashboard Header */}
       <DashboardHeader />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
+
           {/* --- LEFT MAIN COLUMN (Content) --- */}
           <div className="lg:col-span-8 space-y-10">
-            
+
             {/* Featured Offers */}
             {/* We wrap this only to ensure spacing, assuming component handles its own internal layout */}
             <div className="w-full">
@@ -257,11 +257,11 @@ const EnhancedHomepage = ({
             {/* Hero Banner */}
             {/* Removed extra padding/borders - letting the component sit naturally */}
             <div className="w-full">
-               <HeroSection
-                  isDark={isDark}
-                  currentUser={currentUser}
-                  onViewAllSeries={() => { /* Navigate */ }}
-                />
+              <HeroSection
+                isDark={isDark}
+                currentUser={currentUser}
+                onViewAllSeries={() => { /* Navigate */ }}
+              />
             </div>
 
             {/* Trending Section */}
@@ -298,29 +298,29 @@ const EnhancedHomepage = ({
                 />
               </div>
             )}
-            
+
             {/* Success Stories */}
             <div className="pt-6">
-               <SuccessStoriesSection isDark={isDark} />
+              <SuccessStoriesSection isDark={isDark} />
             </div>
           </div>
 
           {/* --- RIGHT SIDEBAR (Activity) --- */}
           <div className="lg:col-span-4 lg:sticky lg:top-6 space-y-6">
-            
+
             {/* Recent Activity Component */}
             {/* Removed the wrapper with the duplicate "Recent Activity" header. 
                 The component is now a direct child of the grid column. */}
             <div className="relative">
-                 <RecentActivityCompact
-                    isDark={isDark}
-                    currentUser={currentUser}
-                    userSubscriptions={userSubscriptions}
-                    onViewSeries={onViewSeries}
-                    onTakeTest={onViewTests}
-                    onViewTests={onViewTests}
-                    isAdmin={isAdmin}
-                  />
+              <RecentActivityCompact
+                isDark={isDark}
+                currentUser={currentUser}
+                userSubscriptions={userSubscriptions}
+                onViewSeries={onViewSeries}
+                onTakeTest={onViewTests}
+                onViewTests={onViewTests}
+                isAdmin={isAdmin}
+              />
             </div>
 
             {/* Supplemental Promo Card */}
@@ -334,8 +334,8 @@ const EnhancedHomepage = ({
                   <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1 leading-relaxed">
                     Unlock all test series and get detailed performance analytics.
                   </p>
-                  <button 
-                    onClick={() => {}} // Add navigation
+                  <button
+                    onClick={() => { }} // Add navigation
                     className="mt-3 text-xs font-semibold text-emerald-600 flex items-center hover:underline"
                   >
                     View Plans <ChevronRight size={12} />
@@ -344,11 +344,11 @@ const EnhancedHomepage = ({
               </div>
             </div>
 
-             {/* Quick Tip */}
-             <div className={`p-5 rounded-2xl border ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100'}`}>
+            {/* Quick Tip */}
+            <div className={`p-5 rounded-2xl border ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100'}`}>
               <div className="flex items-center gap-2 mb-2 text-blue-600">
-                 <Zap size={16} />
-                 <h4 className="font-bold text-sm">Study Streak</h4>
+                <Zap size={16} />
+                <h4 className="font-bold text-sm">Study Streak</h4>
               </div>
               <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
                 Consistency is key. Take one quiz today to maintain your streak!

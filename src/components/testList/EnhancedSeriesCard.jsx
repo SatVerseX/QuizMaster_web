@@ -1,5 +1,5 @@
 import React, { memo, useState, useCallback } from "react";
-import { FiBookOpen, FiUsers } from "react-icons/fi";
+import { FiBookOpen, FiUsers, FiPackage, FiDownload } from "react-icons/fi";
 import { FaCrown, FaGem, FaCheck, FaStar } from "react-icons/fa";
 import { submitRating, canUserRate } from "../../services/ratingService";
 
@@ -68,11 +68,10 @@ const EnhancedSeriesCard = memo(
     return (
       <div
         onClick={handleCardClick}
-        className={`${
-          isDark
-            ? "group relative border-2 border-gray-700 rounded-3xl overflow-hidden shadow-lg transition-all duration-300 cursor-pointer h-80 sm:h-80 flex flex-col hover:border-white"
-            : "group relative border-2 border-gray-200 rounded-3xl overflow-hidden shadow-lg transition-all duration-300 cursor-pointer h-80 sm:h-80 flex flex-col hover:border-blue-400"
-        }`}
+        className={`${isDark
+          ? "group relative border-2 border-gray-700 rounded-3xl overflow-hidden shadow-lg transition-all duration-300 cursor-pointer h-80 sm:h-80 flex flex-col hover:border-white"
+          : "group relative border-2 border-gray-200 rounded-3xl overflow-hidden shadow-lg transition-all duration-300 cursor-pointer h-80 sm:h-80 flex flex-col hover:border-blue-400"
+          }`}
       >
         {/* Premium/Free Badge */}
         <div className="absolute top-4 right-4 z-20">
@@ -107,6 +106,28 @@ const EnhancedSeriesCard = memo(
           </div>
         </div>
 
+        {/* Combo Badge */}
+        {series.isCombo && (
+          <div className="absolute top-14 left-4 z-20">
+            <div className="bg-purple-600 text-white px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-md">
+              <FiPackage className="w-3 h-3" />
+              Combo
+            </div>
+          </div>
+        )}
+
+        {/* Resources Count */}
+        {series.resources && series.resources.length > 0 && (
+          <div className={`absolute ${series.isCombo ? 'top-[5.5rem]' : 'top-14'} left-4 z-20`}>
+            <div className={`flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-sm ${isDark ? 'bg-black/40' : 'bg-white/40'} shadow-sm`}>
+              <FiDownload className="w-3 h-3 text-blue-400" />
+              <span className={`${isDark ? 'text-white' : 'text-gray-900'} text-[10px] font-semibold`}>
+                {series.resources.length} Resources
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Cover Image - Full Card Background */}
         {series.coverImageUrl ? (
           <div className="absolute inset-0 z-0">
@@ -118,7 +139,7 @@ const EnhancedSeriesCard = memo(
                 e.target.style.display = "none";
               }}
             />
-            
+
           </div>
         ) : (
           // Simple gradient background instead of complex multi-stop gradient
@@ -130,11 +151,10 @@ const EnhancedSeriesCard = memo(
         {/* Bottom Stats Container */}
         <div className="relative z-10 mt-auto">
           {/* Simplified background with basic transparency */}
-          <div className={`p-4 border-t ${
-            isDark 
-              ? "bg-black bg-opacity-60 border-gray-600" 
-              : "bg-white bg-opacity-80 border-gray-300"
-          }`}>
+          <div className={`p-4 border-t ${isDark
+            ? "bg-black bg-opacity-60 border-gray-600"
+            : "bg-white bg-opacity-80 border-gray-300"
+            }`}>
             <div className="grid grid-cols-2 gap-4">
               {/* Total Tests */}
               <div className="flex items-center gap-3">
@@ -142,10 +162,10 @@ const EnhancedSeriesCard = memo(
                   <FiBookOpen className="text-white w-4 h-4" />
                 </div>
                 <div>
-                  <div className={`${isDark?"text-gray-300 font-bold text-xs":"text-gray-800 font-bold text-xs"}`}>
+                  <div className={`${isDark ? "text-gray-300 font-bold text-xs" : "text-gray-800 font-bold text-xs"}`}>
                     {series.totalTests || 0}
                   </div>
-                  <div className={`${isDark?"text-gray-300 text-xs":"text-gray-800 text-xs"}`}>Tests</div>
+                  <div className={`${isDark ? "text-gray-300 text-xs" : "text-gray-800 text-xs"}`}>Tests</div>
                 </div>
               </div>
 
@@ -155,16 +175,16 @@ const EnhancedSeriesCard = memo(
                   <FiUsers className="text-white w-4 h-4" />
                 </div>
                 <div>
-                  <div className={`${isDark?"text-gray-300 font-bold text-xs":"text-gray-800 font-bold text-xs"}`}>
+                  <div className={`${isDark ? "text-gray-300 font-bold text-xs" : "text-gray-800 font-bold text-xs"}`}>
                     {series.totalSubscribers || series.totalViews || 0}
                   </div>
-                  <div className={`${isDark?"text-gray-300 text-xs":"text-gray-800 text-xs"}`}>
+                  <div className={`${isDark ? "text-gray-300 text-xs" : "text-gray-800 text-xs"}`}>
                     students
                   </div>
                 </div>
               </div>
 
-              
+
             </div>
           </div>
         </div>

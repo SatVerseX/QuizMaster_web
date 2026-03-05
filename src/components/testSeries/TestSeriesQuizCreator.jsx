@@ -5,9 +5,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import usePopup from '../../hooks/usePopup';
 import BeautifulPopup from '../common/BeautifulPopup';
-import { 
-  FiPlus, 
-  FiTrash2, 
+import {
+  FiPlus,
+  FiTrash2,
   FiArrowLeft,
   FiBookOpen,
   FiCheck,
@@ -36,14 +36,15 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
   const { popupState, showError, showSuccess, hidePopup } = usePopup();
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('info'); // 'info', 'questions', 'preview'
-  
+
   // Theme mode function similar to WelcomePage
   const mode = (light, dark) => (isDark ? dark : light);
-  
+
   const [quizData, setQuizData] = useState({
     title: '',
     description: '',
     questions: [{
+      type: 'mcq',
       question: '',
       options: ['', '', '', ''],
       correctAnswer: 0,
@@ -65,7 +66,7 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
     negativeMarking: {
       enabled: false,
       type: 'fractional', // 'fractional' or 'fixed'
-      value: 0.25 
+      value: 0.25
     }
   });
 
@@ -101,6 +102,7 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
     setQuizData(prev => ({
       ...prev,
       questions: [...prev.questions, {
+        type: 'mcq',
         question: '',
         options: ['', '', '', ''],
         correctAnswer: 0,
@@ -136,8 +138,22 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
       return;
     }
 
-    if (quizData.questions.some(q => !q.question.trim() || q.options.some(opt => !opt.trim()))) {
-      showError('All questions and options must be filled!', 'Validation Error');
+    const invalidQ = quizData.questions.find(q => {
+      if (!q.question.trim()) return true;
+      const qType = q.type || 'mcq';
+      if (qType === 'numerical') {
+        return q.correctAnswer === '' || q.correctAnswer === undefined || q.correctAnswer === null;
+      }
+      // MCQ & MSQ need all options filled
+      if (!q.options || q.options.some(opt => !opt.trim())) return true;
+      if (qType === 'msq' && (!Array.isArray(q.correctAnswer) || q.correctAnswer.length < 2)) return true;
+      return false;
+    });
+    if (invalidQ) {
+      const qType = invalidQ.type || 'mcq';
+      if (qType === 'numerical') showError('Numerical questions must have a correct answer value!', 'Validation Error');
+      else if (qType === 'msq') showError('MSQ questions must have at least 2 correct answers and all options filled!', 'Validation Error');
+      else showError('All questions and options must be filled!', 'Validation Error');
       return;
     }
 
@@ -152,21 +168,21 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
         difficulty: quizData.difficulty,
         negativeMarking: quizData.negativeMarking,
         passingScore: quizData.passingScore, // Save passing score
-        
+
         // Test Series linking
         testSeriesId: testSeries.id,
         testSeriesTitle: testSeries.title,
-        
+
         // Creator info
         createdBy: currentUser.uid,
         createdByName: currentUser.displayName || currentUser.email,
         createdAt: new Date(),
-        
+
         // Quiz settings
         isPartOfSeries: true,
         isPaid: false, // Individual quizzes in series are not paid
         totalQuestions: quizData.questions.length,
-        
+
         // Stats
         totalAttempts: 0,
         averageScore: 0
@@ -183,12 +199,12 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
       });
 
       showSuccess('Test created successfully!', 'Success');
-      
+
       setTimeout(() => {
-      onQuizCreated({
-        id: docRef.id,
-        ...quizDocument
-      });
+        onQuizCreated({
+          id: docRef.id,
+          ...quizDocument
+        });
       }, 1500);
 
     } catch (error) {
@@ -209,8 +225,8 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
 
   const getCompletionStats = () => {
     const totalFields = 1 + quizData.questions.length * 5; // title + (question + 4 options) per question
-    const filledFields = (quizData.title ? 1 : 0) + 
-      quizData.questions.reduce((acc, q) => 
+    const filledFields = (quizData.title ? 1 : 0) +
+      quizData.questions.reduce((acc, q) =>
         acc + (q.question ? 1 : 0) + q.options.filter(opt => opt.trim()).length, 0
       );
     return Math.round((filledFields / totalFields) * 100);
@@ -222,7 +238,7 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
       return sum + mark;
     }, 0);
   };
-  
+
   const maxPossibleScore = calculateMaxScore();
 
   const renderMobileHeader = () => (
@@ -238,7 +254,7 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
           <FiArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
           <span>Back</span>
         </button>
-        
+
         <div className={mode(
           "flex items-center gap-2 px-3 py-2 bg-blue-50 rounded-lg border border-blue-200",
           "flex items-center gap-2 px-3 py-2 bg-blue-500/20 rounded-lg border border-blue-500/30"
@@ -246,7 +262,7 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
           <FiTarget className={mode("w-4 h-4 text-blue-600", "w-4 h-4 text-blue-400")} />
           <span className={mode("text-blue-700 font-bold text-sm", "text-blue-300 font-bold text-sm")}>{getCompletionStats()}%</span>
         </div>
-        </div>
+      </div>
 
       <h1 className={mode(
         "text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-slate-800 via-blue-600 to-indigo-600 mb-2",
@@ -264,29 +280,29 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
   const renderDesktopHeader = () => (
     <div className="hidden lg:block relative z-10 mb-12">
       <div className="flex items-center gap-6 mb-8">
-          <div className="flex-1">
+        <div className="flex-1">
           <h1 className={mode(
             "text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-slate-800 via-blue-600 to-indigo-600 mb-3 leading-tight",
             "text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-200 to-purple-200 mb-3 leading-tight"
           )}>
-              Create Test
-            </h1>
+            Create Test
+          </h1>
           <p className={mode("text-xl text-slate-600 flex items-center gap-3", "text-xl text-gray-400 flex items-center gap-3")}>
             <FaGraduationCap className={mode("w-6 h-6 text-blue-600", "w-6 h-6 text-blue-400")} />
-              Adding new test to{' '}
+            Adding new test to{' '}
             <span className={mode("text-blue-600 font-semibold px-3 py-1 bg-blue-100 rounded-lg", "text-blue-400 font-semibold px-3 py-1 bg-blue-500/20 rounded-lg")}>
-                "{testSeries.title}"
-              </span>
-            </p>
-          </div>
+              "{testSeries.title}"
+            </span>
+          </p>
+        </div>
 
-          {/* Progress Indicator */}
+        {/* Progress Indicator */}
         <div className={mode(
           "flex items-center gap-4 px-6 py-3 bg-white backdrop-blur-xl border border-slate-200 rounded-xl shadow-lg",
           "flex items-center gap-4 px-6 py-3 bg-gradient-to-r from-gray-800/60 to-gray-700/60 backdrop-blur-xl border border-gray-600/40 rounded-xl shadow-lg"
         )}>
           <FiTarget className={mode("w-5 h-5 text-blue-600", "w-5 h-5 text-blue-400")} />
-            <div>
+          <div>
             <div className={mode("text-sm text-slate-600 font-medium", "text-sm text-gray-300 font-medium")}>Completion</div>
             <div className={mode("text-blue-600 font-bold", "text-blue-400 font-bold")}>{getCompletionStats()}%</div>
           </div>
@@ -312,14 +328,13 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium text-sm transition-all duration-300 ${
-                  activeTab === tab.id
+                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium text-sm transition-all duration-300 ${activeTab === tab.id
                     ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
                     : mode(
-                        'text-slate-600 hover:text-slate-700 hover:bg-slate-100',
-                        'text-gray-400 hover:text-gray-300 hover:bg-gray-700/50'
-                      )
-                }`}
+                      'text-slate-600 hover:text-slate-700 hover:bg-slate-100',
+                      'text-gray-400 hover:text-gray-300 hover:bg-gray-700/50'
+                    )
+                  }`}
               >
                 <Icon className="w-4 h-4" />
                 <span className="hidden sm:inline">{tab.label}</span>
@@ -348,18 +363,16 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`group flex-1 flex flex-col items-center gap-3 px-6 py-4 rounded-xl font-medium transition-all duration-300 ${
-                  activeTab === tab.id
+                className={`group flex-1 flex flex-col items-center gap-3 px-6 py-4 rounded-xl font-medium transition-all duration-300 ${activeTab === tab.id
                     ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-xl transform scale-105'
                     : mode(
-                        'text-slate-600 hover:text-slate-700 hover:bg-slate-50 border border-transparent hover:border-slate-200',
-                        'text-gray-400 hover:text-gray-300 hover:bg-gray-700/50 border border-transparent hover:border-gray-600'
-                      )
-                }`}
+                      'text-slate-600 hover:text-slate-700 hover:bg-slate-50 border border-transparent hover:border-slate-200',
+                      'text-gray-400 hover:text-gray-300 hover:bg-gray-700/50 border border-transparent hover:border-gray-600'
+                    )
+                  }`}
               >
-                <Icon className={`w-6 h-6 transition-transform group-hover:scale-110 ${
-                  activeTab === tab.id ? 'text-white' : mode('text-slate-500', 'text-gray-500')
-                }`} />
+                <Icon className={`w-6 h-6 transition-transform group-hover:scale-110 ${activeTab === tab.id ? 'text-white' : mode('text-slate-500', 'text-gray-500')
+                  }`} />
                 <div className="text-center">
                   <div className="font-bold text-sm mb-1">{tab.label}</div>
                   <div className={`text-xs opacity-80 ${activeTab === tab.id ? 'text-white' : mode('text-slate-500', 'text-gray-500')}`}>
@@ -383,19 +396,19 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
         "absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-2xl lg:rounded-3xl",
         "absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 rounded-2xl lg:rounded-3xl"
       )}></div>
-          <div className="relative">
+      <div className="relative">
         <div className="flex items-center gap-4 mb-6 lg:mb-8">
           <div className="p-3 lg:p-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl lg:rounded-2xl shadow-lg">
             <FiBookOpen className="w-6 h-6 lg:w-8 lg:h-8 text-white" />
-              </div>
-              <div>
+          </div>
+          <div>
             <h3 className={mode("text-2xl lg:text-3xl font-bold text-slate-800 mb-2", "text-2xl lg:text-3xl font-bold text-white mb-2")}>Test Information</h3>
             <p className={mode("text-slate-600 text-sm lg:text-lg", "text-gray-400 text-sm lg:text-lg")}>Configure your test details and settings</p>
-              </div>
-            </div>
-            
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mb-6 lg:mb-8">
-          
+
           {/* Title Input */}
           <div className="space-y-3">
             <label className={mode("flex items-center gap-2 text-sm font-semibold text-slate-700", "flex items-center gap-2 text-sm font-semibold text-gray-300")}>
@@ -452,62 +465,61 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
 
         {/* NEW GRID FOR PASSING SCORE & DIFFICULTY */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mb-6 lg:mb-8">
-           
-           {/* Passing Score */}
-           <div className="space-y-3">
-              <label className={mode("flex items-center gap-2 text-sm font-semibold text-slate-700", "flex items-center gap-2 text-sm font-semibold text-gray-300")}>
-                 <FiCheckCircle className={mode("w-4 h-4 text-purple-600", "w-4 h-4 text-purple-400")} />
-                 Passing Score
-              </label>
-              <div className="relative">
-                 <input
-                    type="number"
-                    min="0"
-                    max={maxPossibleScore}
-                    value={quizData.passingScore || 0}
-                    onChange={(e) => handleInputChange('passingScore', parseInt(e.target.value) || 0)}
-                    className={mode(
-                       "w-full px-4 lg:px-6 py-3 lg:py-4 rounded-xl bg-white backdrop-blur-sm border border-slate-300 text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 font-medium text-sm lg:text-base",
-                       "w-full px-4 lg:px-6 py-3 lg:py-4 rounded-xl bg-gray-900/60 backdrop-blur-sm border border-gray-600/40 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 font-medium text-sm lg:text-base"
-                    )}
-                 />
-                 <div className={`absolute right-4 top-1/2 -translate-y-1/2 text-xs ${mode("text-slate-400", "text-gray-500")}`}>
-                    Max: {maxPossibleScore}
-                 </div>
-              </div>
-           </div>
 
-           {/* Difficulty (Moved here) */}
-           <div className="space-y-3">
-              <label className={mode("flex items-center gap-2 text-sm font-semibold text-slate-700", "flex items-center gap-2 text-sm font-semibold text-gray-300")}>
-                <FiTrendingUp className={mode("w-4 h-4 text-orange-600", "w-4 h-4 text-orange-400")} />
-                Difficulty Level
-              </label>
-              <div className="grid grid-cols-3 gap-3 lg:gap-4">
-                {[
-                  { value: 'easy', label: 'Easy', color: getDifficultyColor('easy') },
-                  { value: 'medium', label: 'Medium', color: getDifficultyColor('medium') },
-                  { value: 'hard', label: 'Hard', color: getDifficultyColor('hard') }
-                ].map(diff => (
-                  <button
-                    key={diff.value}
-                    type="button"
-                    onClick={() => handleInputChange('difficulty', diff.value)}
-                    className={`group relative p-3 lg:p-4 rounded-xl text-center font-bold transition-all duration-300 ${
-                        quizData.difficulty === diff.value
-                        ? `bg-gradient-to-r ${diff.color.bg} text-white shadow-lg transform scale-105`
-                        : mode(
-                            'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200',
-                            'bg-gray-700/50 text-gray-300 hover:bg-gray-600/50'
-                          )
-                    }`}
-                  >
-                    <div className="text-xl lg:text-2xl mb-1">{diff.color.emoji}</div>
-                    <div className="text-xs lg:text-sm">{diff.label}</div>
-                  </button>
-                ))}
+          {/* Passing Score */}
+          <div className="space-y-3">
+            <label className={mode("flex items-center gap-2 text-sm font-semibold text-slate-700", "flex items-center gap-2 text-sm font-semibold text-gray-300")}>
+              <FiCheckCircle className={mode("w-4 h-4 text-purple-600", "w-4 h-4 text-purple-400")} />
+              Passing Score
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                min="0"
+                max={maxPossibleScore}
+                value={quizData.passingScore || 0}
+                onChange={(e) => handleInputChange('passingScore', parseInt(e.target.value) || 0)}
+                className={mode(
+                  "w-full px-4 lg:px-6 py-3 lg:py-4 rounded-xl bg-white backdrop-blur-sm border border-slate-300 text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 font-medium text-sm lg:text-base",
+                  "w-full px-4 lg:px-6 py-3 lg:py-4 rounded-xl bg-gray-900/60 backdrop-blur-sm border border-gray-600/40 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 font-medium text-sm lg:text-base"
+                )}
+              />
+              <div className={`absolute right-4 top-1/2 -translate-y-1/2 text-xs ${mode("text-slate-400", "text-gray-500")}`}>
+                Max: {maxPossibleScore}
               </div>
-           </div>
+            </div>
+          </div>
+
+          {/* Difficulty (Moved here) */}
+          <div className="space-y-3">
+            <label className={mode("flex items-center gap-2 text-sm font-semibold text-slate-700", "flex items-center gap-2 text-sm font-semibold text-gray-300")}>
+              <FiTrendingUp className={mode("w-4 h-4 text-orange-600", "w-4 h-4 text-orange-400")} />
+              Difficulty Level
+            </label>
+            <div className="grid grid-cols-3 gap-3 lg:gap-4">
+              {[
+                { value: 'easy', label: 'Easy', color: getDifficultyColor('easy') },
+                { value: 'medium', label: 'Medium', color: getDifficultyColor('medium') },
+                { value: 'hard', label: 'Hard', color: getDifficultyColor('hard') }
+              ].map(diff => (
+                <button
+                  key={diff.value}
+                  type="button"
+                  onClick={() => handleInputChange('difficulty', diff.value)}
+                  className={`group relative p-3 lg:p-4 rounded-xl text-center font-bold transition-all duration-300 ${quizData.difficulty === diff.value
+                      ? `bg-gradient-to-r ${diff.color.bg} text-white shadow-lg transform scale-105`
+                      : mode(
+                        'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200',
+                        'bg-gray-700/50 text-gray-300 hover:bg-gray-600/50'
+                      )
+                    }`}
+                >
+                  <div className="text-xl lg:text-2xl mb-1">{diff.color.emoji}</div>
+                  <div className="text-xs lg:text-sm">{diff.label}</div>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Negative Marking Section */}
@@ -516,7 +528,7 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
             <FiAlertCircle className={mode("w-4 h-4 text-red-600", "w-4 h-4 text-red-400")} />
             Negative Marking
           </label>
-          
+
           <div className="space-y-4">
             {/* Enable/Disable Toggle */}
             <div className={`flex items-center justify-between p-4 rounded-xl border transition-all duration-300 ${mode(
@@ -545,16 +557,14 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
                   ...quizData.negativeMarking,
                   enabled: !quizData.negativeMarking.enabled
                 })}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
-                  quizData.negativeMarking.enabled
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${quizData.negativeMarking.enabled
                     ? 'bg-red-500'
                     : mode('bg-slate-200', 'bg-gray-600')
-                }`}
+                  }`}
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    quizData.negativeMarking.enabled ? 'translate-x-6' : 'translate-x-1'
-                  }`}
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${quizData.negativeMarking.enabled ? 'translate-x-6' : 'translate-x-1'
+                    }`}
                 />
               </button>
             </div>
@@ -582,11 +592,10 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
                           ...quizData.negativeMarking,
                           type: type.value
                         })}
-                        className={`p-3 rounded-lg border transition-all duration-300 text-left ${
-                          quizData.negativeMarking.type === type.value
+                        className={`p-3 rounded-lg border transition-all duration-300 text-left ${quizData.negativeMarking.type === type.value
                             ? mode('bg-red-50 border-red-300 text-red-700', 'bg-red-500/20 border-red-400 text-red-300')
                             : mode('bg-white border-slate-200 text-slate-700 hover:bg-slate-50', 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700')
-                        }`}
+                          }`}
                       >
                         <div className="font-semibold">{type.label}</div>
                         <div className="text-xs opacity-75">{type.description}</div>
@@ -622,7 +631,7 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
                     </div>
                   </div>
                   <div className="mt-1 text-xs text-slate-500">
-                    {quizData.negativeMarking.type === 'fractional' 
+                    {quizData.negativeMarking.type === 'fractional'
                       ? `For each wrong answer, ${quizData.negativeMarking.value} marks will be deducted`
                       : `For each wrong answer, ${quizData.negativeMarking.value} marks will be deducted`
                     }
@@ -664,37 +673,37 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
         "absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-2xl lg:rounded-3xl",
         "absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5 rounded-2xl lg:rounded-3xl"
       )}></div>
-          <div className="relative">
+      <div className="relative">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6 mb-6 lg:mb-10">
-              <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4">
             <div className={mode(
               "p-3 lg:p-4 bg-gradient-to-br from-purple-100 to-pink-100 rounded-xl lg:rounded-2xl shadow-md",
               "p-3 lg:p-4 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl lg:rounded-2xl shadow-lg"
             )}>
               <FaBrain className={mode("w-6 h-6 lg:w-8 lg:h-8 text-purple-700", "w-6 h-6 lg:w-8 lg:h-8 text-white")} />
-                </div>
-                <div>
+            </div>
+            <div>
               <h3 className={mode("text-2xl lg:text-3xl font-bold text-slate-800 mb-2 flex items-center gap-3", "text-2xl lg:text-3xl font-bold text-white mb-2 flex items-center gap-3")}>
-                    Questions ({quizData.questions.length})
-                  </h3>
+                Questions ({quizData.questions.length})
+              </h3>
               <p className={mode("text-slate-600 text-sm lg:text-lg", "text-gray-400 text-sm lg:text-lg")}>Create engaging questions for your test</p>
-                </div>
-              </div>
-              
-              <button
-                onClick={addQuestion}
+            </div>
+          </div>
+
+          <button
+            onClick={addQuestion}
             className="group relative bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-bold rounded-xl lg:rounded-2xl px-6 lg:px-8 py-3 lg:py-4 transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-emerald-500/25 w-full lg:w-auto"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 to-green-400/20 rounded-xl lg:rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <div className="relative flex items-center justify-center lg:justify-start gap-3">
               <FiPlus className="w-4 h-4 lg:w-5 lg:h-5" />
               <span className="text-sm lg:text-base">Add Question</span>
-                </div>
-              </button>
             </div>
+          </button>
+        </div>
 
         <div className="space-y-6 lg:space-y-10">
-              {quizData.questions.map((question, qIndex) => (
+          {quizData.questions.map((question, qIndex) => (
             <div key={qIndex} className={mode(
               "group relative bg-white backdrop-blur-xl border border-slate-200 rounded-xl lg:rounded-2xl p-6 lg:p-8 shadow-sm hover:shadow-lg transition-all duration-500 hover:scale-[1.01] hover:border-purple-300",
               "group relative bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-xl border border-gray-600/30 rounded-xl lg:rounded-2xl p-6 lg:p-8 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-[1.01] hover:border-purple-500/30"
@@ -703,266 +712,261 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
                 "absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-xl lg:rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300",
                 "absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5 rounded-xl lg:rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
               )}></div>
-                  
-                  <div className="relative">
-                    {/* Question Header */}
+
+              <div className="relative">
+                {/* Question Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                      <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4">
                     <div className={mode(
                       "w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg lg:rounded-xl flex items-center justify-center font-bold text-purple-700 text-base lg:text-lg shadow-md",
                       "w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg lg:rounded-xl flex items-center justify-center font-bold text-white text-base lg:text-lg shadow-lg"
                     )}>
-                          {qIndex + 1}
-                        </div>
+                      {qIndex + 1}
+                    </div>
                     <h4 className={mode("text-xl lg:text-2xl font-bold text-slate-800", "text-xl lg:text-2xl font-bold text-white")}>
-                          Question {qIndex + 1}
-                        </h4>
-                      </div>
-                      
-                      {quizData.questions.length > 1 && (
-                        <button
-                          onClick={() => removeQuestion(qIndex)}
+                      Question {qIndex + 1}
+                    </h4>
+                  </div>
+
+                  {quizData.questions.length > 1 && (
+                    <button
+                      onClick={() => removeQuestion(qIndex)}
                       className={mode(
                         "group/btn p-2 lg:p-3 bg-red-100 hover:bg-red-200 rounded-lg lg:rounded-xl transition-all duration-300 hover:scale-110 self-start sm:self-auto",
                         "group/btn p-2 lg:p-3 bg-red-500/20 hover:bg-red-500/30 rounded-lg lg:rounded-xl transition-all duration-300 hover:scale-110 self-start sm:self-auto"
                       )}
-                          title="Delete Question"
-                        >
+                      title="Delete Question"
+                    >
                       <FiTrash2 className={mode("w-4 h-4 lg:w-5 lg:h-5 text-red-600 group-hover/btn:text-red-700", "w-4 h-4 lg:w-5 lg:h-5 text-red-400 group-hover/btn:text-red-300")} />
-                        </button>
-                      )}
-                    </div>
+                    </button>
+                  )}
+                </div>
 
-                    {/* Question Text */}
+                {/* Question Text */}
                 <div className="mb-6 lg:mb-8 space-y-3">
                   <label className={mode("flex items-center gap-2 text-sm font-semibold text-slate-700", "flex items-center gap-2 text-sm font-semibold text-gray-300")}>
                     <FiHelpCircle className={mode("w-4 h-4 text-purple-600", "w-4 h-4 text-purple-400")} />
                     Question Text <span className={mode("text-red-500", "text-red-400")}>*</span>
-                      </label>
-                      <textarea
-                        placeholder="Enter your question here..."
-                        value={question.question}
-                        onChange={(e) => handleQuestionChange(qIndex, 'question', e.target.value)}
+                  </label>
+                  <textarea
+                    placeholder="Enter your question here..."
+                    value={question.question}
+                    onChange={(e) => handleQuestionChange(qIndex, 'question', e.target.value)}
                     className={mode(
                       "w-full px-4 lg:px-6 py-3 lg:py-4 rounded-xl bg-slate-50 backdrop-blur-sm border border-slate-300 text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 font-medium text-sm lg:text-base h-20 lg:h-24 resize-none",
                       "w-full px-4 lg:px-6 py-3 lg:py-4 rounded-xl bg-gray-900/60 backdrop-blur-sm border border-gray-600/40 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 font-medium text-sm lg:text-base h-20 lg:h-24 resize-none"
                     )}
-                        rows="3"
-                      />
-                    </div>
+                    rows="3"
+                  />
+                </div>
 
-                    {/* Options */}
+                {/* Options */}
                 <div className="mb-6 lg:mb-8 space-y-3">
                   <label className={mode("flex items-center gap-2 text-sm font-semibold text-slate-700", "flex items-center gap-2 text-sm font-semibold text-gray-300")}>
                     <FiCheckCircle className={mode("w-4 h-4 text-emerald-600", "w-4 h-4 text-emerald-400")} />
                     Answer Options <span className={mode("text-red-500", "text-red-400")}>*</span>
-                      </label>
+                  </label>
                   <div className="space-y-3 lg:space-y-4">
-                        {question.options.map((option, oIndex) => (
+                    {question.options.map((option, oIndex) => (
                       <div key={oIndex} className="flex items-center gap-3 lg:gap-4">
                         <div className="relative flex-shrink-0">
-                              <input
-                                type="radio"
-                                name={`correct-${qIndex}`}
-                                checked={question.correctAnswer === oIndex}
-                                onChange={() => handleQuestionChange(qIndex, 'correctAnswer', oIndex)}
+                          <input
+                            type="radio"
+                            name={`correct-${qIndex}`}
+                            checked={question.correctAnswer === oIndex}
+                            onChange={() => handleQuestionChange(qIndex, 'correctAnswer', oIndex)}
                             className={mode(
                               "w-5 h-5 lg:w-6 lg:h-6 text-emerald-600 bg-white border-slate-300 focus:ring-emerald-500 focus:ring-2",
                               "w-5 h-5 lg:w-6 lg:h-6 text-emerald-600 bg-gray-700 border-gray-600 focus:ring-emerald-500 focus:ring-2"
                             )}
-                              />
-                              {question.correctAnswer === oIndex && (
+                          />
+                          {question.correctAnswer === oIndex && (
                             <div className={mode(
                               "absolute inset-0 bg-emerald-500/20 rounded-full animate-pulse",
                               "absolute inset-0 bg-emerald-500/20 rounded-full animate-pulse"
                             )}></div>
-                              )}
-                            </div>
-                            
-                            <div className="flex-1 relative">
-                              <input
-                                type="text"
-                                placeholder={`Option ${String.fromCharCode(65 + oIndex)}`}
-                                value={option}
-                                onChange={(e) => handleOptionChange(qIndex, oIndex, e.target.value)}
+                          )}
+                        </div>
+
+                        <div className="flex-1 relative">
+                          <input
+                            type="text"
+                            placeholder={`Option ${String.fromCharCode(65 + oIndex)}`}
+                            value={option}
+                            onChange={(e) => handleOptionChange(qIndex, oIndex, e.target.value)}
                             className={mode(
-                              `w-full px-4 lg:px-6 py-3 lg:py-4 rounded-xl backdrop-blur-sm border text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-300 font-medium text-sm lg:text-base ${
-                                question.correctAnswer === oIndex 
-                                  ? 'border-emerald-500/40 bg-emerald-50 focus:ring-emerald-500' 
-                                  : 'border-slate-300 bg-slate-50 focus:ring-blue-500'
+                              `w-full px-4 lg:px-6 py-3 lg:py-4 rounded-xl backdrop-blur-sm border text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-300 font-medium text-sm lg:text-base ${question.correctAnswer === oIndex
+                                ? 'border-emerald-500/40 bg-emerald-50 focus:ring-emerald-500'
+                                : 'border-slate-300 bg-slate-50 focus:ring-blue-500'
                               }`,
-                              `w-full px-4 lg:px-6 py-3 lg:py-4 rounded-xl backdrop-blur-sm border text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-300 font-medium text-sm lg:text-base ${
-                                  question.correctAnswer === oIndex 
-                                    ? 'border-emerald-500/40 bg-emerald-500/10 focus:ring-emerald-500' 
-                                    : 'border-gray-600/40 bg-gray-900/60 focus:ring-blue-500'
+                              `w-full px-4 lg:px-6 py-3 lg:py-4 rounded-xl backdrop-blur-sm border text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-300 font-medium text-sm lg:text-base ${question.correctAnswer === oIndex
+                                ? 'border-emerald-500/40 bg-emerald-500/10 focus:ring-emerald-500'
+                                : 'border-gray-600/40 bg-gray-900/60 focus:ring-blue-500'
                               }`
                             )}
-                              />
-                              {question.correctAnswer === oIndex && (
+                          />
+                          {question.correctAnswer === oIndex && (
                             <FiCheck className={mode("absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 lg:w-5 lg:h-5 text-emerald-500", "absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 lg:w-5 lg:h-5 text-emerald-400")} />
-                              )}
+                          )}
                           <div className={mode(
                             "absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 lg:w-6 lg:h-6 bg-slate-200 rounded-lg flex items-center justify-center text-xs font-bold text-slate-600",
                             "absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 lg:w-6 lg:h-6 bg-gray-700 rounded-lg flex items-center justify-center text-xs font-bold text-gray-400"
                           )}>
-                                {String.fromCharCode(65 + oIndex)}
-                              </div>
-                          <div className="pl-12 lg:pl-14"></div>
-                            </div>
+                            {String.fromCharCode(65 + oIndex)}
                           </div>
-                        ))}
+                          <div className="pl-12 lg:pl-14"></div>
+                        </div>
                       </div>
+                    ))}
+                  </div>
                   <p className={mode("text-xs lg:text-sm text-slate-500 flex items-center gap-2 mt-3 lg:mt-4", "text-xs lg:text-sm text-gray-500 flex items-center gap-2 mt-3 lg:mt-4")}>
                     <FiTarget className={mode("w-3 h-3 lg:w-4 lg:h-4 text-slate-500", "w-3 h-3 lg:w-4 lg:h-4")} />
-                        Select the radio button next to the correct answer
-                      </p>
-                    </div>
+                    Select the radio button next to the correct answer
+                  </p>
+                </div>
 
-                    {/* Explanation */}
-                    <div className="space-y-3">
+                {/* Explanation */}
+                <div className="space-y-3">
                   <label className={mode("flex items-center gap-2 text-sm font-semibold text-slate-700", "flex items-center gap-2 text-sm font-semibold text-gray-300")}>
                     <FiStar className={mode("w-4 h-4 text-yellow-600", "w-4 h-4 text-yellow-400")} />
-                        Explanation (Optional)
-                      </label>
-                      <textarea
-                        placeholder="Explain why this is the correct answer..."
-                        value={question.explanation}
-                        onChange={(e) => handleQuestionChange(qIndex, 'explanation', e.target.value)}
+                    Explanation (Optional)
+                  </label>
+                  <textarea
+                    placeholder="Explain why this is the correct answer..."
+                    value={question.explanation}
+                    onChange={(e) => handleQuestionChange(qIndex, 'explanation', e.target.value)}
                     className={mode(
                       "w-full px-4 lg:px-6 py-3 lg:py-4 rounded-xl bg-slate-50 backdrop-blur-sm border border-slate-300 text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-300 font-medium text-sm lg:text-base h-16 lg:h-20 resize-none",
                       "w-full px-4 lg:px-6 py-3 lg:py-4 rounded-xl bg-gray-900/60 backdrop-blur-sm border border-gray-600/40 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-300 font-medium text-sm lg:text-base h-16 lg:h-20 resize-none"
                     )}
-                        rows="2"
-                      />
+                    rows="2"
+                  />
+                </div>
+
+                {/* Individual Question Negative Marking */}
+                <div className="space-y-3">
+                  <label className={mode("flex items-center gap-2 text-sm font-semibold text-slate-700", "flex items-center gap-2 text-sm font-semibold text-gray-300")}>
+                    <FiAlertCircle className={mode("w-4 h-4 text-red-600", "w-4 h-4 text-red-400")} />
+                    Question-Specific Negative Marking
+                  </label>
+
+                  <div className="space-y-4">
+                    {/* Enable/Disable Toggle */}
+                    <div className={`flex items-center justify-between p-4 rounded-lg border transition-all duration-300 ${mode(
+                      "bg-slate-50 border-slate-200",
+                      "bg-gray-700/40 border-gray-600/40"
+                    )}`}>
+                      <div className="flex items-center gap-3">
+                        <div className={mode(
+                          "w-8 h-8 bg-gradient-to-br from-red-100 to-pink-100 rounded-lg flex items-center justify-center",
+                          "w-8 h-8 bg-gradient-to-br from-red-500/20 to-pink-500/20 rounded-lg flex items-center justify-center"
+                        )}>
+                          <FiAlertCircle className={mode("w-4 h-4 text-red-600", "w-4 h-4 text-red-400")} />
+                        </div>
+                        <div>
+                          <div className={mode("font-semibold text-slate-800", "font-semibold text-gray-200")}>
+                            Override Global Setting
+                          </div>
+                          <div className={mode("text-sm text-slate-600", "text-sm text-gray-400")}>
+                            Set specific negative marking for this question
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleQuestionChange(qIndex, 'negativeMarking', {
+                          ...question.negativeMarking,
+                          enabled: !question.negativeMarking.enabled
+                        })}
+                        className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${question.negativeMarking.enabled
+                            ? 'bg-red-500'
+                            : mode('bg-slate-200', 'bg-gray-600')
+                          }`}
+                      >
+                        <span
+                          className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${question.negativeMarking.enabled ? 'translate-x-5' : 'translate-x-1'
+                            }`}
+                        />
+                      </button>
                     </div>
 
-                    {/* Individual Question Negative Marking */}
-                    <div className="space-y-3">
-                      <label className={mode("flex items-center gap-2 text-sm font-semibold text-slate-700", "flex items-center gap-2 text-sm font-semibold text-gray-300")}>
-                        <FiAlertCircle className={mode("w-4 h-4 text-red-600", "w-4 h-4 text-red-400")} />
-                        Question-Specific Negative Marking
-                      </label>
-                      
-                      <div className="space-y-4">
-                        {/* Enable/Disable Toggle */}
-                        <div className={`flex items-center justify-between p-4 rounded-lg border transition-all duration-300 ${mode(
-                          "bg-slate-50 border-slate-200",
-                          "bg-gray-700/40 border-gray-600/40"
-                        )}`}>
-                          <div className="flex items-center gap-3">
-                            <div className={mode(
-                              "w-8 h-8 bg-gradient-to-br from-red-100 to-pink-100 rounded-lg flex items-center justify-center",
-                              "w-8 h-8 bg-gradient-to-br from-red-500/20 to-pink-500/20 rounded-lg flex items-center justify-center"
-                            )}>
-                              <FiAlertCircle className={mode("w-4 h-4 text-red-600", "w-4 h-4 text-red-400")} />
-                            </div>
-                            <div>
-                              <div className={mode("font-semibold text-slate-800", "font-semibold text-gray-200")}>
-                                Override Global Setting
-                              </div>
-                              <div className={mode("text-sm text-slate-600", "text-sm text-gray-400")}>
-                                Set specific negative marking for this question
-                              </div>
-                            </div>
+                    {/* Question-Specific Negative Marking Settings */}
+                    {question.negativeMarking.enabled && (
+                      <div className={`space-y-4 p-4 rounded-lg border transition-all duration-300 ${mode(
+                        "bg-red-50 border-red-200",
+                        "bg-red-500/10 border-red-400/30"
+                      )}`}>
+                        {/* Type Selection */}
+                        <div>
+                          <label className={mode("block text-sm font-medium text-slate-700 mb-2", "block text-sm font-medium text-gray-300 mb-2")}>
+                            Marking Type
+                          </label>
+                          <div className="grid grid-cols-2 gap-3">
+                            {[
+                              { value: 'fractional', label: 'Fractional', description: '1/4th mark deduction' },
+                              { value: 'fixed', label: 'Fixed', description: 'Fixed mark deduction' }
+                            ].map(type => (
+                              <button
+                                key={type.value}
+                                type="button"
+                                onClick={() => handleQuestionChange(qIndex, 'negativeMarking', {
+                                  ...question.negativeMarking,
+                                  type: type.value
+                                })}
+                                className={`p-3 rounded-lg border transition-all duration-300 text-left ${question.negativeMarking.type === type.value
+                                    ? mode('bg-red-100 border-red-300 text-red-700', 'bg-red-500/20 border-red-400 text-red-300')
+                                    : mode('bg-white border-slate-200 text-slate-700 hover:bg-slate-50', 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700')
+                                  }`}
+                              >
+                                <div className="font-semibold">{type.label}</div>
+                                <div className="text-xs opacity-75">{type.description}</div>
+                              </button>
+                            ))}
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => handleQuestionChange(qIndex, 'negativeMarking', {
-                              ...question.negativeMarking,
-                              enabled: !question.negativeMarking.enabled
-                            })}
-                            className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
-                              question.negativeMarking.enabled
-                                ? 'bg-red-500'
-                                : mode('bg-slate-200', 'bg-gray-600')
-                            }`}
-                          >
-                            <span
-                              className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
-                                question.negativeMarking.enabled ? 'translate-x-5' : 'translate-x-1'
-                              }`}
-                            />
-                          </button>
                         </div>
 
-                        {/* Question-Specific Negative Marking Settings */}
-                        {question.negativeMarking.enabled && (
-                          <div className={`space-y-4 p-4 rounded-lg border transition-all duration-300 ${mode(
-                            "bg-red-50 border-red-200",
-                            "bg-red-500/10 border-red-400/30"
-                          )}`}>
-                            {/* Type Selection */}
-                            <div>
-                              <label className={mode("block text-sm font-medium text-slate-700 mb-2", "block text-sm font-medium text-gray-300 mb-2")}>
-                                Marking Type
-                              </label>
-                              <div className="grid grid-cols-2 gap-3">
-                                {[
-                                  { value: 'fractional', label: 'Fractional', description: '1/4th mark deduction' },
-                                  { value: 'fixed', label: 'Fixed', description: 'Fixed mark deduction' }
-                                ].map(type => (
-                                  <button
-                                    key={type.value}
-                                    type="button"
-                                    onClick={() => handleQuestionChange(qIndex, 'negativeMarking', {
-                                      ...question.negativeMarking,
-                                      type: type.value
-                                    })}
-                                    className={`p-3 rounded-lg border transition-all duration-300 text-left ${
-                                      question.negativeMarking.type === type.value
-                                        ? mode('bg-red-100 border-red-300 text-red-700', 'bg-red-500/20 border-red-400 text-red-300')
-                                        : mode('bg-white border-slate-200 text-slate-700 hover:bg-slate-50', 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700')
-                                    }`}
-                                  >
-                                    <div className="font-semibold">{type.label}</div>
-                                    <div className="text-xs opacity-75">{type.description}</div>
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-
-                            {/* Value Input */}
-                            <div>
-                              <label className={mode("block text-sm font-medium text-slate-700 mb-2", "block text-sm font-medium text-gray-300 mb-2")}>
-                                {question.negativeMarking.type === 'fractional' ? 'Fraction Value' : 'Mark Deduction'}
-                              </label>
-                              <div className="relative">
-                                <input
-                                  type="number"
-                                  min="0.1"
-                                  max="1"
-                                  step="0.05"
-                                  value={question.negativeMarking.value}
-                                  onChange={(e) => handleQuestionChange(qIndex, 'negativeMarking', {
-                                    ...question.negativeMarking,
-                                    value: parseFloat(e.target.value) || 0.25
-                                  })}
-                                  className={mode(
-                                    "w-full px-4 py-3 rounded-lg bg-white border border-slate-300 text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-300",
-                                    "w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-300"
-                                  )}
-                                  placeholder={question.negativeMarking.type === 'fractional' ? "0.25" : "0.25"}
-                                />
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
-                                  {question.negativeMarking.type === 'fractional' ? 'fraction' : 'marks'}
-                                </div>
-                              </div>
-                              <div className="mt-1 text-xs text-slate-500">
-                                {question.negativeMarking.type === 'fractional' 
-                                  ? `For each wrong answer, ${question.negativeMarking.value} marks will be deducted`
-                                  : `For each wrong answer, ${question.negativeMarking.value} marks will be deducted`
-                                }
-                              </div>
+                        {/* Value Input */}
+                        <div>
+                          <label className={mode("block text-sm font-medium text-slate-700 mb-2", "block text-sm font-medium text-gray-300 mb-2")}>
+                            {question.negativeMarking.type === 'fractional' ? 'Fraction Value' : 'Mark Deduction'}
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              min="0.1"
+                              max="1"
+                              step="0.05"
+                              value={question.negativeMarking.value}
+                              onChange={(e) => handleQuestionChange(qIndex, 'negativeMarking', {
+                                ...question.negativeMarking,
+                                value: parseFloat(e.target.value) || 0.25
+                              })}
+                              className={mode(
+                                "w-full px-4 py-3 rounded-lg bg-white border border-slate-300 text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-300",
+                                "w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-300"
+                              )}
+                              placeholder={question.negativeMarking.type === 'fractional' ? "0.25" : "0.25"}
+                            />
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
+                              {question.negativeMarking.type === 'fractional' ? 'fraction' : 'marks'}
                             </div>
                           </div>
-                        )}
+                          <div className="mt-1 text-xs text-slate-500">
+                            {question.negativeMarking.type === 'fractional'
+                              ? `For each wrong answer, ${question.negativeMarking.value} marks will be deducted`
+                              : `For each wrong answer, ${question.negativeMarking.value} marks will be deducted`
+                            }
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
-              ))}
+              </div>
             </div>
-          </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 
@@ -986,26 +990,26 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
           {quizData.description && (
             <p className="text-gray-300 text-sm lg:text-base mb-4 lg:mb-6">{quizData.description}</p>
           )}
-          
+
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
             <div className="text-center p-4 bg-blue-500/20 rounded-xl border border-blue-500/30">
               <FiLayers className="w-6 h-6 lg:w-8 lg:h-8 text-blue-400 mx-auto mb-2" />
               <div className="text-2xl lg:text-3xl font-bold text-blue-300">{quizData.questions.length}</div>
               <div className="text-xs lg:text-sm text-blue-200">Questions</div>
             </div>
-            
+
             <div className="text-center p-4 bg-emerald-500/20 rounded-xl border border-emerald-500/30">
               <FiClock className="w-6 h-6 lg:w-8 lg:h-8 text-emerald-400 mx-auto mb-2" />
               <div className="text-2xl lg:text-3xl font-bold text-emerald-300">{quizData.timeLimit}</div>
               <div className="text-xs lg:text-sm text-emerald-200">Minutes</div>
             </div>
-            
+
             <div className="text-center p-4 bg-purple-500/20 rounded-xl border border-purple-500/30">
               <FiTrendingUp className="w-6 h-6 lg:w-8 lg:h-8 text-purple-400 mx-auto mb-2" />
               <div className="text-2xl lg:text-3xl font-bold text-purple-300">{getDifficultyColor(quizData.difficulty).emoji}</div>
               <div className="text-xs lg:text-sm text-purple-200 capitalize">{quizData.difficulty}</div>
             </div>
-            
+
             <div className="text-center p-4 bg-orange-500/20 rounded-xl border border-orange-500/30">
               <FiTarget className="w-6 h-6 lg:w-8 lg:h-8 text-orange-400 mx-auto mb-2" />
               <div className="text-2xl lg:text-3xl font-bold text-orange-300">{Math.ceil(quizData.questions.length * 1.5)}</div>
@@ -1016,62 +1020,81 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
 
         {/* Questions Preview */}
         <div className="space-y-4 lg:space-y-6">
-          {quizData.questions.map((question, index) => (
-            <div key={index} className="bg-gray-800/40 rounded-xl lg:rounded-2xl p-4 lg:p-6">
-              <div className="flex items-start gap-3 lg:gap-4 mb-3 lg:mb-4">
-                <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center font-bold text-white text-sm lg:text-base flex-shrink-0">
-                  {index + 1}
-                </div>
-                <div className="flex-1">
-                  <h5 className="text-base lg:text-lg font-semibold text-white mb-2 lg:mb-3">
-                    {question.question || 'Question text not provided'}
-                  </h5>
-                  
-                  <div className="space-y-2 lg:space-y-3">
-                    {question.options.map((option, optIndex) => (
-                      <div
-                        key={optIndex}
-                        className={`flex items-center gap-3 p-2 lg:p-3 rounded-lg ${
-                          optIndex === question.correctAnswer
-                            ? 'bg-emerald-500/20 border border-emerald-500/40'
-                            : 'bg-gray-700/30'
-                        }`}
-                      >
-                        <div className={`w-4 h-4 lg:w-5 lg:h-5 rounded-full flex items-center justify-center ${
-                          optIndex === question.correctAnswer
-                            ? 'bg-emerald-500 text-white'
-                            : 'bg-gray-600 text-gray-400'
-                        }`}>
-                          {optIndex === question.correctAnswer ? (
-                            <FiCheck className="w-2 h-2 lg:w-3 lg:h-3" />
-                          ) : (
-                            <span className="text-xs font-bold">{String.fromCharCode(65 + optIndex)}</span>
-                          )}
-                        </div>
-                        <span className={`text-sm lg:text-base ${
-                          optIndex === question.correctAnswer ? 'text-emerald-300 font-medium' : 'text-gray-300'
-                        }`}>
-                          {option || `Option ${String.fromCharCode(65 + optIndex)} not provided`}
-                        </span>
-                      </div>
-                    ))}
+          {quizData.questions.map((question, index) => {
+            const qType = question.type || 'mcq';
+            const correctArr = Array.isArray(question.correctAnswer) ? question.correctAnswer : [];
+            return (
+              <div key={index} className="bg-gray-800/40 rounded-xl lg:rounded-2xl p-4 lg:p-6">
+                <div className="flex items-start gap-3 lg:gap-4 mb-3 lg:mb-4">
+                  <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center font-bold text-white text-sm lg:text-base flex-shrink-0">
+                    {index + 1}
                   </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2 lg:mb-3">
+                      <h5 className="text-base lg:text-lg font-semibold text-white">
+                        {question.question || 'Question text not provided'}
+                      </h5>
+                      <span className={`shrink-0 px-2 py-0.5 rounded text-[10px] font-bold uppercase ${qType === 'numerical' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                          : qType === 'msq' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                            : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                        }`}>{qType}</span>
+                    </div>
 
-                  {question.explanation && (
-                    <div className="mt-3 lg:mt-4 p-3 lg:p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
-                      <div className="flex items-start gap-2 lg:gap-3">
-                        <FiStar className="w-4 h-4 lg:w-5 lg:h-5 text-blue-400 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="text-xs lg:text-sm font-semibold text-blue-300 mb-1">Explanation</p>
-                          <p className="text-xs lg:text-sm text-blue-200">{question.explanation}</p>
+                    {/* Numerical Answer Display */}
+                    {qType === 'numerical' ? (
+                      <div className="p-3 lg:p-4 bg-purple-500/15 rounded-lg border border-purple-500/30">
+                        <span className="text-xs uppercase font-bold text-purple-400 block mb-1">Correct Answer</span>
+                        <span className="text-lg font-mono font-bold text-purple-200">{question.correctAnswer ?? '—'}</span>
+                        {question.tolerance > 0 && <span className="text-xs text-purple-400 ml-2">(±{question.tolerance})</span>}
+                      </div>
+                    ) : (
+                      <div className="space-y-2 lg:space-y-3">
+                        {(question.options || []).map((option, optIndex) => {
+                          const isCorrect = qType === 'msq' ? correctArr.includes(optIndex) : optIndex === question.correctAnswer;
+                          return (
+                            <div
+                              key={optIndex}
+                              className={`flex items-center gap-3 p-2 lg:p-3 rounded-lg ${isCorrect
+                                  ? 'bg-emerald-500/20 border border-emerald-500/40'
+                                  : 'bg-gray-700/30'
+                                }`}
+                            >
+                              <div className={`w-4 h-4 lg:w-5 lg:h-5 ${qType === 'msq' ? 'rounded' : 'rounded-full'} flex items-center justify-center ${isCorrect
+                                  ? 'bg-emerald-500 text-white'
+                                  : 'bg-gray-600 text-gray-400'
+                                }`}>
+                                {isCorrect ? (
+                                  <FiCheck className="w-2 h-2 lg:w-3 lg:h-3" />
+                                ) : (
+                                  <span className="text-xs font-bold">{String.fromCharCode(65 + optIndex)}</span>
+                                )}
+                              </div>
+                              <span className={`text-sm lg:text-base ${isCorrect ? 'text-emerald-300 font-medium' : 'text-gray-300'
+                                }`}>
+                                {option || `Option ${String.fromCharCode(65 + optIndex)} not provided`}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {question.explanation && (
+                      <div className="mt-3 lg:mt-4 p-3 lg:p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                        <div className="flex items-start gap-2 lg:gap-3">
+                          <FiStar className="w-4 h-4 lg:w-5 lg:h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <p className="text-xs lg:text-sm font-semibold text-blue-300 mb-1">Explanation</p>
+                            <p className="text-xs lg:text-sm text-blue-200">{question.explanation}</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
@@ -1096,44 +1119,44 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
           </div>
           <div className="text-center lg:text-left">
             <div className={mode("text-xl lg:text-2xl font-bold text-slate-800 mb-2", "text-xl lg:text-2xl font-bold text-white mb-2")}>
-                  {quizData.questions.length} Question{quizData.questions.length !== 1 ? 's' : ''}
-                </div>
+              {quizData.questions.length} Question{quizData.questions.length !== 1 ? 's' : ''}
+            </div>
             <div className={mode("flex flex-col sm:flex-row items-center gap-3 lg:gap-6 text-slate-600 text-sm lg:text-base", "flex flex-col sm:flex-row items-center gap-3 lg:gap-6 text-gray-400 text-sm lg:text-base")}>
-                  <span className="flex items-center gap-2">
+              <span className="flex items-center gap-2">
                 <FiClock className={mode("w-4 h-4 text-slate-500", "w-4 h-4")} />
                 {quizData.timeLimit} minutes
-                  </span>
-                  <span className="flex items-center gap-2">
+              </span>
+              <span className="flex items-center gap-2">
                 <FiTarget className={mode("w-4 h-4 text-slate-500", "w-4 h-4")} />
-                    {getDifficultyColor(quizData.difficulty).emoji} {quizData.difficulty.toUpperCase()}
-                  </span>
-                </div>
-              </div>
+                {getDifficultyColor(quizData.difficulty).emoji} {quizData.difficulty.toUpperCase()}
+              </span>
             </div>
-            
-            <button
-              onClick={handleCreateQuiz}
-              disabled={loading || !quizData.title.trim()}
+          </div>
+        </div>
+
+        <button
+          onClick={handleCreateQuiz}
+          disabled={loading || !quizData.title.trim()}
           className="group relative bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 text-white font-bold rounded-xl lg:rounded-2xl px-8 lg:px-12 py-4 lg:py-5 transition-all duration-300 transform hover:scale-105 shadow-xl lg:shadow-2xl hover:shadow-blue-500/25 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none w-full lg:w-auto"
-            >
+        >
           <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-xl lg:rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           <div className="relative flex items-center justify-center gap-3 lg:gap-4">
-                {loading ? (
-                  <>
+            {loading ? (
+              <>
                 <div className="w-5 h-5 lg:w-6 lg:h-6 border-3 lg:border-4 border-white border-t-transparent rounded-full animate-spin"></div>
                 <span className="text-base lg:text-xl">Creating Test...</span>
-                  </>
-                ) : (
-                  <>
+              </>
+            ) : (
+              <>
                 <FaMagic className="w-5 h-5 lg:w-6 lg:h-6" />
                 <span className="text-base lg:text-xl">Create Test</span>
                 <FiChevronRight className="w-4 h-4 lg:w-5 lg:h-5 transition-transform group-hover:translate-x-1" />
-                  </>
-                )}
-              </div>
-            </button>
+              </>
+            )}
           </div>
-        </div>
+        </button>
+      </div>
+    </div>
   );
 
   return (
@@ -1143,10 +1166,10 @@ const TestSeriesQuizCreator = ({ testSeries, onBack, onQuizCreated }) => {
 
         {/* Mobile Header */}
         {renderMobileHeader()}
-        
+
         {/* Desktop Header */}
         {renderDesktopHeader()}
-        
+
         {/* Mobile Tabs */}
         {renderMobileTabs()}
 

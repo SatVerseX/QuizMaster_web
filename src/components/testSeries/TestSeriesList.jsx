@@ -2,12 +2,12 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useSubscription } from '../../contexts/SubscriptionContext';
-import { examCategories, getAllSubcategories } from '../../utils/constants/examCategories';
-import { 
-  collection, 
-  query, 
-  where, 
-  orderBy, 
+import { examCategories, getAllSubcategories, getSubcategoryById } from '../../utils/constants/examCategories';
+import {
+  collection,
+  query,
+  where,
+  orderBy,
   onSnapshot,
   getDocs,
   doc,
@@ -23,13 +23,16 @@ import EnhancedSeriesCard from '../testList/EnhancedSeriesCard';
 import LoadingPlaceholder from '../testList/LoadingPlaceholder';
 import EmptyState from '../testList/EmptyState';
 
-const TestSeriesList = ({ 
-  onCreateSeries, 
-  onViewSeries, 
-  onSubscribeSeries, 
-  onTakeTest, 
+const TestSeriesList = ({
+  onCreateSeries,
+  onViewSeries,
+  onSubscribeSeries,
+  onTakeTest,
   onViewTests,
-  useEnhancedHomepage = false
+  useEnhancedHomepage = false,
+  examGoal,
+  onChangeGoal,
+  isGoalModalOpen
 }) => {
   const { currentUser, isAdmin } = useAuth();
   const { isActive, isFreePlan } = useSubscription();
@@ -80,6 +83,13 @@ const TestSeriesList = ({
     };
   }, [showMobileFilters]);
 
+  // Sync examGoal to selectedSubcategory on mount / goal change
+  useEffect(() => {
+    if (examGoal) {
+      setSelectedSubcategory(examGoal);
+    }
+  }, [examGoal]);
+
   useEffect(() => {
     loadTestSeries();
     if (currentUser) {
@@ -96,29 +106,29 @@ const TestSeriesList = ({
 
       const unsubscribe = onSnapshot(q, async (querySnapshot) => {
         const seriesData = [];
-        
+
         for (const doc of querySnapshot.docs) {
           const seriesInfo = { id: doc.id, ...doc.data() };
-          
+
           try {
             // Load from both quizzes and section-quizzes collections
             const [quizzesQuery, sectionQuizzesQuery] = await Promise.all([
               getDocs(query(collection(db, 'quizzes'), where('testSeriesId', '==', seriesInfo.id))),
               getDocs(query(collection(db, 'section-quizzes'), where('testSeriesId', '==', seriesInfo.id)))
             ]);
-            
+
             const tests = [];
-            
+
             // Add regular quizzes
             quizzesQuery.forEach(testDoc => {
               tests.push({ id: testDoc.id, ...testDoc.data(), type: 'regular' });
             });
-            
+
             // Add section-wise quizzes
             sectionQuizzesQuery.forEach(testDoc => {
               tests.push({ id: testDoc.id, ...testDoc.data(), type: 'section-wise' });
             });
-            
+
             seriesData.push({
               ...seriesInfo,
               tests: tests,
@@ -139,7 +149,7 @@ const TestSeriesList = ({
             });
           }
         }
-        
+
         setSeries(seriesData);
         setLoading(false);
       });
@@ -158,16 +168,16 @@ const TestSeriesList = ({
         where('userId', '==', currentUser.uid),
         where('status', '==', 'active')
       );
-      
+
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const subscriptions = querySnapshot.docs.map(doc => ({ 
-          id: doc.id, 
+        const subscriptions = querySnapshot.docs.map(doc => ({
+          id: doc.id,
           ...doc.data(),
           testSeriesId: doc.data().testSeriesId
         }));
         setUserSubscriptions(subscriptions);
       });
-      
+
       return unsubscribe;
     } catch (error) {
       console.error('Error loading user subscriptions:', error);
@@ -243,40 +253,46 @@ const TestSeriesList = ({
     <div className={`min-h-screen ${isDark ? 'bg-gray-900' : 'bg-white'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <HeaderSubtitle isDark={isDark} />
-        
-        <SearchFilterControls
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          selectedSubcategory={selectedSubcategory}
-          setSelectedSubcategory={setSelectedSubcategory}
-          activeFilter={activeFilter}
-          setActiveFilter={setActiveFilter}
-          showMobileFilters={showMobileFilters}
-          setShowMobileFilters={setShowMobileFilters}
-          subcategoryOptions={subcategoryOptions}
-          filterOptions={filterOptions}
-          isDark={isDark}
-        />
 
-        <MobileFiltersSheet
-          showMobileFilters={showMobileFilters}
-          setShowMobileFilters={setShowMobileFilters}
-          selectedSubcategory={selectedSubcategory}
-          setSelectedSubcategory={setSelectedSubcategory}
-          activeFilter={activeFilter}
-          setActiveFilter={setActiveFilter}
-          subcategoryOptions={subcategoryOptions}
-          filterOptions={filterOptions}
-          isDark={isDark}
-        />
+        {/* Exam Goal Banner removed */}
+
+        {!isGoalModalOpen && (
+          <>
+            <SearchFilterControls
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              selectedSubcategory={selectedSubcategory}
+              setSelectedSubcategory={setSelectedSubcategory}
+              activeFilter={activeFilter}
+              setActiveFilter={setActiveFilter}
+              showMobileFilters={showMobileFilters}
+              setShowMobileFilters={setShowMobileFilters}
+              subcategoryOptions={subcategoryOptions}
+              filterOptions={filterOptions}
+              isDark={isDark}
+            />
+
+            <MobileFiltersSheet
+              showMobileFilters={showMobileFilters}
+              setShowMobileFilters={setShowMobileFilters}
+              selectedSubcategory={selectedSubcategory}
+              setSelectedSubcategory={setSelectedSubcategory}
+              activeFilter={activeFilter}
+              setActiveFilter={setActiveFilter}
+              subcategoryOptions={subcategoryOptions}
+              filterOptions={filterOptions}
+              isDark={isDark}
+            />
+          </>
+        )}
 
         {/* Series Grid */}
         <div className="mt-6">
           {filteredSeries.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
               {filteredSeries.map(seriesItem => (
-                <EnhancedSeriesCard 
-                  key={seriesItem.id} 
+                <EnhancedSeriesCard
+                  key={seriesItem.id}
                   series={seriesItem}
                   isDark={isDark}
                   hasUserSubscribed={hasUserSubscribed}

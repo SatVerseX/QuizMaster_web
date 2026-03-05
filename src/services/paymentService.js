@@ -4,7 +4,7 @@ import { auth } from '../lib/firebase';
 // Normalize API base URL to avoid double slashes and ensure '/api' prefix exists
 function normalizeApiBase(rawBase) {
   try {
-    const defaultBase = 'https://backend-quiz-glw23gnc5-satish-pals-projects.vercel.app';
+    const defaultBase = 'https://backend-quiz-eight.vercel.app';
     let base = (rawBase || defaultBase).trim();
     // Remove trailing slashes
     base = base.replace(/\/+$/, '');
@@ -17,7 +17,7 @@ function normalizeApiBase(rawBase) {
     }
     return base;
   } catch (_e) {
-    return 'https://backend-quiz-glw23gnc5-satish-pals-projects.vercel.app/api';
+    return 'https://backend-quiz-eight.vercel.app/api';
   }
 }
 
@@ -138,7 +138,7 @@ export class PaymentService {
     }
   }
 
-  // ==================== LEGACY SUBSCRIPTION METHODS (if needed) ====================
+  // ==================== SUBSCRIPTION METHODS ====================
   
   static async getPlans() {
     try {
@@ -149,14 +149,33 @@ export class PaymentService {
     }
   }
 
+  // UPDATED: Fixed endpoint URL and payload key to match backend
   static async createRazorpayOrder(planType, userEmail, userName) {
     try {
       const token = await this.getAuthToken();
       
-      const response = await axios.post(`${API_BASE}/payment/create-order`, {
-        planType,
+      // Changed from /create-order to /create-subscription-order
+      // Changed planType to planId as expected by backend
+      const response = await axios.post(`${API_BASE}/payment/create-subscription-order`, {
+        planId: planType, 
         userEmail,
         userName
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      return response.data;
+    } catch (error) {
+      this.handleApiError(error);
+    }
+  }
+
+  static async createSubscriptionOrder(planId) {
+    try {
+      const token = await this.getAuthToken();
+      const response = await axios.post(`${API_BASE}/payment/create-subscription-order`, {
+        planId
       }, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -585,9 +604,6 @@ export class PaymentService {
     if (import.meta.env.DEV) {
       console.log(`[PaymentService] ${event}:`, data);
     }
-    
-    // In production, you might want to send this to an analytics service
-    // analytics.track(event, data);
   }
 }
 

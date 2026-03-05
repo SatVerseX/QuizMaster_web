@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useTheme } from "../../contexts/ThemeContext";
+import { useSubscription } from "../../contexts/SubscriptionContext";
 import {
   collection,
   query,
@@ -11,26 +12,66 @@ import {
 } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { 
-  FiBookOpen, 
-  FiArrowRight, 
-  FiCreditCard, 
-  FiUser, 
-  FiTrendingUp, 
-  FiAward,
-  FiGrid 
-} from "react-icons/fi";
-import { FaCrown, FaStar } from "react-icons/fa";
+  BookOpen, 
+  ArrowRight, 
+  CreditCard, 
+  User, 
+  TrendingUp, 
+  Award, 
+  LayoutGrid, 
+  Calendar, 
+  CheckCircle2, 
+  Crown,
+  Star,
+  Rocket,
+  Shield,
+  Clock,
+  Sparkles
+} from "lucide-react";
 import { getUserAvatar } from "../../utils/userUtils";
+import PaymentPlans from "../payment/PaymentPlans";
 
 const UserSubscriptions = ({ onViewTests, onSubscribeSeries }) => {
   const { currentUser } = useAuth();
   const { isDark } = useTheme();
+  
+  const { 
+    subscription: globalPlan, 
+    loading: planLoading, 
+    isFreePlan 
+  } = useSubscription();
+
   const [loading, setLoading] = useState(true);
   const [subs, setSubs] = useState([]);
   const [series, setSeries] = useState([]);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  
   const userAvatar = useMemo(() => getUserAvatar(currentUser), [currentUser]);
 
-  // --- Data Loading Logic (Preserved) ---
+  // --- Styles Helper ---
+  const styles = {
+    pageBg: isDark ? "bg-zinc-950" : "bg-slate-50",
+    cardBg: isDark ? "bg-zinc-900" : "bg-white",
+    cardBorder: isDark ? "border-zinc-800" : "border-zinc-200",
+    textPrimary: isDark ? "text-zinc-100" : "text-zinc-900",
+    textSecondary: isDark ? "text-zinc-400" : "text-zinc-500",
+    iconBg: isDark ? "bg-zinc-800" : "bg-zinc-100",
+    divider: isDark ? "border-zinc-800" : "border-zinc-100",
+    
+    // High Contrast Badge Styles
+    badgePremium: isDark 
+      ? "bg-amber-900/40 text-amber-300 border-amber-700/50" 
+      : "bg-amber-100 text-amber-800 border-amber-300",
+      
+    badgeFree: isDark
+      ? "bg-zinc-800 text-zinc-300 border-zinc-700"
+      : "bg-zinc-100 text-zinc-700 border-zinc-300",
+      
+    badgeSuccess: isDark
+      ? "bg-emerald-900/40 text-emerald-400 border-emerald-700/50"
+      : "bg-emerald-100 text-emerald-800 border-emerald-300"
+  };
+
   useEffect(() => {
     const load = async () => {
       if (!currentUser) {
@@ -65,7 +106,6 @@ const UserSubscriptions = ({ onViewTests, onSubscribeSeries }) => {
             .filter((s) => s.exists())
             .map((s) => ({ id: s.id, ...s.data() }));
 
-          // Enrich with totalTests count
           const seriesWithCounts = await Promise.all(
             seriesData.map(async (s) => {
               try {
@@ -97,22 +137,38 @@ const UserSubscriptions = ({ onViewTests, onSubscribeSeries }) => {
       .filter(Boolean);
   }, [subs, series]);
 
-  const handleUpgrade = (s) => {
+  const handleUpgradeSeries = (s) => {
     if (onSubscribeSeries) {
       onSubscribeSeries({ id: s.id, isPaid: true });
     }
   };
 
-  const isPremiumUser = activeSeries.some((s) => s.isPaid);
+  const formatDate = (timestamp) => {
+    if (!timestamp) return 'N/A';
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    return date.toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
 
-  if (loading) {
+  const calculateDaysRemaining = (expiryDate) => {
+    if (!expiryDate) return 0;
+    const end = expiryDate.toDate ? expiryDate.toDate() : new Date(expiryDate);
+    const now = new Date();
+    const diff = end - now;
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  };
+
+  if (loading || planLoading) {
     return (
-      <div className={`min-h-screen p-8 ${isDark ? "bg-gray-900" : "bg-gray-50"}`}>
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-8">
-          <div className={`lg:col-span-1 h-64 rounded-3xl animate-pulse ${isDark ? "bg-gray-800" : "bg-gray-200"}`} />
-          <div className="lg:col-span-3 space-y-6">
-            <div className={`h-32 rounded-3xl animate-pulse ${isDark ? "bg-gray-800" : "bg-gray-200"}`} />
-            <div className={`h-32 rounded-3xl animate-pulse ${isDark ? "bg-gray-800" : "bg-gray-200"}`} />
+      <div className={`min-h-screen p-6 sm:p-8 ${styles.pageBg}`}>
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className={`lg:col-span-4 h-80 rounded-2xl animate-pulse ${isDark ? "bg-zinc-900" : "bg-zinc-200"}`} />
+          <div className="lg:col-span-8 space-y-6">
+            <div className={`h-40 rounded-2xl animate-pulse ${isDark ? "bg-zinc-900" : "bg-zinc-200"}`} />
+            <div className={`h-40 rounded-2xl animate-pulse ${isDark ? "bg-zinc-900" : "bg-zinc-200"}`} />
           </div>
         </div>
       </div>
@@ -120,186 +176,272 @@ const UserSubscriptions = ({ onViewTests, onSubscribeSeries }) => {
   }
 
   return (
-    <div className={`min-h-screen w-full pb-12 ${isDark ? "bg-gray-900" : "bg-gray-50"}`}>
-      
-      {/* Header Background Decoration */}
-      <div className={`absolute top-0 left-0 right-0 h-64 ${
-        isDark ? "bg-gradient-to-b from-blue-900/20 to-transparent" : "bg-gradient-to-b from-blue-100/50 to-transparent"
-      }`} />
+    <div className={`min-h-screen w-full ${styles.pageBg}`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+        
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className={`text-3xl font-bold tracking-tight ${styles.textPrimary}`}>Subscription & Learning</h1>
+          <p className={`mt-1 text-sm ${styles.textSecondary}`}>Manage your plan and enrolled courses.</p>
+        </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 relative z-10">
-        <div className="flex flex-col lg:flex-row gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
-          {/* --- Sidebar: User Profile & Status --- */}
-          <aside className="lg:w-80 flex-shrink-0">
-            <div className={`sticky top-8 rounded-3xl p-6 border shadow-lg ${
-              isDark 
-                ? "bg-gray-800/50 border-gray-700 backdrop-blur-xl" 
-                : "bg-white border-white shadow-blue-100/50"
-            }`}>
+          {/* --- LEFT SIDEBAR (Profile & Plan) --- */}
+          <aside className="lg:col-span-4 space-y-6">
+            
+            {/* User Profile Card */}
+            <div className={`rounded-xl border p-6 ${styles.cardBg} ${styles.cardBorder}`}>
               <div className="flex items-center gap-4 mb-6">
-                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-inner ${
-                  isDark ? "bg-gray-700 text-gray-300" : "bg-blue-50 text-blue-600"
-                }`}>
+                <div className={`w-16 h-16 rounded-full overflow-hidden border-2 ${isDark ? "border-zinc-700" : "border-white shadow-sm"}`}>
                   {userAvatar ? (
-                    <img src={userAvatar} alt="Profile" className="w-full h-full object-cover rounded-2xl" referrerPolicy="no-referrer" />
+                    <img src={userAvatar} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   ) : (
-                    currentUser?.displayName?.charAt(0) || <FiUser />
+                    <div className={`w-full h-full flex items-center justify-center ${isDark ? "bg-zinc-800" : "bg-zinc-100"}`}>
+                      <User className="w-8 h-8 text-zinc-400" />
+                    </div>
                   )}
                 </div>
                 <div>
-                  <h2 className={`font-bold text-lg leading-tight ${isDark ? "text-white" : "text-gray-900"}`}>
+                  <h2 className={`font-semibold text-lg ${styles.textPrimary}`}>
                     {currentUser?.displayName || "Student"}
                   </h2>
-                  <p className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+                  <p className={`text-sm ${styles.textSecondary} truncate max-w-[180px]`}>
                     {currentUser?.email}
                   </p>
+                  
+                  {/* Pro Member Badge */}
+                  {!isFreePlan && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-bold border ${styles.badgePremium}`}>
+                        <Crown className="w-3 h-3 fill-current" />
+                        Pro Member
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className={`p-4 rounded-2xl mb-6 border ${
-                isPremiumUser
-                  ? isDark ? "bg-gradient-to-br from-yellow-900/20 to-yellow-900/10 border-yellow-500/30" : "bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200"
-                  : isDark ? "bg-gray-700/30 border-gray-600" : "bg-gray-50 border-gray-100"
-              }`}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className={`text-xs font-bold uppercase tracking-wider ${
-                    isPremiumUser 
-                      ? isDark ? "text-yellow-400" : "text-yellow-700"
-                      : isDark ? "text-gray-400" : "text-gray-500"
-                  }`}>
-                    Current Plan
-                  </span>
-                  {isPremiumUser && <FaCrown className="text-yellow-500" />}
+              <div className={`border-t pt-4 space-y-3 ${styles.divider}`}>
+                <div className="flex justify-between items-center text-sm">
+                  <span className={styles.textSecondary}>Active Courses</span>
+                  <span className={`font-medium ${styles.textPrimary}`}>{activeSeries.length}</span>
                 </div>
-                <div className={`text-xl font-extrabold ${
-                  isPremiumUser 
-                    ? isDark ? "text-yellow-200" : "text-yellow-800"
-                    : isDark ? "text-white" : "text-gray-900"
-                }`}>
-                  {isPremiumUser ? "Premium Scholar" : "Free Account"}
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className={isDark ? "text-gray-400" : "text-gray-600"}>Active Courses</span>
-                  <span className={`font-bold ${isDark ? "text-white" : "text-gray-900"}`}>{activeSeries.length}</span>
-                </div>
-                <div className={`h-px ${isDark ? "bg-gray-700" : "bg-gray-100"}`} />
-                <div className="flex items-center justify-between text-sm">
-                  <span className={isDark ? "text-gray-400" : "text-gray-600"}>Member Since</span>
-                  <span className={`font-bold ${isDark ? "text-white" : "text-gray-900"}`}>
+                <div className="flex justify-between items-center text-sm">
+                  <span className={styles.textSecondary}>Joined</span>
+                  <span className={`font-medium ${styles.textPrimary}`}>
                     {new Date(currentUser?.metadata?.creationTime).getFullYear()}
                   </span>
                 </div>
               </div>
             </div>
+
+            {/* Current Plan Card */}
+            <div className={`rounded-xl border p-6 relative overflow-hidden ${styles.cardBg} ${styles.cardBorder}`}>
+              {/* Background gradient hint */}
+              {!isFreePlan && (
+                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none" />
+              )}
+              
+              <div className="relative">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Current Plan</p>
+                    <h3 className={`text-xl font-bold mt-1 ${styles.textPrimary}`}>
+                      {globalPlan?.name || "Free Plan"}
+                    </h3>
+                  </div>
+                  {!isFreePlan && <Crown className="w-6 h-6 text-amber-500 fill-current" />}
+                </div>
+
+                {!isFreePlan && globalPlan ? (
+                  <div className="space-y-4">
+                    <div className={`flex items-center gap-2 text-sm font-bold ${isDark ? "text-emerald-400" : "text-emerald-700"}`}>
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Active Subscription</span>
+                    </div>
+                    
+                    <div className={`p-3 rounded-lg border ${isDark ? "bg-zinc-800/50 border-zinc-700" : "bg-zinc-50 border-zinc-200"}`}>
+                      <div className="flex justify-between items-center text-sm mb-1">
+                        <span className={styles.textSecondary}>Renews</span>
+                        <span className={`font-medium ${styles.textPrimary}`}>{formatDate(globalPlan.expiresAt)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className={styles.textSecondary}>Remaining</span>
+                        <span className={`font-medium ${calculateDaysRemaining(globalPlan.expiresAt) < 5 ? "text-rose-500" : "text-emerald-600"}`}>
+                          {calculateDaysRemaining(globalPlan.expiresAt)} Days
+                        </span>
+                      </div>
+                    </div>
+
+                    <button 
+                      onClick={() => setShowUpgradeModal(true)}
+                      className={`w-full py-2.5 rounded-lg text-sm font-medium border transition-colors ${
+                        isDark 
+                          ? "border-zinc-700 hover:bg-zinc-800 text-zinc-300" 
+                          : "border-zinc-200 hover:bg-zinc-50 text-zinc-700"
+                      }`}
+                    >
+                      Manage Plan
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <p className={`text-sm ${styles.textSecondary}`}>
+                      Upgrade to unlock unlimited AI quizzes, detailed analytics, and premium support.
+                    </p>
+                    <button 
+                      onClick={() => setShowUpgradeModal(true)}
+                      className="w-full py-2.5 rounded-lg text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm transition-all hover:shadow-md flex items-center justify-center gap-2"
+                    >
+                      <Rocket className="w-4 h-4" /> Upgrade to Pro
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           </aside>
 
-          {/* --- Main Content --- */}
-          <main className="flex-1 min-w-0">
+          {/* --- RIGHT CONTENT (Enrolled Courses) --- */}
+          <main className="lg:col-span-8 space-y-8">
             
-            {/* Header */}
-            <div className="mb-8">
-              <h1 className={`text-3xl font-bold mb-2 ${isDark ? "text-white" : "text-gray-900"}`}>
-                My Learning
-              </h1>
-              <p className={isDark ? "text-gray-400" : "text-gray-600"}>
-                Track your progress and access your enrolled test series.
-              </p>
+            {/* Header for List */}
+            <div className="flex items-center justify-between">
+              <h2 className={`text-lg font-bold flex items-center gap-2 ${styles.textPrimary}`}>
+                <BookOpen className="w-5 h-5 text-indigo-500" /> 
+                Enrolled Series
+                <span className={`ml-2 px-2.5 py-0.5 rounded-full text-xs font-medium ${isDark ? "bg-zinc-800 text-zinc-400" : "bg-zinc-100 text-zinc-600"}`}>
+                  {activeSeries.length}
+                </span>
+              </h2>
             </div>
 
-            {/* Active Subscriptions Grid */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-12">
-              {activeSeries.length === 0 ? (
-                <div className={`col-span-full p-10 rounded-3xl border-2 border-dashed text-center ${
-                  isDark ? "border-gray-700 bg-gray-800/30 text-gray-400" : "border-gray-200 bg-white text-gray-500"
-                }`}>
-                  <FiBookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <h3 className="text-lg font-semibold mb-2">No Active Subscriptions</h3>
-                  <p className="mb-6 max-w-md mx-auto">You haven't enrolled in any test series yet. Browse our catalog to start learning.</p>
-                  <a href="/test-series" className="inline-flex items-center px-6 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors">
-                    Browse Catalog
-                  </a>
+            {/* List */}
+            {activeSeries.length === 0 ? (
+              <div className={`flex flex-col items-center justify-center p-12 rounded-xl border-2 border-dashed text-center ${isDark ? "border-zinc-800 bg-zinc-900/30" : "border-zinc-200 bg-zinc-50/50"}`}>
+                <div className={`p-4 rounded-full mb-4 ${isDark ? "bg-zinc-800" : "bg-white shadow-sm"}`}>
+                  <LayoutGrid className={`w-8 h-8 ${styles.textSecondary}`} />
                 </div>
-              ) : (
-                activeSeries.map((s) => (
+                <h3 className={`text-lg font-semibold mb-1 ${styles.textPrimary}`}>No Enrollments Yet</h3>
+                <p className={`text-sm max-w-sm mb-6 ${styles.textSecondary}`}>
+                  You haven't enrolled in any test series yet. Browse our catalog to start your learning journey.
+                </p>
+                <a 
+                  href="/test-series" 
+                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"
+                >
+                  Browse Catalog
+                </a>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {activeSeries.map((s) => (
                   <div 
                     key={s.id}
-                    className={`group relative p-5 rounded-3xl border transition-all duration-300 hover:-translate-y-1 ${
+                    className={`group relative flex flex-col rounded-xl border transition-all duration-200 hover:shadow-md ${
                       isDark 
-                        ? "bg-gray-800 border-gray-700 hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-900/20" 
-                        : "bg-white border-slate-200 hover:border-blue-300 hover:shadow-xl hover:shadow-blue-100/50"
+                        ? "bg-zinc-900 border-zinc-800 hover:border-zinc-700" 
+                        : "bg-white border-zinc-200 hover:border-zinc-300"
                     }`}
                   >
-                    <div className="flex items-start gap-5">
+                    <div className="p-5 flex gap-4">
                       {/* Thumbnail */}
-                      <div className={`w-20 h-20 rounded-2xl flex-shrink-0 overflow-hidden shadow-sm ${
-                        isDark ? "bg-gray-700" : "bg-gray-100"
-                      }`}>
+                      <div className={`shrink-0 w-16 h-16 rounded-lg overflow-hidden border ${isDark ? "border-zinc-700 bg-zinc-800" : "border-zinc-100 bg-zinc-50"}`}>
                         {s.coverImageUrl ? (
-                          <img src={s.coverImageUrl} alt={s.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                          <img src={s.coverImageUrl} alt={s.title} className="w-full h-full object-cover" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-blue-500">
-                            <FiGrid size={24} />
+                          <div className="w-full h-full flex items-center justify-center text-indigo-500">
+                            <LayoutGrid size={24} />
                           </div>
                         )}
                       </div>
 
-                      {/* Content */}
+                      {/* Info */}
                       <div className="flex-1 min-w-0">
-                        {s.isPaid && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-yellow-100 text-yellow-700 mb-2">
-                            <FaCrown size={10} /> Premium
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <h3 className={`font-semibold text-base truncate ${styles.textPrimary}`}>
+                            {s.title}
+                          </h3>
+                          {s.isPaid && (
+                            <span className={`shrink-0 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border flex items-center gap-1 ${styles.badgePremium}`}>
+                              <Crown size={10} className="fill-current" /> Premium
+                            </span>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400 mb-3">
+                          <span className="flex items-center gap-1">
+                            <BookOpen size={12} /> {s.totalTests || 0} Tests
                           </span>
-                        )}
-                        <h3 className={`font-bold text-lg mb-1 truncate ${isDark ? "text-white" : "text-gray-900"}`}>
-                          {s.title}
-                        </h3>
-                        <div className="flex items-center gap-4 text-xs mb-4">
-                          <span className={`flex items-center gap-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}>
-                            <FiBookOpen /> {s.totalTests || 0} Tests
-                          </span>
-                          <span className={`flex items-center gap-1 ${isDark ? "text-gray-400" : "text-gray-500"}`}>
-                            <FiTrendingUp /> Active
+                          <span className="flex items-center gap-1">
+                            <TrendingUp size={12} /> Active
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Action Button */}
-                    <button
-                      onClick={() => onViewTests && onViewTests(s)}
-                      className={`w-full mt-2 py-3 px-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors ${
-                        isDark 
-                          ? "bg-gray-700 hover:bg-gray-600 text-white" 
-                          : "bg-blue-50 hover:bg-blue-100 text-blue-700"
-                      }`}
-                    >
-                      Continue Learning <FiArrowRight />
-                    </button>
+                    {/* Footer Action */}
+                    <div className={`mt-auto px-5 pb-5 pt-0`}>
+                      <button
+                        onClick={() => onViewTests && onViewTests(s)}
+                        className={`w-full py-2.5 px-4 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
+                          isDark 
+                            ? "bg-zinc-800 hover:bg-zinc-700 text-zinc-200" 
+                            : "bg-zinc-50 hover:bg-zinc-100 text-zinc-700 border border-zinc-200"
+                        }`}
+                      >
+                        Continue Learning <ArrowRight size={14} />
+                      </button>
+                    </div>
                   </div>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            )}
 
-            {/* Recommendations Section */}
-            <UpgradeSuggestions
-              isDark={isDark}
-              onSubscribe={handleUpgrade}
-              activeIds={new Set(activeSeries.map((s) => s.id))}
-            />
+            {/* Recommendations */}
+            <div className="pt-8 border-t border-zinc-200 dark:border-zinc-800">
+              <div className="flex items-center gap-2 mb-6">
+                <Sparkles className="w-5 h-5 text-amber-500" />
+                <h3 className={`text-lg font-bold ${styles.textPrimary}`}>Recommended Upgrades</h3>
+              </div>
+              <UpgradeSuggestions
+                isDark={isDark}
+                onSubscribe={handleUpgradeSeries}
+                activeIds={new Set(activeSeries.map((s) => s.id))}
+                badgeStyle={styles.badgePremium}
+              />
+            </div>
 
           </main>
         </div>
       </div>
+
+      {/* Upgrade Modal */}
+      {showUpgradeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+           <div className={`relative w-full max-w-5xl my-8 rounded-2xl shadow-2xl overflow-hidden ${isDark ? "bg-zinc-900 border border-zinc-700" : "bg-white"}`}>
+              <button 
+                onClick={() => setShowUpgradeModal(false)}
+                className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/10 hover:bg-black/20 dark:bg-white/10 dark:hover:bg-white/20 transition-colors"
+              >
+                 <ArrowRight className="rotate-45 w-5 h-5 text-zinc-500 dark:text-zinc-300" />
+              </button>
+              <div className="max-h-[85vh] overflow-y-auto custom-scrollbar">
+                 <PaymentPlans 
+                    onSuccess={() => { setShowUpgradeModal(false); window.location.reload(); }} 
+                    onCancel={() => setShowUpgradeModal(false)}
+                 />
+              </div>
+           </div>
+        </div>
+      )}
     </div>
   );
 };
 
 // --- Sub-Component for Upgrades ---
-const UpgradeSuggestions = ({ isDark, onSubscribe, activeIds }) => {
+// Defined *outside* to avoid re-creation on render
+const UpgradeSuggestions = ({ isDark, onSubscribe, activeIds, badgeStyle }) => {
   const [loading, setLoading] = useState(true);
   const [paidSeries, setPaidSeries] = useState([]);
 
@@ -307,12 +449,13 @@ const UpgradeSuggestions = ({ isDark, onSubscribe, activeIds }) => {
     const load = async () => {
       try {
         setLoading(true);
+        // Find paid series that are published
         const q = query(collection(db, "test-series"), where("isPublished", "==", true));
         const snap = await getDocs(q);
         const all = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
         
         // Filter for paid series not already owned
-        const filtered = all.filter((s) => s.isPaid && !activeIds.has(s.id)).slice(0, 2); // Limit to 2
+        const filtered = all.filter((s) => s.isPaid && !activeIds.has(s.id)).slice(0, 2); 
         
         // Enrich with counts
         const enriched = await Promise.all(filtered.map(async (s) => {
@@ -331,62 +474,47 @@ const UpgradeSuggestions = ({ isDark, onSubscribe, activeIds }) => {
     load();
   }, [activeIds]);
 
-  if (loading || paidSeries.length === 0) return null;
+  if (loading) return <div className="h-40 animate-pulse bg-zinc-100 dark:bg-zinc-800 rounded-xl" />;
+  if (paidSeries.length === 0) return <p className="text-sm text-zinc-500">You're all caught up! No upgrades available.</p>;
 
   return (
-    <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-800">
-      <div className="flex items-center gap-2 mb-6">
-        <FiAward className="text-yellow-500 w-6 h-6" />
-        <h2 className={`text-2xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}>
-          Recommended Upgrades
-        </h2>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {paidSeries.map((s) => (
-          <div
-            key={s.id}
-            className={`relative overflow-hidden rounded-3xl border p-6 transition-all duration-300 hover:-translate-y-1 ${
-              isDark 
-                ? "bg-gradient-to-br from-gray-800 to-gray-900 border-yellow-500/30 shadow-lg shadow-black/20" 
-                : "bg-gradient-to-br from-yellow-50 to-white border-yellow-200 shadow-xl shadow-yellow-500/10"
-            }`}
-          >
-            {/* Background Decor */}
-            <div className="absolute -right-6 -top-6 opacity-5">
-              <FaCrown size={120} className={isDark ? "text-yellow-200" : "text-yellow-600"} />
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      {paidSeries.map((s) => (
+        <div
+          key={s.id}
+          className={`relative overflow-hidden rounded-xl border p-5 transition-all hover:shadow-lg ${
+            isDark 
+              ? "bg-gradient-to-br from-zinc-800 to-zinc-900 border-amber-500/20" 
+              : "bg-gradient-to-br from-amber-50/50 to-white border-amber-200"
+          }`}
+        >
+          <div className="relative z-10">
+            <div className="flex justify-between items-start mb-3">
+              <div className={`px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider flex items-center gap-1 border ${badgeStyle}`}>
+                <Star size={10} fill="currentColor" /> Recommended
+              </div>
+              <div className={`text-xl font-bold ${isDark ? "text-white" : "text-zinc-900"}`}>
+                ₹{(s.discountedPrice ?? s.price ?? 0).toLocaleString()}
+              </div>
             </div>
 
-            <div className="relative z-10">
-              <div className="flex justify-between items-start mb-4">
-                <div className="px-3 py-1 rounded-full bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-400 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
-                  <FaStar size={10} /> Premium
-                </div>
-                <div className={`text-2xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}>
-                  ₹{(s.discountedPrice ?? s.price ?? 0).toLocaleString()}
-                </div>
-              </div>
+            <h3 className={`font-bold text-lg mb-1 line-clamp-1 ${isDark ? "text-white" : "text-zinc-900"}`}>
+              {s.title}
+            </h3>
+            
+            <p className={`text-sm mb-4 line-clamp-1 ${isDark ? "text-zinc-400" : "text-zinc-600"}`}>
+               {s.description || "Unlock premium features for this series."}
+            </p>
 
-              <h3 className={`text-xl font-bold mb-2 line-clamp-1 ${isDark ? "text-white" : "text-gray-900"}`}>
-                {s.title}
-              </h3>
-              
-              <div className={`flex items-center gap-4 text-sm mb-6 ${isDark ? "text-gray-400" : "text-gray-600"}`}>
-                <span>{s.totalTests || 0} Tests</span>
-                <span>•</span>
-                <span>{s.totalSubscribers || 0} Students</span>
-              </div>
-
-              <button
-                onClick={() => onSubscribe(s)}
-                className="w-full py-3 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-white transition-all"
-              >
-                <FiCreditCard /> Unlock Access
-              </button>
-            </div>
+            <button
+              onClick={() => onSubscribe(s)}
+              className="w-full py-2.5 rounded-lg font-semibold shadow-sm flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white transition-all active:scale-[0.98]"
+            >
+              <CreditCard className="w-4 h-4" /> Unlock Access
+            </button>
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   );
 };

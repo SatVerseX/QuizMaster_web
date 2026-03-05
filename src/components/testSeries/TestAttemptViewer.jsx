@@ -41,7 +41,7 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
 
   // --- Safe Initialization ---
   const initialTime = (test?.timeLimit || 30) * 60;
-  
+
   // --- State ---
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState({});
@@ -120,10 +120,10 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
   }, [isSectionWiseQuiz, test]);
 
   const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
-  
-  const progressPercentage = useMemo(() => 
+
+  const progressPercentage = useMemo(() =>
     totalQuestions > 0 ? ((currentQuestionIndex + 1) / totalQuestions) * 100 : 0,
-  [currentQuestionIndex, totalQuestions]);
+    [currentQuestionIndex, totalQuestions]);
 
   // --- Effects ---
 
@@ -175,7 +175,7 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
     } catch (e) {
       console.warn('Failed to restore test progress', e);
     }
-  }, []); 
+  }, []);
 
   // Save Progress to LocalStorage
   useEffect(() => {
@@ -246,13 +246,33 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
   };
 
   const handleAnswerSelect = (optionIndex) => {
+    const qType = currentQuestion?.type || 'mcq';
+    if (qType === 'msq') {
+      setAnswers(prev => {
+        const newAnswers = { ...prev };
+        const current = Array.isArray(prev[currentQuestionIndex]) ? [...prev[currentQuestionIndex]] : [];
+        const idx = current.indexOf(optionIndex);
+        if (idx !== -1) current.splice(idx, 1);
+        else current.push(optionIndex);
+        if (current.length === 0) delete newAnswers[currentQuestionIndex];
+        else newAnswers[currentQuestionIndex] = current;
+        return newAnswers;
+      });
+    } else {
+      setAnswers(prev => {
+        const newAnswers = { ...prev };
+        if (prev[currentQuestionIndex] === optionIndex) delete newAnswers[currentQuestionIndex];
+        else newAnswers[currentQuestionIndex] = optionIndex;
+        return newAnswers;
+      });
+    }
+  };
+
+  const handleNumericalAnswer = (value) => {
     setAnswers(prev => {
       const newAnswers = { ...prev };
-      if (prev[currentQuestionIndex] === optionIndex) {
-        delete newAnswers[currentQuestionIndex];
-      } else {
-        newAnswers[currentQuestionIndex] = optionIndex;
-      }
+      if (value === '' || value === null || value === undefined) delete newAnswers[currentQuestionIndex];
+      else newAnswers[currentQuestionIndex] = value;
       return newAnswers;
     });
   };
@@ -293,30 +313,54 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
       : test.questions;
 
     allQuestions.forEach((question, index) => {
-      // Calculate max possible score based on positive marking value
-      const positiveMarks = question.positiveMarking?.enabled && question.positiveMarking.value 
-        ? parseFloat(question.positiveMarking.value) 
+      const positiveMarks = question.positiveMarking?.enabled && question.positiveMarking.value
+        ? parseFloat(question.positiveMarking.value)
         : 1;
       maxPossibleScore += positiveMarks;
+      const qType = question.type || 'mcq';
+      const userAnswer = answers[index];
 
-      if (answers[index] === question.correctAnswer) {
-        correct++;
-        totalScore += positiveMarks;
-      } else if (answers[index] !== undefined) {
-        incorrect++;
-        // Determine which negative marking rule applies
-        let negativeMarkingToApply = null;
-        if (question.negativeMarking && question.negativeMarking.enabled) {
-          negativeMarkingToApply = question.negativeMarking;
-        } else if (test.negativeMarking && test.negativeMarking.enabled) {
-          negativeMarkingToApply = test.negativeMarking;
+      if (qType === 'numerical') {
+        if (userAnswer !== undefined && userAnswer !== '' && userAnswer !== null) {
+          const userNum = parseFloat(userAnswer);
+          const correctNum = parseFloat(question.correctAnswer);
+          const tolerance = parseFloat(question.tolerance) || 0;
+          if (!isNaN(userNum) && !isNaN(correctNum) && Math.abs(userNum - correctNum) <= tolerance) {
+            correct++;
+            totalScore += positiveMarks;
+          } else {
+            incorrect++;
+            let neg = question.negativeMarking?.enabled ? question.negativeMarking : (test.negativeMarking?.enabled ? test.negativeMarking : null);
+            if (neg) totalScore -= neg.type === 'fractional' ? positiveMarks * neg.value : neg.value;
+          }
         }
-
-        if (negativeMarkingToApply) {
-          if (negativeMarkingToApply.type === 'fractional') {
-            totalScore -= (positiveMarks * negativeMarkingToApply.value);
-          } else if (negativeMarkingToApply.type === 'fixed') {
-            totalScore -= negativeMarkingToApply.value;
+      } else if (qType === 'msq') {
+        const correctArr = Array.isArray(question.correctAnswer) ? question.correctAnswer : [];
+        const userArr = Array.isArray(userAnswer) ? userAnswer : [];
+        if (userArr.length > 0) {
+          const correctSelected = userArr.filter(a => correctArr.includes(a)).length;
+          const wrongSelected = userArr.filter(a => !correctArr.includes(a)).length;
+          if (correctSelected === correctArr.length && wrongSelected === 0) {
+            correct++;
+            totalScore += positiveMarks;
+          } else if (question.partialMarking && wrongSelected === 0 && correctSelected > 0) {
+            totalScore += positiveMarks * (correctSelected / correctArr.length);
+          } else if (wrongSelected > 0) {
+            incorrect++;
+            let neg = question.negativeMarking?.enabled ? question.negativeMarking : (test.negativeMarking?.enabled ? test.negativeMarking : null);
+            if (neg) totalScore -= neg.type === 'fractional' ? positiveMarks * neg.value : neg.value;
+          }
+        }
+      } else {
+        if (userAnswer === question.correctAnswer) {
+          correct++;
+          totalScore += positiveMarks;
+        } else if (userAnswer !== undefined) {
+          incorrect++;
+          let neg = question.negativeMarking?.enabled ? question.negativeMarking : (test.negativeMarking?.enabled ? test.negativeMarking : null);
+          if (neg) {
+            if (neg.type === 'fractional') totalScore -= positiveMarks * neg.value;
+            else if (neg.type === 'fixed') totalScore -= neg.value;
           }
         }
       }
@@ -324,19 +368,9 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
 
     totalScore = Math.max(0, totalScore);
     const finalScoreVal = Math.round(totalScore * 100) / 100;
+    const percentage = maxPossibleScore > 0 ? Math.round((finalScoreVal / maxPossibleScore) * 100) : 0;
 
-    // Calculate Percentage based on Max Possible Score
-    const percentage = maxPossibleScore > 0 
-      ? Math.round((finalScoreVal / maxPossibleScore) * 100) 
-      : 0;
-
-    return {
-      correct,
-      incorrect,
-      totalScore: finalScoreVal,
-      maxPossibleScore,
-      percentage
-    };
+    return { correct, incorrect, totalScore: finalScoreVal, maxPossibleScore, percentage };
   };
 
   const handleSubmitTest = async () => {
@@ -350,9 +384,9 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
       // --- PASS/FAIL LOGIC ---
       // Check if a specific passing score is set in the test metadata
       const passingThreshold = test.passingScore !== undefined && test.passingScore !== null && test.passingScore > 0
-        ? parseFloat(test.passingScore) 
+        ? parseFloat(test.passingScore)
         : (scoreData.maxPossibleScore * 0.4); // Fallback to 40% if not set
-      
+
       const isPassed = scoreData.totalScore >= passingThreshold;
 
       const attemptData = {
@@ -392,7 +426,7 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
       setIsTestCompleted(true);
       if (isPassed) setShowConfetti(true);
       setCompletedAttempt({ ...attemptData, id: docRef.id });
-      if(onComplete) onComplete({ ...attemptData, id: docRef.id });
+      if (onComplete) onComplete({ ...attemptData, id: docRef.id });
     } catch (error) {
       console.error('Submission Error:', error);
       showError('Failed to submit test. Please try again.', 'Submission Error');
@@ -430,15 +464,15 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
   if (!isTestStarted) {
     return (
       <div className={`min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 transition-colors duration-300 ${mode('bg-slate-50', 'bg-zinc-950')}`}>
-        
+
         <div className={`w-full max-w-3xl rounded-[2rem] p-8 sm:p-12 shadow-2xl border relative overflow-hidden transition-all ${mode('bg-white/80 border-slate-200/60 shadow-slate-200/50', 'bg-zinc-900/80 border-zinc-800/60 shadow-black/50')} backdrop-blur-xl`}>
-          
+
           <div className="relative z-10 text-center space-y-10">
             <div className="space-y-6">
               <span className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-extrabold uppercase tracking-widest border shadow-sm ${mode('bg-white border-emerald-100 text-emerald-600', 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400')}`}>
                 <FiTarget className="w-4 h-4" /> {totalQuestions} Questions Included
               </span>
-              
+
               <div className="space-y-4">
                 <h1 className={`text-4xl sm:text-5xl font-black tracking-tighter leading-tight ${mode('text-slate-900', 'text-white')}`}>
                   {test.title}
@@ -619,9 +653,17 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
 
               <div className={`p-6 border-b ${mode('bg-slate-50/50 border-slate-100', 'bg-zinc-900 border-zinc-800')}`}>
                 <div className="flex justify-between items-start mb-4">
-                  <span className={`text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider ${mode('bg-slate-100 text-slate-600 border border-slate-200', 'bg-zinc-800 text-zinc-400 border border-zinc-700')}`}>
-                    Question {currentQuestionIndex + 1}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider ${mode('bg-slate-100 text-slate-600 border border-slate-200', 'bg-zinc-800 text-zinc-400 border border-zinc-700')}`}>
+                      Question {currentQuestionIndex + 1}
+                    </span>
+                    {(() => {
+                      const qType = currentQuestion?.type || 'mcq';
+                      if (qType === 'numerical') return <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border border-purple-200 dark:border-purple-700">Numerical</span>;
+                      if (qType === 'msq') return <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-200 dark:border-amber-700">Multi-Select</span>;
+                      return null;
+                    })()}
+                  </div>
                   <button
                     onClick={toggleFlag}
                     className={`flex items-center gap-2 text-sm font-medium transition-colors ${flaggedQuestions.has(currentQuestionIndex) ? 'text-amber-500' : 'text-slate-400 hover:text-slate-600'}`}
@@ -643,56 +685,95 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
               )}
 
               <div className="p-6 space-y-3">
-                {currentQuestion?.options?.map((option, idx) => {
-                  const isSelected = answers[currentQuestionIndex] === idx;
+                {(() => {
+                  const qType = currentQuestion?.type || 'mcq';
+
+                  if (qType === 'numerical') {
+                    return (
+                      <div className="space-y-4">
+                        <label className={`block text-xs font-bold uppercase tracking-wider ${mode('text-slate-500', 'text-zinc-400')}`}>
+                          Enter your numerical answer
+                        </label>
+                        <input
+                          type="number"
+                          step="any"
+                          value={answers[currentQuestionIndex] ?? ''}
+                          onChange={(e) => handleNumericalAnswer(e.target.value)}
+                          placeholder="Type your answer..."
+                          className={`w-full px-5 py-4 rounded-xl border-2 text-lg font-mono font-bold focus:outline-none transition-all duration-200 ${answers[currentQuestionIndex] !== undefined && answers[currentQuestionIndex] !== ''
+                              ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
+                              : mode('border-slate-200 bg-white focus:border-emerald-400', 'border-zinc-700 bg-zinc-800 focus:border-emerald-500')
+                            } ${mode('text-slate-900 placeholder-slate-400', 'text-white placeholder-zinc-500')}`}
+                        />
+                        {currentQuestion?.tolerance > 0 && (
+                          <p className={`text-xs ${mode('text-slate-400', 'text-zinc-500')}`}>
+                            Tolerance: ±{currentQuestion.tolerance}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  const isMSQ = qType === 'msq';
+                  const selectedArr = isMSQ && Array.isArray(answers[currentQuestionIndex]) ? answers[currentQuestionIndex] : [];
+
                   return (
-                    <button
-                      key={idx}
-                      onClick={() => handleAnswerSelect(idx)}
-                      className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-200 flex items-start gap-4 group ${isSelected
-                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 dark:border-emerald-500'
-                        : mode('border-slate-100 hover:border-emerald-200 hover:bg-slate-50', 'border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800/50')
-                        }`}
-                    >
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold transition-colors shrink-0 ${isSelected
-                        ? 'bg-emerald-500 text-white shadow-sm'
-                        : mode('bg-slate-100 text-slate-500 group-hover:bg-white group-hover:shadow-sm', 'bg-zinc-800 text-zinc-400 group-hover:bg-zinc-700')
-                        }`}>
-                        {String.fromCharCode(65 + idx)}
-                      </div>
-
-                      <div className="flex-1 pt-1">
-                        <span className={`text-base font-medium leading-relaxed ${
-                          isSelected
-                            ? mode('text-slate-900 font-bold', 'text-white font-bold')
-                            : mode('text-zinc-700 group-hover:text-zinc-900', 'text-zinc-300 group-hover:text-white')
-                        }`}>
-                          {option}
-                        </span>
-                      </div>
-
-                      {isSelected && (
-                        <div className="ml-auto">
-                           <FiCheckCircle className="w-5 h-5 text-emerald-500" />
-                        </div>
+                    <>
+                      {(currentQuestion?.options || []).map((option, idx) => {
+                        const isSelected = isMSQ ? selectedArr.includes(idx) : answers[currentQuestionIndex] === idx;
+                        return (
+                          <button
+                            key={idx}
+                            onClick={() => handleAnswerSelect(idx)}
+                            className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-200 flex items-start gap-4 group ${isSelected
+                              ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 dark:border-emerald-500'
+                              : mode('border-slate-100 hover:border-emerald-200 hover:bg-slate-50', 'border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800/50')
+                              }`}
+                          >
+                            <div className={`w-8 h-8 ${isMSQ ? 'rounded-md' : 'rounded-lg'} flex items-center justify-center text-sm font-bold transition-colors shrink-0 ${isSelected
+                              ? 'bg-emerald-500 text-white shadow-sm'
+                              : mode('bg-slate-100 text-slate-500 group-hover:bg-white group-hover:shadow-sm', 'bg-zinc-800 text-zinc-400 group-hover:bg-zinc-700')
+                              }`}>
+                              {isSelected && isMSQ ? <FiCheck className="w-4 h-4" /> : String.fromCharCode(65 + idx)}
+                            </div>
+                            <div className="flex-1 pt-1">
+                              <span className={`text-base font-medium leading-relaxed ${isSelected
+                                  ? mode('text-slate-900 font-bold', 'text-white font-bold')
+                                  : mode('text-zinc-700 group-hover:text-zinc-900', 'text-zinc-300 group-hover:text-white')
+                                }`}>
+                                {option}
+                              </span>
+                            </div>
+                            {isSelected && (
+                              <div className="ml-auto">
+                                <FiCheckCircle className="w-5 h-5 text-emerald-500" />
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                      {isMSQ && (
+                        <p className={`text-xs font-medium pt-1 ${mode('text-slate-400', 'text-zinc-500')}`}>
+                          Select all correct answers
+                        </p>
                       )}
-                    </button>
+                    </>
                   );
-                })}
+                })()}
               </div>
-              
+
               {answers[currentQuestionIndex] !== undefined && (
                 <div className={`px-8 pb-6 flex justify-end`}>
-                   <button 
-                     onClick={handleClearAnswer} 
-                     className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-colors ${mode('text-zinc-400 hover:text-emerald-600', 'text-zinc-500 hover:text-emerald-400')}`}
-                   >
-                      <FiRefreshCw /> Clear Selection
-                   </button>
+                  <button
+                    onClick={handleClearAnswer}
+                    className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-colors ${mode('text-zinc-400 hover:text-emerald-600', 'text-zinc-500 hover:text-emerald-400')}`}
+                  >
+                    <FiRefreshCw /> Clear Selection
+                  </button>
                 </div>
-             )}
+              )}
             </div>
-            
+
             {/* Navigation Footer */}
             <div className="flex justify-between items-center">
               <button
@@ -702,7 +783,7 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
               >
                 <FiChevronLeft /> Previous
               </button>
-              
+
               <button
                 onClick={() => {
                   if (isLastQuestion) setShowSubmitConfirm(true);
@@ -730,7 +811,7 @@ const TestAttemptViewer = ({ test, testSeries, onBack, onComplete }) => {
             <div className="flex gap-3">
               <button onClick={() => setShowSubmitConfirm(false)} className={`flex-1 py-3 rounded-xl font-bold ${mode('bg-slate-100 text-slate-700 hover:bg-slate-200', 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700')}`}>Review</button>
               <button onClick={handleSubmitTest} disabled={loading} className="flex-1 py-3 rounded-xl font-bold bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg flex items-center justify-center gap-2">
-                {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <FiSend />}
+                {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <FiSend />}
                 {loading ? 'Submitting...' : 'Confirm Submit'}
               </button>
             </div>

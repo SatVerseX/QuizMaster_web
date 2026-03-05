@@ -12,6 +12,8 @@ import {
   FiActivity,
   FiCalendar,
   FiAlertCircle,
+  FiDownload,
+  FiPackage,
 } from "react-icons/fi";
 import { FaRobot, FaStar, FaRegStar } from "react-icons/fa";
 import { submitRating, canUserRate, getUserRating } from "../../services/ratingService";
@@ -26,7 +28,7 @@ const TestSeriesTestsList = ({
   const [tests, setTests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
   // Rating State
   const [canRate, setCanRate] = useState(false);
   const [userRating, setUserRating] = useState(0);
@@ -46,10 +48,10 @@ const TestSeriesTestsList = ({
     if (testSeries?.id && currentUser?.uid) {
       const incrementView = async () => {
         try {
-          const alreadySubscribed = Array.isArray(testSeries.subscribedUsers) 
-            ? testSeries.subscribedUsers.includes(currentUser.uid) 
+          const alreadySubscribed = Array.isArray(testSeries.subscribedUsers)
+            ? testSeries.subscribedUsers.includes(currentUser.uid)
             : false;
-            
+
           if (!alreadySubscribed) {
             await updateDoc(doc(db, "test-series", testSeries.id), {
               totalSubscribers: increment(1),
@@ -208,89 +210,92 @@ const TestSeriesTestsList = ({
   return (
     <div className={`min-h-screen w-full overflow-hidden pb-12 ${isDark ? "bg-gray-900" : "bg-slate-50"}`}>
       <div className="max-w-6xl mx-auto px-3 sm:px-4 pt-4 sm:pt-6">
-        
+
         {/* --- Hero Section --- */}
         <div className="relative mb-6 sm:mb-8">
-           <div className={`p-4 sm:p-6 rounded-3xl overflow-hidden border w-full ${
-             isDark 
-               ? "bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700" 
-               : "bg-white border-slate-200 shadow-sm"
-           }`}>
-             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 w-full">
-               <div className="w-full">
-                 <div className="flex items-center gap-2 mb-2 flex-wrap">
-                   <span className={`px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wide ${
-                     isDark ? "bg-blue-500/20 text-blue-300" : "bg-blue-100 text-blue-700"
-                   }`}>
-                     Test Series
-                   </span>
-                   <span className={`text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-gray-400" : "text-gray-500"}`}>
-                     • {tests.length} Tests
-                   </span>
-                 </div>
-                 <h1 className={`text-xl sm:text-3xl font-bold mb-2 break-words ${isDark ? "text-white" : "text-slate-900"}`}>
-                   {testSeries.title}
-                 </h1>
-                 <p className={`max-w-2xl text-sm md:text-base ${isDark ? "text-gray-400" : "text-slate-600"}`}>
-                   {testSeries.description || "Comprehensive evaluation series designed to test your knowledge and improve your skills."}
-                 </p>
-                 
-                 {/* Responsive Stats Box */}
-                 <div className={`mt-6 w-full md:w-auto grid grid-cols-3 md:flex items-center md:gap-8 px-2 sm:px-6 py-3 sm:py-4 rounded-2xl backdrop-blur-md ${
-                    isDark ? "bg-white/5 border border-white/10" : "bg-slate-50 border border-slate-100"
+          <div className={`p-4 sm:p-6 rounded-3xl overflow-hidden border w-full ${isDark
+            ? "bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700"
+            : "bg-white border-slate-200 shadow-sm"
+            }`}>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 w-full">
+              <div className="w-full">
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wide ${isDark ? "bg-blue-500/20 text-blue-300" : "bg-blue-100 text-blue-700"
+                    }`}>
+                    Test Series
+                  </span>
+                  {testSeries.isCombo && (
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wide flex items-center gap-1 ${isDark ? "bg-purple-500/20 text-purple-300" : "bg-purple-100 text-purple-700"
+                      }`}>
+                      <FiPackage className="w-3 h-3" />
+                      Combo
+                    </span>
+                  )}
+                  <span className={`text-xs sm:text-sm whitespace-nowrap ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+                    • {tests.length} Tests
+                  </span>
+                </div>
+                <h1 className={`text-xl sm:text-3xl font-bold mb-2 break-words ${isDark ? "text-white" : "text-slate-900"}`}>
+                  {testSeries.title}
+                </h1>
+                <p className={`max-w-2xl text-sm md:text-base ${isDark ? "text-gray-400" : "text-slate-600"}`}>
+                  {testSeries.description || "Comprehensive evaluation series designed to test your knowledge and improve your skills."}
+                </p>
+
+                {/* Responsive Stats Box */}
+                <div className={`mt-6 w-full md:w-auto grid grid-cols-3 md:flex items-center md:gap-8 px-2 sm:px-6 py-3 sm:py-4 rounded-2xl backdrop-blur-md ${isDark ? "bg-white/5 border border-white/10" : "bg-slate-50 border border-slate-100"
                   }`}>
-                    <div className="text-center md:text-left border-r md:border-r-0 border-gray-200 dark:border-gray-700 px-1">
-                      <div className={`text-lg sm:text-2xl font-bold ${isDark ? "text-white" : "text-slate-900"}`}>
-                        {tests.length}
-                      </div>
-                      <div className={`text-[10px] sm:text-xs font-medium uppercase tracking-wider ${isDark ? "text-gray-500" : "text-slate-500"}`}>
-                        Tests
-                      </div>
+                  <div className="text-center md:text-left border-r md:border-r-0 border-gray-200 dark:border-gray-700 px-1">
+                    <div className={`text-lg sm:text-2xl font-bold ${isDark ? "text-white" : "text-slate-900"}`}>
+                      {tests.length}
                     </div>
-                    <div className={`hidden md:block w-px h-8 ${isDark ? "bg-gray-700" : "bg-slate-200"}`} />
-                    <div className="text-center md:text-left border-r md:border-r-0 border-gray-200 dark:border-gray-700 px-1">
-                      <div className={`text-lg sm:text-2xl font-bold ${isDark ? "text-white" : "text-slate-900"}`}>
-                        {subscriberCount}
-                      </div>
-                      <div className={`text-[10px] sm:text-xs font-medium uppercase tracking-wider ${isDark ? "text-gray-500" : "text-slate-500"}`}>
-                        Students
-                      </div>
+                    <div className={`text-[10px] sm:text-xs font-medium uppercase tracking-wider ${isDark ? "text-gray-500" : "text-slate-500"}`}>
+                      Tests
                     </div>
-                    <div className={`hidden md:block w-px h-8 ${isDark ? "bg-gray-700" : "bg-slate-200"}`} />
-                    <div className="text-center md:text-left px-1">
-                      <div className="flex items-center justify-center md:justify-start gap-1">
-                        <span className={`text-lg sm:text-2xl font-bold ${isDark ? "text-white" : "text-slate-900"}`}>
-                          {Number(averageRating).toFixed(1)}
-                        </span>
-                        <FaStar className="text-yellow-400 w-3 h-3 sm:w-4 sm:h-4" />
-                      </div>
-                      <div className={`text-[10px] sm:text-xs font-medium uppercase tracking-wider ${isDark ? "text-gray-500" : "text-slate-500"}`}>
-                        Rating
-                      </div>
+                  </div>
+                  <div className={`hidden md:block w-px h-8 ${isDark ? "bg-gray-700" : "bg-slate-200"}`} />
+                  <div className="text-center md:text-left border-r md:border-r-0 border-gray-200 dark:border-gray-700 px-1">
+                    <div className={`text-lg sm:text-2xl font-bold ${isDark ? "text-white" : "text-slate-900"}`}>
+                      {subscriberCount}
                     </div>
-                 </div>
-               </div>
-             </div>
-           </div>
+                    <div className={`text-[10px] sm:text-xs font-medium uppercase tracking-wider ${isDark ? "text-gray-500" : "text-slate-500"}`}>
+                      Students
+                    </div>
+                  </div>
+                  <div className={`hidden md:block w-px h-8 ${isDark ? "bg-gray-700" : "bg-slate-200"}`} />
+                  <div className="text-center md:text-left px-1">
+                    <div className="flex items-center justify-center md:justify-start gap-1">
+                      <span className={`text-lg sm:text-2xl font-bold ${isDark ? "text-white" : "text-slate-900"}`}>
+                        {Number(averageRating).toFixed(1)}
+                      </span>
+                      <FaStar className="text-yellow-400 w-3 h-3 sm:w-4 sm:h-4" />
+                    </div>
+                    <div className={`text-[10px] sm:text-xs font-medium uppercase tracking-wider ${isDark ? "text-gray-500" : "text-slate-500"}`}>
+                      Rating
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* --- Rating Section --- */}
         {canRate && (
-          <div className={`mb-8 p-4 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-4 w-full ${
-            isDark ? "bg-gray-800/50 border-gray-700" : "bg-white border-slate-200"
-          }`}>
+          <div className={`mb-8 p-4 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-4 w-full ${isDark ? "bg-gray-800/50 border-gray-700" : "bg-white border-slate-200"
+            }`}>
             <div className="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-start text-center sm:text-left">
-               <div className={`p-3 rounded-full flex-shrink-0 ${isDark ? "bg-yellow-500/20" : "bg-yellow-50"}`}>
-                 <FaStar className="text-yellow-500 w-5 h-5" />
-               </div>
-               <div>
-                 <h3 className={`font-semibold text-sm sm:text-base ${isDark ? "text-white" : "text-slate-900"}`}>
-                   {hasRated ? "You've rated this series" : "Rate this Series"}
-                 </h3>
-                 <p className={`text-xs ${isDark ? "text-gray-400" : "text-slate-500"}`}>
-                   {hasRated ? "Click stars to update" : "Share your experience"}
-                 </p>
-               </div>
+              <div className={`p-3 rounded-full flex-shrink-0 ${isDark ? "bg-yellow-500/20" : "bg-yellow-50"}`}>
+                <FaStar className="text-yellow-500 w-5 h-5" />
+              </div>
+              <div>
+                <h3 className={`font-semibold text-sm sm:text-base ${isDark ? "text-white" : "text-slate-900"}`}>
+                  {hasRated ? "You've rated this series" : "Rate this Series"}
+                </h3>
+                <p className={`text-xs ${isDark ? "text-gray-400" : "text-slate-500"}`}>
+                  {hasRated ? "Click stars to update" : "Share your experience"}
+                </p>
+              </div>
             </div>
             <div className="flex flex-col items-center sm:items-end w-full sm:w-auto">
               <div className="flex gap-2 sm:gap-1">
@@ -317,6 +322,69 @@ const TestSeriesTestsList = ({
           </div>
         )}
 
+        {/* --- Study Materials Section --- */}
+        {testSeries.resources && testSeries.resources.length > 0 && (
+          <div className={`mb-6 sm:mb-8 p-4 sm:p-6 rounded-2xl border w-full ${isDark
+            ? "bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700"
+            : "bg-white border-slate-200 shadow-sm"
+            }`}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`p-2.5 rounded-xl ${isDark ? "bg-blue-500/20" : "bg-blue-50"}`}>
+                <FiDownload className={`w-5 h-5 ${isDark ? "text-blue-400" : "text-blue-600"}`} />
+              </div>
+              <div>
+                <h3 className={`font-bold text-base sm:text-lg ${isDark ? "text-white" : "text-slate-900"}`}>
+                  📚 Study Materials
+                </h3>
+                <p className={`text-xs ${isDark ? "text-gray-400" : "text-slate-500"}`}>
+                  Download practice sheets, notes & study material
+                </p>
+              </div>
+            </div>
+            <div className="grid gap-3">
+              {testSeries.resources.map((res) => {
+                const typeIcons = { pdf: '📄', practice_sheet: '📝', notes: '📒', other: '📁' };
+                const typeLabels = { pdf: 'PDF', practice_sheet: 'Practice Sheet', notes: 'Notes', other: 'File' };
+                return (
+                  <div
+                    key={res.id}
+                    className={`flex items-center gap-3 p-3 sm:p-4 rounded-xl border transition-all ${isDark
+                      ? "bg-gray-800/60 border-gray-700 hover:border-blue-500/50"
+                      : "bg-slate-50 border-slate-200 hover:border-blue-300 hover:shadow-md"
+                      }`}
+                  >
+                    <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-lg sm:text-xl flex-shrink-0 ${isDark ? "bg-gray-700" : "bg-white border border-slate-200"
+                      }`}>
+                      {typeIcons[res.type] || '📁'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`font-semibold text-sm truncate ${isDark ? "text-white" : "text-slate-800"}`}>
+                        {res.title}
+                      </p>
+                      {res.description && (
+                        <p className={`text-xs truncate ${isDark ? "text-gray-400" : "text-slate-500"}`}>
+                          {res.description}
+                        </p>
+                      )}
+                      <span className={`inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase ${isDark ? "bg-gray-600 text-gray-300" : "bg-slate-200 text-slate-600"
+                        }`}>
+                        {typeLabels[res.type] || 'File'}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => window.open(res.url, '_blank')}
+                      className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm text-white shadow-lg transition-transform active:scale-95 flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 flex-shrink-0"
+                    >
+                      <FiDownload className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      <span className="hidden sm:inline">Download</span>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* --- Tests List --- */}
         {error ? (
           <div className={`p-6 rounded-xl border text-center ${isDark ? "bg-red-900/10 border-red-800" : "bg-red-50 border-red-200"}`}>
@@ -329,25 +397,23 @@ const TestSeriesTestsList = ({
             {tests.map((test, index) => (
               <div
                 key={test.id}
-                className={`group relative p-4 rounded-2xl border transition-all duration-200 hover:-translate-y-1 w-full ${
-                  isDark 
-                    ? "bg-gray-800 border-gray-700 hover:border-blue-500/50 hover:shadow-lg" 
-                    : "bg-white border-slate-200 hover:border-blue-300 hover:shadow-xl"
-                }`}
+                className={`group relative p-4 rounded-2xl border transition-all duration-200 hover:-translate-y-1 w-full ${isDark
+                  ? "bg-gray-800 border-gray-700 hover:border-blue-500/50 hover:shadow-lg"
+                  : "bg-white border-slate-200 hover:border-blue-300 hover:shadow-xl"
+                  }`}
               >
                 {/* Responsive Layout: Column on mobile, Row on Desktop */}
                 <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center w-full">
-                  
+
                   {/* Info Section: Takes full width minus buttons on desktop */}
                   <div className="flex-1 min-w-0 flex gap-3 w-full">
-                    
+
                     {/* Index Number */}
-                    <div className={`flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-sm sm:text-lg font-bold shadow-sm ${
-                      isDark ? "bg-gray-700 text-gray-300" : "bg-slate-100 text-slate-600"
-                    }`}>
+                    <div className={`flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-sm sm:text-lg font-bold shadow-sm ${isDark ? "bg-gray-700 text-gray-300" : "bg-slate-100 text-slate-600"
+                      }`}>
                       {String(index + 1).padStart(2, '0')}
                     </div>
-                    
+
                     {/* Title & Meta */}
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -357,9 +423,8 @@ const TestSeriesTestsList = ({
                         {/* Difficulty/AI Tags - Only wrap if needed */}
                         <div className="flex items-center gap-1.5 flex-wrap">
                           {test.isAIGenerated && (
-                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide flex items-center gap-1 ${
-                              isDark ? "bg-purple-500/20 text-purple-300" : "bg-purple-100 text-purple-700"
-                            }`}>
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide flex items-center gap-1 ${isDark ? "bg-purple-500/20 text-purple-300" : "bg-purple-100 text-purple-700"
+                              }`}>
                               <FaRobot className="w-3 h-3" />
                             </span>
                           )}
@@ -368,26 +433,26 @@ const TestSeriesTestsList = ({
                           </span>
                         </div>
                       </div>
-                      
+
                       {/* Metadata Row - Wraps nicely on mobile */}
                       <div className={`flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs sm:text-sm ${isDark ? "text-gray-400" : "text-slate-500"}`}>
                         <div className="flex items-center gap-1">
-                           <FiTarget className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
-                           <span>{test.totalQuestions} Qs</span>
+                          <FiTarget className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
+                          <span>{test.totalQuestions} Qs</span>
                         </div>
                         <div className="flex items-center gap-1">
-                           <FiClock className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
-                           <span>{test.timeLimit}m</span>
+                          <FiClock className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                          <span>{test.timeLimit}m</span>
                         </div>
                         {test.totalAttempts > 0 && (
                           <div className="flex items-center gap-1">
-                             <FiActivity className="w-3.5 h-3.5 text-orange-500 flex-shrink-0" />
-                             <span>{test.totalAttempts} Runs</span>
+                            <FiActivity className="w-3.5 h-3.5 text-orange-500 flex-shrink-0" />
+                            <span>{test.totalAttempts} Runs</span>
                           </div>
                         )}
                         <div className="flex items-center gap-1 hidden sm:flex">
-                           <FiCalendar className="w-3.5 h-3.5 text-purple-500 flex-shrink-0" />
-                           <span>{formatDate(test.createdAt)}</span>
+                          <FiCalendar className="w-3.5 h-3.5 text-purple-500 flex-shrink-0" />
+                          <span>{formatDate(test.createdAt)}</span>
                         </div>
                       </div>
                     </div>
@@ -398,22 +463,20 @@ const TestSeriesTestsList = ({
                     {onViewLeaderboard && (
                       <button
                         onClick={() => onViewLeaderboard(test)}
-                        className={`px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-colors border whitespace-nowrap ${
-                          isDark 
-                            ? "border-gray-600 text-gray-300 hover:bg-gray-700" 
-                            : "border-slate-200 text-slate-600 hover:bg-slate-50"
-                        }`}
+                        className={`px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-colors border whitespace-nowrap ${isDark
+                          ? "border-gray-600 text-gray-300 hover:bg-gray-700"
+                          : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                          }`}
                       >
                         <FiBarChart2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         <span>Rank</span>
                       </button>
                     )}
-                    
+
                     <button
                       onClick={() => onTakeTest && onTakeTest(test, testSeries)}
-                      className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm text-white shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-1.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 whitespace-nowrap truncate ${
-                        !onViewLeaderboard ? 'col-span-2' : ''
-                      }`}
+                      className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm text-white shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-1.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 whitespace-nowrap truncate ${!onViewLeaderboard ? 'col-span-2' : ''
+                        }`}
                     >
                       <FiPlay className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current flex-shrink-0" />
                       <span>Start</span>
@@ -425,12 +488,10 @@ const TestSeriesTestsList = ({
             ))}
           </div>
         ) : (
-          <div className={`text-center py-16 rounded-3xl border-2 border-dashed ${
-            isDark ? "border-gray-800 bg-gray-900/50" : "border-slate-200 bg-slate-50/50"
-          }`}>
-            <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
-              isDark ? "bg-gray-800 text-gray-600" : "bg-white text-slate-400 shadow-sm"
+          <div className={`text-center py-16 rounded-3xl border-2 border-dashed ${isDark ? "border-gray-800 bg-gray-900/50" : "border-slate-200 bg-slate-50/50"
             }`}>
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isDark ? "bg-gray-800 text-gray-600" : "bg-white text-slate-400 shadow-sm"
+              }`}>
               <FiBookOpen className="w-8 h-8" />
             </div>
             <h3 className={`text-xl font-bold mb-2 ${isDark ? "text-white" : "text-slate-900"}`}>

@@ -47,6 +47,8 @@ import { db } from "./lib/firebase";
 import { doc, updateDoc, increment, getDoc } from "firebase/firestore";
 import { logger } from "./utils/logger";
 import StudyPlanGenerator from "./components/planning/StudyPlanGenerator";
+import ExamGoalSelector, { loadExamGoal, saveExamGoal, clearExamGoal } from "./components/goal/ExamGoalSelector";
+import UserProfile from "./components/profile/UserProfile";
 
 // Normalize quiz structure for attempt viewer
 const normalizeTestForAttempt = (raw) => {
@@ -94,6 +96,32 @@ const AppContent = () => {
   const [pendingAction, setPendingAction] = useState(null);
   const { isDark } = useTheme();
 
+  // Exam Goal state
+  const [examGoal, setExamGoal] = useState(localStorage.getItem('quizmaster-exam-goal') || null);
+  const [showGoalChanger, setShowGoalChanger] = useState(false);
+
+  // Load exam goal from Firestore on login
+  useEffect(() => {
+    loadExamGoal(currentUser).then((goal) => {
+      if (goal) setExamGoal(goal);
+    });
+  }, [currentUser]);
+
+  const handleGoalSelected = (goalId) => {
+    setExamGoal(goalId);
+    setShowGoalChanger(false);
+  };
+
+  const handleChangeGoal = () => {
+    setShowGoalChanger(true);
+  };
+
+  const handleClearGoal = async () => {
+    await clearExamGoal(currentUser);
+    setExamGoal(null);
+    setShowGoalChanger(false);
+  };
+
   const countFreeSeriesView = async (series) => {
     try {
       if (!series || series.isPaid) return;
@@ -125,6 +153,8 @@ const AppContent = () => {
       setCurrentView("test-history");
     } else if (path === "/subscriptions") {
       setCurrentView("subscriptions");
+    } else if (path === "/profile") {
+      setCurrentView("profile");
     } else if (path === "/homepage") {
       setCurrentView("homepage");
     } else if (path.startsWith("/series/")) {
@@ -205,7 +235,7 @@ const AppContent = () => {
       } else if (path.includes("/leaderboard")) {
         setCurrentView("test-leaderboard");
         const testId = path.split("/")[2];
-         if (testId && (!selectedItem || selectedItem.id !== testId)) {
+        if (testId && (!selectedItem || selectedItem.id !== testId)) {
           setIsLoadingSeries(true);
           getDoc(doc(db, "quizzes", testId))
             .then((snap) => {
@@ -231,28 +261,28 @@ const AppContent = () => {
               }
               return getDoc(doc(db, "section-quizzes", testId)).then(
                 (secSnap) => {
-                   if (secSnap.exists()) {
-                     const testData = { id: secSnap.id, ...secSnap.data(), type: "section-wise" };
-                      if (testData.testSeriesId) {
-                        return getDoc(doc(db, "test-series", testData.testSeriesId)).then((seriesSnap) => {
-                           if(seriesSnap.exists()) {
-                             setSelectedItem({ ...testData, testSeriesId: testData.testSeriesId });
-                           } else {
-                             setSelectedItem(testData);
-                           }
-                        });
-                      } else {
-                        setSelectedItem(testData);
-                      }
-                      return true;
-                   }
-                   navigate("/test-series");
-                   return false;
+                  if (secSnap.exists()) {
+                    const testData = { id: secSnap.id, ...secSnap.data(), type: "section-wise" };
+                    if (testData.testSeriesId) {
+                      return getDoc(doc(db, "test-series", testData.testSeriesId)).then((seriesSnap) => {
+                        if (seriesSnap.exists()) {
+                          setSelectedItem({ ...testData, testSeriesId: testData.testSeriesId });
+                        } else {
+                          setSelectedItem(testData);
+                        }
+                      });
+                    } else {
+                      setSelectedItem(testData);
+                    }
+                    return true;
+                  }
+                  navigate("/test-series");
+                  return false;
                 }
               );
             })
             .finally(() => setIsLoadingSeries(false));
-         }
+        }
       } else {
         setCurrentView("take-test");
       }
@@ -280,19 +310,19 @@ const AppContent = () => {
       if (path.includes("/take")) {
         setCurrentView("take-quiz");
         const quizId = path.split("/")[2];
-        
+
         if (quizId && (!selectedItem || selectedItem.id !== quizId)) {
           setIsLoadingSeries(true);
           getDoc(doc(db, "quizzes", quizId))
             .then((snap) => {
               if (snap.exists()) {
-                return { id: snap.id, ...snap.data(), type: 'regular' }; 
+                return { id: snap.id, ...snap.data(), type: 'regular' };
               } else {
                 return getDoc(doc(db, "section-quizzes", quizId)).then(sectionSnap => {
-                    if (sectionSnap.exists()) {
-                        return { id: sectionSnap.id, ...sectionSnap.data(), type: 'section-wise' };
-                    }
-                    return null; 
+                  if (sectionSnap.exists()) {
+                    return { id: sectionSnap.id, ...sectionSnap.data(), type: 'section-wise' };
+                  }
+                  return null;
                 });
               }
             })
@@ -310,23 +340,23 @@ const AppContent = () => {
             })
             .finally(() => setIsLoadingSeries(false));
         }
-        
+
       } else if (path.includes("/leaderboard")) {
-         setCurrentView("leaderboard");
-         const quizId = path.split("/")[2];
-         if (quizId && (!selectedItem || selectedItem.id !== quizId)) {
-           setIsLoadingSeries(true);
-           getDoc(doc(db, "quizzes", quizId))
-             .then(snap => {
-               if(snap.exists()) return { id: snap.id, ...snap.data() };
-               return getDoc(doc(db, "section-quizzes", quizId)).then(s => s.exists() ? {id: s.id, ...s.data()} : null);
-             })
-             .then(data => {
-               if(data) setSelectedItem(data);
-               else navigate("/test-series");
-             })
-             .finally(() => setIsLoadingSeries(false));
-         }
+        setCurrentView("leaderboard");
+        const quizId = path.split("/")[2];
+        if (quizId && (!selectedItem || selectedItem.id !== quizId)) {
+          setIsLoadingSeries(true);
+          getDoc(doc(db, "quizzes", quizId))
+            .then(snap => {
+              if (snap.exists()) return { id: snap.id, ...snap.data() };
+              return getDoc(doc(db, "section-quizzes", quizId)).then(s => s.exists() ? { id: s.id, ...s.data() } : null);
+            })
+            .then(data => {
+              if (data) setSelectedItem(data);
+              else navigate("/test-series");
+            })
+            .finally(() => setIsLoadingSeries(false));
+        }
       } else {
         setCurrentView("take-quiz");
       }
@@ -341,7 +371,7 @@ const AppContent = () => {
     if (!path.startsWith("/series/")) return;
     const seriesId = path.split("/")[2];
     if (!seriesId) return;
-    
+
     // If already selected, don't reload, but if ID mismatch or null, load
     if (!selectedItem || selectedItem.id !== seriesId) {
       setIsLoadingSeries(true);
@@ -354,18 +384,18 @@ const AppContent = () => {
               if (raw) {
                 const offer = JSON.parse(raw);
                 if (offer && typeof offer === "object") {
-                    base.price = offer.discountedPrice ?? base.price;
+                  base.price = offer.discountedPrice ?? base.price;
                 }
               }
-            } catch (_) {}
+            } catch (_) { }
             setSelectedItem(base);
           } else {
             // Series not found handling
-             navigate("/test-series");
+            navigate("/test-series");
           }
         })
         .catch(err => {
-            console.error("Error loading series:", err);
+          console.error("Error loading series:", err);
         })
         .finally(() => setIsLoadingSeries(false));
     }
@@ -412,7 +442,7 @@ const AppContent = () => {
 
   const handleSubscribeSeries = (series) => {
     if (!requireLoginForTestSeries("subscribe-series")) return;
-    setSelectedItem(series); 
+    setSelectedItem(series);
     setCurrentView("subscribe-series");
     navigate(`/series/${series.id}/subscribe`);
   };
@@ -608,58 +638,66 @@ const AppContent = () => {
     switch (currentView) {
       case "welcome": return <WelcomePage onGetStarted={handleGetStarted} onCreateSeries={handleCreateSeries} onViewExistingSeries={handleViewTestSeries} />;
       case "homepage": return <EnhancedHomepage onCreateSeries={handleCreateSeries} onViewSeries={handleViewSeries} onSubscribeSeries={handleSubscribeSeries} onViewTests={handleViewTests} />;
+      case "profile": return <UserProfile examGoal={examGoal} onChangeGoal={handleChangeGoal} />;
       case "subscriptions": return <UserSubscriptions onViewTests={handleViewTests} onSubscribeSeries={handleSubscribeSeries} />;
-      
-      case "create-series": 
+
+      case "create-series":
         return isAdmin ? <TestSeriesCreator onBack={handleBackToSeries} onSeriesCreated={handleSeriesCreated} /> : <div className="text-center p-10">Admin Access Required</div>;
-      
-      case "subscribe-series": 
-        if (!selectedItem) return <LoadingScreen />; 
+
+      case "subscribe-series":
+        if (!selectedItem) return <LoadingScreen />;
         return <TestSeriesSubscription testSeries={selectedItem} onSuccess={handleSubscriptionSuccess} onCancel={handleBackToSeries} />;
-      
-      case "series-dashboard": 
-        if (!selectedItem) return <LoadingScreen />; 
+
+      case "series-dashboard":
+        if (!selectedItem) return <LoadingScreen />;
         return <TestSeriesDashboard testSeries={selectedItem} onBack={handleBackToSeries} onCreateManualTest={isAdmin ? handleCreateManualTest : undefined} onCreateAITest={isAdmin ? handleCreateAITest : undefined} onTakeTest={handleTakeTest} onViewLeaderboard={handleViewLeaderboard} />;
-      
-      case "create-manual-test": 
+
+      case "create-manual-test":
         if (!selectedItem) return <LoadingScreen />;
         return <SectionWiseQuizCreator onBack={handleBackToDashboard} onQuizCreated={handleTestCreated} testSeriesId={selectedItem?.id} />;
-      
-      case "create-ai-test": 
+
+      case "create-ai-test":
         if (!selectedItem) return <LoadingScreen />;
         return <TestSeriesAIGenerator testSeries={selectedItem} onBack={handleBackToDashboard} onQuizCreated={handleTestCreated} />;
-      
-      case "view-tests": 
+
+      case "view-tests":
         if (!selectedItem) return <LoadingScreen />;
         return <TestSeriesTestsList testSeries={selectedItem} onBack={handleBackToSeries} onTakeTest={handleTakeTest} onViewLeaderboard={handleViewLeaderboard} />;
-      
-      case "take-test": 
+
+      case "take-test":
         // Ensure we have test data before rendering viewer
         if (!selectedItem?.test) return <LoadingScreen />;
         return <TestAttemptViewer test={selectedItem?.test} testSeries={selectedItem?.testSeries} onBack={() => selectedItem?.testSeries ? (setSelectedItem(selectedItem.testSeries), setCurrentView("view-tests")) : handleBackToDashboard()} onComplete={handleTestCompleted} />;
-      
+
       case "test-history": return <TestAttemptHistory onBack={handleBackToSeries} onViewAttempt={handleViewAttemptDetails} />;
-      
-      case "attempt-details": 
+
+      case "attempt-details":
         if (!selectedItem) return <LoadingScreen />;
         return <TestAttemptDetails attempt={selectedItem} onBack={handleBackToHistory} testSeriesId={selectedItem?.testSeriesId} />;
-      
-      case "test-leaderboard": 
-         if (!selectedItem) return <LoadingScreen />;
-         return <LeaderBoard quizId={selectedItem?.id} quizTitle={selectedItem?.title} testSeriesId={selectedItem?.testSeriesId} onBack={() => selectedItem?.testSeriesId ? (setSelectedItem({id: selectedItem.testSeriesId}), setCurrentView("view-tests")) : handleBackToSeries()} isIndividualTest={true} />;
-      
-      case "take-quiz": 
-         if (!selectedItem) return <LoadingScreen />;
-         return <QuizTaker quiz={selectedItem} onBack={handleBackToSeries} onViewLeaderboard={(quiz) => { setSelectedItem(quiz); setCurrentView("leaderboard"); }} />;
-      
+
+      case "test-leaderboard":
+        if (!selectedItem) return <LoadingScreen />;
+        return <LeaderBoard quizId={selectedItem?.id} quizTitle={selectedItem?.title} testSeriesId={selectedItem?.testSeriesId} onBack={() => selectedItem?.testSeriesId ? (setSelectedItem({ id: selectedItem.testSeriesId }), setCurrentView("view-tests")) : handleBackToSeries()} isIndividualTest={true} />;
+
+      case "take-quiz":
+        if (!selectedItem) return <LoadingScreen />;
+        return <QuizTaker quiz={selectedItem} onBack={handleBackToSeries} onViewLeaderboard={(quiz) => { setSelectedItem(quiz); setCurrentView("leaderboard"); }} />;
+
       case "ai-generator": return <AIQuizGenerator onClose={handleBackToSeries} onQuestionsGenerated={handleSeriesCreated} />;
       case "attempts": return <UserAttempts onBack={handleBackToSeries} />;
-      case "leaderboard": 
-         if (!selectedItem) return <LoadingScreen />;
-         return <LeaderBoard quizId={selectedItem?.id} quizTitle={selectedItem?.title} onBack={handleBackToSeries} isIndividualTest={false} />;
-      
+      case "leaderboard":
+        if (!selectedItem) return <LoadingScreen />;
+        return <LeaderBoard quizId={selectedItem?.id} quizTitle={selectedItem?.title} onBack={handleBackToSeries} isIndividualTest={false} />;
+
       case "test-series":
-      default: return <TestSeriesList onCreateSeries={isAdmin ? handleCreateSeries : undefined} onViewSeries={handleViewSeries} onSubscribeSeries={handleSubscribeSeries} onTakeTest={handleTakeTest} onViewTests={handleViewTests} />;
+      default:
+        return (
+          <>
+            <TestSeriesList onCreateSeries={isAdmin ? handleCreateSeries : undefined} onViewSeries={handleViewSeries} onSubscribeSeries={handleSubscribeSeries} onTakeTest={handleTakeTest} onViewTests={handleViewTests} examGoal={examGoal === '__skipped__' ? null : examGoal} onChangeGoal={handleChangeGoal} isGoalModalOpen={!examGoal || showGoalChanger} />
+            {/* Show goal selector popup if no goal set yet */}
+            {!examGoal && <ExamGoalSelector isModal={true} onGoalSelected={handleGoalSelected} onSkip={() => setExamGoal('__skipped__')} />}
+          </>
+        );
     }
   };
 
@@ -668,13 +706,14 @@ const AppContent = () => {
 
   return (
     <div className={`flex flex-col min-h-screen transition-all duration-500 ${pageLoaded ? "opacity-100" : "opacity-0"} ${isDark ? "bg-gray-900" : "bg-white"}`}>
-      {showHeader && <Header onViewAttempts={handleViewAttempts} onViewHome={handleViewHome} onViewTestSeries={handleViewTestSeries} onViewWelcome={handleViewWelcome} onLoginClick={handleLoginClick} currentView={currentView} />}
+      {showHeader && <Header onViewAttempts={handleViewAttempts} onViewHome={handleViewHome} onViewTestSeries={handleViewTestSeries} onViewWelcome={handleViewWelcome} onLoginClick={handleLoginClick} currentView={currentView} examGoal={examGoal} onChangeGoal={handleChangeGoal} />}
       <main className={`flex-grow ${showHeader ? "pt-20" : ""} relative`}>
         <div className="relative z-10">
           <ErrorBoundary>{renderContent()}</ErrorBoundary>
         </div>
       </main>
       <LoginPopup isOpen={showLoginPopup} onClose={handleCloseLoginPopup} onLoginClick={handleLoginClick} pendingAction={pendingAction} />
+      {showGoalChanger && <ExamGoalSelector isModal={true} onGoalSelected={handleGoalSelected} onSkip={() => setShowGoalChanger(false)} />}
       {showFooter && <Footer />}
     </div>
   );
@@ -695,8 +734,8 @@ const ApplyCreator = () => {
   const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-gray-900 p-8 text-white">
-       <h1>Become a Creator</h1>
-       <button onClick={() => navigate("/test-series")} className="mt-4 bg-blue-600 px-4 py-2 rounded">Back</button>
+      <h1>Become a Creator</h1>
+      <button onClick={() => navigate("/test-series")} className="mt-4 bg-blue-600 px-4 py-2 rounded">Back</button>
     </div>
   );
 }
@@ -720,6 +759,7 @@ const App = () => {
               <Route path="/" element={<AppContent />} />
               <Route path="/welcome" element={<AppContent />} />
               <Route path="/homepage" element={<AppContent />} />
+              <Route path="/profile" element={<AppContent />} />
               <Route path="/subscriptions" element={<AppContent />} />
               <Route path="/test-series" element={<AppContent />} />
               <Route path="/create-series" element={<AppContent />} />
