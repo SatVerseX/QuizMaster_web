@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
+import quizmasterLogo from '../../assets/quizmaster-logo.png';
 import { 
   FaGithub, FaTwitter, FaLinkedin, FaEnvelope, FaArrowUp 
 } from 'react-icons/fa';
@@ -95,9 +96,12 @@ const Footer = () => {
             {/* 1. Brand Column (Lg: 4 cols) */}
             <div className="lg:col-span-4 space-y-6">
               <div>
-                <h3 className={`text-2xl font-black tracking-tight mb-2 ${styles.text.heading}`}>
-                  <span className={styles.text.accent}>QuizMaster</span>
-                </h3>
+                <div className="flex items-center gap-3 mb-2">
+                  <img src={quizmasterLogo} alt="QuizMaster" className="w-10 h-10 object-contain rounded-full" />
+                  <h3 className={`text-2xl font-black tracking-tight ${styles.text.heading}`}>
+                    <span className={styles.text.accent}>QuizMaster</span>
+                  </h3>
+                </div>
                 <p className={`text-sm leading-relaxed max-w-xs ${styles.text.body}`}>
                   Empowering learners with AI-driven assessments, real-time analytics, and a seamless testing environment.
                 </p>

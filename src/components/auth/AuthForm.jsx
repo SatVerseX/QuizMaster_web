@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "../../contexts/ThemeContext";
+import quizmasterLogo from "../../assets/quizmaster-logo.png";
 import {
   FiMail,
   FiLock,
@@ -109,14 +110,10 @@ const AuthForm = () => {
       <div className="max-w-md w-full relative z-10">
         {/* Logo */}
         <div className="flex justify-center mb-7 mt-3">
-          <div className="text-center">
-            <div className="text-3xl font-bold">
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-red-500 to-yellow-500">
-                Quiz
-              </span>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-red-500 to-yellow-500">
-                Master
-              </span>
+          <div className="flex flex-col items-center">
+            <div className="flex items-center gap-0">
+              <img src={quizmasterLogo} alt="QuizMaster" className="w-24 h-24 object-contain rounded-full" />
+              <span className={`-ml-2 text-[28px] font-black tracking-normal leading-none ${isDark ? "text-white" : "text-slate-900"}`}>Quiz<span className="text-[#a855f7]">Master</span></span>
             </div>
             <div
               className={`text-sm font-medium ${

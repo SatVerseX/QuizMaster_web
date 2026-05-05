@@ -5,6 +5,7 @@ import { useTheme } from "../../contexts/ThemeContext";
 import { useSubscription } from "../../contexts/SubscriptionContext";
 import { getUserAvatar } from "../../utils/userUtils";
 import { getSubcategoryById } from "../../utils/constants/examCategories";
+import quizmasterLogo from "../../assets/quizmaster-logo.png";
 import {
   Sun,
   Moon,
@@ -145,20 +146,12 @@ const Header = ({
             <div className="flex items-center flex-shrink-0">
               <button
                 onClick={() => navigate('/homepage')}
-                className="group flex flex-col justify-center relative outline-none"
+                className="group flex items-center gap-0 leading-none relative outline-none"
                 onMouseEnter={() => setLogoHovered(true)}
                 onMouseLeave={() => setLogoHovered(false)}
               >
-                <span
-                  className={`text-2xl font-bold bg-gradient-to-r from-orange-500 via-red-500 to-yellow-500 bg-clip-text text-transparent transition-all duration-300 ${logoHovered ? "tracking-wide" : "tracking-normal"
-                    }`}
-                >
-                  QuizMaster
-                </span>
-                <span
-                  className={`h-0.5 rounded-full bg-gradient-to-r from-orange-500 via-red-500 to-yellow-500 transition-all duration-300 ${logoHovered ? "w-full opacity-100" : "w-0 opacity-0"
-                    }`}
-                ></span>
+                <img src={quizmasterLogo} alt="QuizMaster" className={`w-24 h-24 object-contain rounded-full transition-all duration-300 ${logoHovered ? "scale-110" : "scale-100"}`} />
+                <span className={`-ml-2 text-[22px] font-black tracking-normal leading-none transition-all duration-300 ${theme === "dark" ? "text-white" : "text-slate-900"}`}>Quiz<span className="text-[#a855f7]">Master</span></span>
               </button>
             </div>
 
@@ -275,7 +268,7 @@ const Header = ({
                 ) : (
                   <button
                     onClick={() => onLoginClick ? onLoginClick() : navigate('/login')}
-                    className="flex items-center gap-2 px-5 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold shadow-lg shadow-blue-500/25 transition-all hover:-translate-y-0.5"
+                    className="flex items-center gap-2 px-5 py-2 rounded-full bg-purple-600 hover:bg-purple-700 text-white text-sm font-bold shadow-lg shadow-purple-500/25 transition-all hover:-translate-y-0.5"
                   >
                     <LogIn className="w-4 h-4" /> Login
                   </button>

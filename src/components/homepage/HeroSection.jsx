@@ -75,8 +75,8 @@ const HeroSection = ({ isDark, currentUser, onViewAllSeries }) => {
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               className={`w-full pl-12 pr-4 py-4 rounded-2xl text-base font-medium transition-all duration-200 outline-none border-2 ${isDark
-                  ? `bg-zinc-950/50 ${isFocused ? 'border-emerald-500/50 ring-4 ring-emerald-500/10' : 'border-zinc-700 text-white placeholder-zinc-600'}`
-                  : `bg-white ${isFocused ? 'border-emerald-500 ring-4 ring-emerald-100' : 'border-zinc-200 text-zinc-900 placeholder-zinc-400 shadow-sm'}`
+                ? `bg-zinc-950/50 ${isFocused ? 'border-emerald-500/50 ring-4 ring-emerald-500/10' : 'border-zinc-700 text-white placeholder-zinc-600'}`
+                : `bg-white ${isFocused ? 'border-emerald-500 ring-4 ring-emerald-100' : 'border-zinc-200 text-zinc-900 placeholder-zinc-400 shadow-sm'}`
                 }`}
             />
 
@@ -84,8 +84,8 @@ const HeroSection = ({ isDark, currentUser, onViewAllSeries }) => {
               <button
                 type="submit"
                 className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${isDark
-                    ? 'bg-zinc-800 text-white hover:bg-zinc-700'
-                    : 'bg-zinc-100 text-zinc-900 hover:bg-zinc-200'
+                  ? 'bg-zinc-800 text-white hover:bg-zinc-700'
+                  : 'bg-zinc-100 text-zinc-900 hover:bg-zinc-200'
                   }`}
               >
                 {searchTerm ? <FiArrowRight /> : <FiCommand className="w-3.5 h-3.5 opacity-50" />}
@@ -107,8 +107,8 @@ const HeroSection = ({ isDark, currentUser, onViewAllSeries }) => {
                   // Optional: auto-submit or just fill
                 }}
                 className={`text-xs px-2.5 py-1 rounded-md border font-medium transition-all hover:-translate-y-0.5 ${isDark
-                    ? `bg-zinc-800/50 border-zinc-700 text-zinc-300 hover:text-white`
-                    : `bg-white border-zinc-200 text-zinc-600 hover:border-emerald-300 hover:text-emerald-700`
+                  ? `bg-zinc-800/50 border-zinc-700 text-zinc-300 hover:text-white`
+                  : `bg-white border-zinc-200 text-zinc-600 hover:border-emerald-300 hover:text-emerald-700`
                   }`}
               >
                 {topic.label}
@@ -130,8 +130,8 @@ const HeroSection = ({ isDark, currentUser, onViewAllSeries }) => {
           <button
             onClick={() => navigate('/dashboard')}
             className={`w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold text-sm transition-all border flex items-center justify-center gap-2 ${isDark
-                ? 'bg-zinc-800/50 border-zinc-700 text-white hover:bg-zinc-800'
-                : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50 hover:border-zinc-300 shadow-sm'
+              ? 'bg-zinc-800/50 border-zinc-700 text-white hover:bg-zinc-800'
+              : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50 hover:border-zinc-300 shadow-sm'
               }`}
           >
             <FiCompass className="w-4 h-4" />
