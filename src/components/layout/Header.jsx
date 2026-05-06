@@ -150,8 +150,8 @@ const Header = ({
                 onMouseEnter={() => setLogoHovered(true)}
                 onMouseLeave={() => setLogoHovered(false)}
               >
-                <img src={quizmasterLogo} alt="QuizMaster" className={`w-24 h-24 object-contain rounded-full transition-all duration-300 ${logoHovered ? "scale-110" : "scale-100"}`} />
-                <span className={`-ml-2 text-[22px] font-black tracking-normal leading-none transition-all duration-300 ${theme === "dark" ? "text-white" : "text-slate-900"}`}>Quiz<span className="text-[#a855f7]">Master</span></span>
+                <img src={quizmasterLogo} alt="QuizMaster" className={`w-10 h-10 object-contain transition-all duration-300 ${logoHovered ? "scale-110" : "scale-100"}`} />
+                <span className={`ml-1.5 text-[20px] font-black tracking-normal leading-none transition-all duration-300 ${theme === "dark" ? "text-white" : "text-slate-900"}`}>Quiz<span className="text-[#a855f7]">Master</span></span>
               </button>
             </div>
 

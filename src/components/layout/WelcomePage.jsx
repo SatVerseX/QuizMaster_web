@@ -244,7 +244,7 @@ const WelcomePage = ({ onGetStarted, onCreateSeries }) => {
         <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-10">
           <nav className="flex items-center justify-between h-20">
             <button onClick={onGetStarted} className="flex items-center gap-1 leading-none">
-              <img src={quizmasterLogo} alt="" className="w-20 h-20 object-contain rounded-full -ml-2" />
+              <img src={quizmasterLogo} alt="" className="w-12 h-12 object-contain rounded-full -ml-2" />
               <span className="text-[28px] font-black tracking-normal leading-none translate-y-[1px]">Quiz<span className="text-[#a855f7]">Master</span></span>
             </button>
 
@@ -453,7 +453,7 @@ const WelcomePage = ({ onGetStarted, onCreateSeries }) => {
           <div className="grid lg:grid-cols-3 gap-6 max-w-5xl mx-auto items-center">
             {plans.map((p, i) => (
               <FadeSlide key={p.id} delay={i * 150} className={`h-full`}>
-                <HoverCard3D className={`relative p-6 rounded-2xl h-full flex flex-col border transition-all duration-500 group ${p.popular
+                <HoverCard3D className={`relative p-7 rounded-2xl h-full flex flex-col border transition-all duration-500 group ${p.popular
                   ? `lg:scale-105 z-10 shadow-2xl overflow-visible ${isDark ? 'bg-slate-800/80 border-violet-500/50 shadow-violet-900/20 backdrop-blur-xl' : 'bg-white border-violet-200 shadow-violet-200/50'}`
                   : `scale-100 z-0 overflow-hidden hover:border-slate-300 dark:hover:border-slate-600 ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-white/50 border-slate-200'}`
                   }`}>
@@ -464,33 +464,32 @@ const WelcomePage = ({ onGetStarted, onCreateSeries }) => {
                   )}
 
                   {/* Plan Icon */}
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl mb-6 ${p.iconClass}`}>
+                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-lg mb-5 ${p.iconClass}`}>
                     <p.icon />
                   </div>
 
-                  <div className="mb-6 text-left relative">
-                    <h3 className={`text-xs font-bold uppercase tracking-widest mb-3 ${mode("text-slate-500", "text-slate-400")}`}>{p.name}</h3>
-                    <div className="flex items-baseline gap-1 mb-1">
-                      <span className={`text-4xl font-black tracking-tight ${mode("text-slate-900", "text-white")}`}>
+                  <div className="mb-5 relative">
+                    <h3 className={`text-[11px] font-semibold uppercase tracking-[0.15em] mb-4 ${mode("text-slate-400", "text-slate-500")}`}>{p.name}</h3>
+                    <div className="flex items-baseline gap-1.5 mb-1">
+                      <span className={`text-3xl font-extrabold tracking-tight ${mode("text-slate-900", "text-white")}`}>
                         ₹{billing === 'monthly' ? p.priceMonthly : Math.round(p.priceAnnual / 12)}
                       </span>
-                      <span className={`font-medium text-base ${mode("text-slate-500", "text-slate-400")}`}>/mo</span>
+                      <span className={`font-normal text-sm ${mode("text-slate-400", "text-slate-500")}`}>/mo</span>
                     </div>
                     {billing === 'annual' && (
-                      <p className="text-xs text-violet-500 font-bold animate-pulse">Billed ₹{p.priceAnnual} yearly</p>
+                      <p className="text-xs text-violet-500 font-medium mt-1">Billed ₹{p.priceAnnual} yearly</p>
                     )}
-                    {/* Accent Underline */}
-                    <div className={`w-10 h-1 rounded-full mt-4 mb-4 ${p.accentClass}`} />
-                    <p className={`text-sm font-medium leading-relaxed ${mode("text-slate-600", "text-slate-300")}`}>{p.blurb}</p>
+                    <div className={`w-8 h-[3px] rounded-full mt-4 mb-4 ${p.accentClass}`} />
+                    <p className={`text-[13px] font-normal leading-[1.7] ${mode("text-slate-400", "text-slate-500")}`}>{p.blurb}</p>
                   </div>
 
-                  <ul className="space-y-3 mb-6 flex-1">
+                  <ul className="space-y-2.5 mb-7 flex-1">
                     {p.features.map((feat, k) => (
-                      <li key={k} className="flex items-start gap-3 text-sm font-medium">
-                        <div className={`mt-0.5 shrink-0 ${p.popular ? mode("text-violet-500", "text-violet-300") : mode("text-emerald-500", "text-emerald-400")}`}>
-                          <FiCheckCircle size={16} />
+                      <li key={k} className="flex items-start gap-2.5 text-[13px]">
+                        <div className={`mt-0.5 shrink-0 ${p.popular ? mode("text-violet-400", "text-violet-300") : mode("text-violet-400", "text-violet-400")}`}>
+                          <FiCheckCircle size={14} />
                         </div>
-                        <span className={mode("text-slate-700", "text-slate-300")}>{feat}</span>
+                        <span className={`font-normal leading-relaxed ${mode("text-slate-500", "text-slate-400")}`}>{feat}</span>
                       </li>
                     ))}
                   </ul>
@@ -500,14 +499,14 @@ const WelcomePage = ({ onGetStarted, onCreateSeries }) => {
                     whileTap={{ scale: 0.98 }}
                     onClick={() => handlePurchasePlan(p)}
                     disabled={savingPlan === p.id}
-                    className={`w-full py-4 rounded-xl font-bold transition-all duration-300 shadow-xl flex items-center justify-center gap-2 ${p.popular
-                      ? "bg-violet-600 hover:bg-violet-500 text-white shadow-violet-500/30"
-                      : mode("bg-white border-2 border-slate-100 text-slate-700 hover:border-slate-300 hover:bg-slate-50", "bg-slate-800 border border-slate-700 text-white hover:bg-slate-700")
+                    className={`w-full py-3.5 rounded-xl font-semibold text-sm transition-all duration-300 shadow-lg flex items-center justify-center gap-2 ${p.popular
+                      ? "bg-violet-600 hover:bg-violet-500 text-white shadow-violet-500/25"
+                      : mode("bg-slate-50 border border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-100", "bg-slate-800 border border-slate-700 text-white hover:bg-slate-700")
                       }`}
                   >
                     {savingPlan === p.id ? (
                       <>
-                        <FiLoader className="w-5 h-5 animate-spin" /> Processing...
+                        <FiLoader className="w-4 h-4 animate-spin" /> Processing...
                       </>
                     ) : (
                       "Get Started Now"

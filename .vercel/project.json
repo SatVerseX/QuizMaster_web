@@ -1,1 +1,16 @@
-{"projectId":"prj_nYeWLiUvhuF1Aw2wiM1dzDkLqEhv","orgId":"team_Midw0fUEnyHIpxh5FlrFhyEN"}
+{
+  "projectId": "prj_nYeWLiUvhuF1Aw2wiM1dzDkLqEhv",
+  "orgId": "team_Midw0fUEnyHIpxh5FlrFhyEN",
+  "projectName": "quiz-app",
+  "settings": {
+    "createdAt": 1753529688237,
+    "framework": "vite",
+    "devCommand": null,
+    "installCommand": "npm install",
+    "buildCommand": "npm run build",
+    "outputDirectory": "dist",
+    "rootDirectory": null,
+    "directoryListing": false,
+    "nodeVersion": "22.x"
+  }
+}
